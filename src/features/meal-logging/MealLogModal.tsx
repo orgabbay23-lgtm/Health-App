@@ -120,12 +120,15 @@ export function MealLogModal({
       resetManual();
       onClose();
     } catch (error: any) {
-      if (error.message === "BYOK_REQUIRED") {
+      if (error.message === "BYOK_REQUIRED" || error.message === "API_KEY_INVALID") {
+        if (error.message === "API_KEY_INVALID") {
+          toast.error("מפתח ה-API שסופק אינו תקין או פג תוקף. אנא הזן מפתח חדש.");
+        }
         setPendingDescription(description);
         setIsByokOpen(true);
       } else {
         console.error(error);
-        toast.error("אירעה שגיאה בפענוח הארוחה. בדוק את מפתח ה-API ונסה שוב.");
+        toast.error(error.message || "אירעה שגיאה בפענוח הארוחה. בדוק את מפתח ה-API ונסה שוב.");
       }
     } finally {
       setIsSubmitting(false);

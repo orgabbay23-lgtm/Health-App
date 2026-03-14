@@ -1,7 +1,6 @@
 /// <reference types="vite/client" />
 import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
 import { z } from "zod";
-import { useSettingsStore } from "../store";
 
 const PRIMARY_MODEL = "gemini-3-flash-preview";
 const FALLBACK_MODEL = "gemini-2.5-flash";
@@ -123,10 +122,12 @@ const SYSTEM_INSTRUCTION =
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
+const getApiKey = () => localStorage.getItem('gemini_personal_api_key') || import.meta.env.VITE_GEMINI_API_KEY;
+
 export async function parseMealDescription(
   description: string,
 ): Promise<ParsedMealDescription> {
-  const apiKey = useSettingsStore.getState().geminiApiKey || "";
+  const apiKey = getApiKey() || "";
 
   if (!apiKey) {
     throw new Error("BYOK_REQUIRED");
@@ -156,6 +157,20 @@ export async function parseMealDescription(
     return await performRequest(PRIMARY_MODEL);
   } catch (error: any) {
     console.error(`Primary model (${PRIMARY_MODEL}) failed:`, error);
+    
+    // Check for 401 Unauthorized / Invalid API Key
+    const isAuthError = 
+      error?.status === 401 || 
+      error?.message?.includes("401") || 
+      error?.message?.toLowerCase().includes("unauthorized") || 
+      error?.message?.toLowerCase().includes("invalid api key") ||
+      error?.message?.toLowerCase().includes("api key not found");
+
+    if (isAuthError) {
+      localStorage.removeItem('gemini_personal_api_key');
+      throw new Error("API_KEY_INVALID");
+    }
+
     const isQuotaError =
       error?.status === 429 ||
       error?.message?.includes("429") ||
@@ -175,3 +190,4 @@ export async function parseMealDescription(
     throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
   }
 }
+

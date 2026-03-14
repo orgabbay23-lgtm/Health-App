@@ -3,7 +3,6 @@ import { ModalShell } from "../../../components/ui/modal-shell";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
-import { useSettingsStore } from "../../../store";
 
 interface ByokModalProps {
   isOpen: boolean;
@@ -11,27 +10,37 @@ interface ByokModalProps {
   onSuccess: (key: string) => void;
 }
 
+const STORAGE_KEY = 'gemini_personal_api_key';
+
 export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
   const [key, setKey] = useState("");
-  const setGeminiApiKey = useSettingsStore((state) => state.setGeminiApiKey);
-  const _hasHydrated = useSettingsStore((state) => state._hasHydrated);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Sync current key from store when modal opens
   useEffect(() => {
-    if (isOpen) {
-      setKey(useSettingsStore.getState().geminiApiKey || "");
-    }
-  }, [isOpen]);
+    setIsMounted(true);
+  }, []);
 
-  if (!_hasHydrated) return null;
+  // Sync current key from localStorage when modal opens
+  useEffect(() => {
+    if (isOpen && isMounted) {
+      setKey(localStorage.getItem(STORAGE_KEY) || "");
+    }
+  }, [isOpen, isMounted]);
+
+  if (!isMounted) return null;
 
   const handleSave = () => {
     const trimmedKey = key.trim();
     if (trimmedKey) {
-      setGeminiApiKey(trimmedKey);
+      localStorage.setItem(STORAGE_KEY, trimmedKey);
       onSuccess(trimmedKey);
       onClose();
     }
+  };
+
+  const handleClear = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setKey("");
   };
 
   return (
@@ -39,7 +48,7 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
       <div className="space-y-4 p-4" dir="rtl">
         <p className="text-sm text-slate-600">
           כדי להשתמש בתכונות הבינה המלאכותית (AI), עליך להזין מפתח API אישי של Gemini.
-          המפתח נשמר בדפדפן שלך בלבד ולא נשלח לשרתים שלנו.
+          המפתח נשמר בדפדפן שלך בלבד (localStorage) ולא נשלח לשרתים שלנו.
         </p>
         <div className="space-y-2">
           <Label htmlFor="api-key">מפתח API</Label>
@@ -61,6 +70,14 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
             ביטול
           </Button>
         </div>
+        {localStorage.getItem(STORAGE_KEY) && (
+          <button 
+            onClick={handleClear}
+            className="w-full text-xs text-red-400 hover:text-red-500 underline transition-colors"
+          >
+            מחק מפתח שמור
+          </button>
+        )}
         <p className="text-center text-xs text-slate-400">
           ניתן להשיג מפתח בחינם ב- <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">Google AI Studio</a>
         </p>
@@ -68,3 +85,4 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
     </ModalShell>
   );
 }
+

@@ -33,7 +33,12 @@ export function AuthScreen() {
 
   const handleGoogleAuth = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      const { error } = await supabase.auth.signInWithOAuth({ 
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
       if (error) throw error;
     } catch (err: any) {
       setError(err.message);
@@ -87,13 +92,19 @@ export function AuthScreen() {
           <div className="flex-1 border-t border-slate-200"></div>
         </div>
 
-        <Button
-          variant="outline"
-          onClick={handleGoogleAuth}
-          className="w-full bg-white hover:bg-slate-50"
-        >
-          התחבר עם Google
-        </Button>
+        <div className="space-y-3">
+          <Button
+            variant="outline"
+            onClick={handleGoogleAuth}
+            className="w-full bg-white hover:bg-slate-50"
+          >
+            התחבר עם Google
+          </Button>
+          
+          <p className="text-center text-xs text-slate-500">
+            לא עובד? <span className="cursor-help underline decoration-dotted" title="אם לא נפתח חלון התחברות, ייתכן שחוסם פופ-אפים (Popup Blocker) מונע זאת. נסה לבטל אותו עבור אתר זה.">בדוק את חוסם הפופ-אפים שלך</span>
+          </p>
+        </div>
 
         <p className="mt-6 text-center text-sm text-slate-600">
           {isSignUp ? "כבר יש לך חשבון? " : "אין לך חשבון? "}

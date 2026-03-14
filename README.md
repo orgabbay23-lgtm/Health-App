@@ -68,3 +68,18 @@ The repository now includes:
 - Working ESLint flat config
 - Updated UX architecture with modular React components
 - **Vercel-ready Deployment**: Strict TypeScript checking with zero unused variable warnings, ensuring seamless CI/CD production builds.
+
+## Deployment Checklist (Vercel & Supabase Auth)
+
+To ensure Google OAuth and persistence work correctly in production:
+
+1. **Supabase Dashboard**:
+   - Go to **Authentication** -> **URL Configuration**.
+   - Set **Site URL** to your Vercel deployment URL (e.g., `https://your-app.vercel.app`).
+   - Add your Vercel URL with a wildcard to **Redirect URLs**: `https://your-app.vercel.app/**`.
+2. **Google Cloud Console** (if using custom Google Provider):
+   - Ensure the redirect URI in Google Cloud matches the one provided by Supabase (`https://<project-id>.supabase.co/auth/v1/callback`).
+3. **Environment Variables**:
+   - Ensure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set in Vercel Project Settings.
+   - (Optional) `VITE_GEMINI_API_KEY` can be set as a fallback, but users are encouraged to use their own via the UI.
+

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Dashboard } from "./features/dashboard/Dashboard";
 import { OnboardingFlow } from "./features/onboarding/OnboardingFlow";
 import { AuthScreen } from "./features/auth/AuthScreen";
+import { AuthCallback } from "./features/auth/AuthCallback";
 import { useAuth } from "./components/AuthProvider";
 import { useAppStore } from "./store";
 
@@ -9,6 +10,11 @@ function App() {
   const { user, loading: authLoading } = useAuth();
   const profile = useAppStore(state => state.profile);
   const isLoadingData = useAppStore(state => state.isLoadingData);
+  const isCallback = window.location.pathname === "/auth/callback";
+
+  if (isCallback) {
+    return <AuthCallback />;
+  }
 
   if (authLoading || (user && isLoadingData)) {
     return (
