@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
 import { z } from "zod";
+import { useSettingsStore } from "../store";
 
 const PRIMARY_MODEL = "gemini-3-flash-preview";
 const FALLBACK_MODEL = "gemini-2.5-flash";
@@ -125,7 +126,7 @@ export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 export async function parseMealDescription(
   description: string,
 ): Promise<ParsedMealDescription> {
-  const apiKey = localStorage.getItem("GEMINI_API_KEY") || "";
+  const apiKey = useSettingsStore.getState().geminiApiKey || "";
 
   if (!apiKey) {
     throw new Error("BYOK_REQUIRED");

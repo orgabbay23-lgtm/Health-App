@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { supabase } from "../lib/supabase";
 import {
   ActivityLevel,
@@ -452,6 +453,31 @@ export const useAppStore = create<AppState>()((set, get) => ({
   }
 }));
 
+interface SettingsState {
+  geminiApiKey: string | null;
+  _hasHydrated: boolean;
+  setGeminiApiKey: (key: string | null) => void;
+  setHasHydrated: (state: boolean) => void;
+}
+
+export const useSettingsStore = create<SettingsState>()(
+  persist(
+    (set) => ({
+      geminiApiKey: null,
+      _hasHydrated: false,
+      setGeminiApiKey: (key) => set({ geminiApiKey: key }),
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
+    }),
+    {
+      name: "health-app-settings",
+      storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+    },
+  ),
+);
+
 export function useActiveUser() {
   const userId = useAppStore(state => state.userId);
   const profile = useAppStore(state => state.profile);
@@ -480,3 +506,4 @@ export function useActiveDailyLogs() {
 export function useActiveSavedMeals() {
   return useAppStore((state) => state.savedMeals);
 }
+

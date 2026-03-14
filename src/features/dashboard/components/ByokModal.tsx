@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ModalShell } from "../../../components/ui/modal-shell";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
+import { useSettingsStore } from "../../../store";
 
 interface ByokModalProps {
   isOpen: boolean;
@@ -12,11 +13,23 @@ interface ByokModalProps {
 
 export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
   const [key, setKey] = useState("");
+  const setGeminiApiKey = useSettingsStore((state) => state.setGeminiApiKey);
+  const _hasHydrated = useSettingsStore((state) => state._hasHydrated);
+
+  // Sync current key from store when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setKey(useSettingsStore.getState().geminiApiKey || "");
+    }
+  }, [isOpen]);
+
+  if (!_hasHydrated) return null;
 
   const handleSave = () => {
-    if (key.trim()) {
-      localStorage.setItem("GEMINI_API_KEY", key.trim());
-      onSuccess(key.trim());
+    const trimmedKey = key.trim();
+    if (trimmedKey) {
+      setGeminiApiKey(trimmedKey);
+      onSuccess(trimmedKey);
       onClose();
     }
   };
