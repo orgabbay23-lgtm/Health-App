@@ -1,57 +1,107 @@
-# Health & Nutrition AI Tracker
+# Health App
 
-A modern, comprehensive web application designed for weight loss and clinical-grade nutrition tracking. Built with React and Vite, it features Gemini 3.0 Flash AI for natural language meal parsing, clinical-grade nutrition algorithms (Mifflin-St Jeor), and a fully RTL (Hebrew) tailored User Interface.
+Health App is a mobile-first nutrition tracking application built with React, Vite, TypeScript, and Zustand. It combines a strict Gemini meal-parsing pipeline with clinical nutrition formulas, personalized Hebrew RTL UX, and multi-user local persistence.
 
-## 🚀 Tech Stack
+## Highlights
 
-- **Framework:** [React 18](https://react.dev/) with [Vite](https://vitejs.dev/)
-- **Language:** TypeScript
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components:** [shadcn/ui](https://ui.shadcn.com/) (Radix UI)
-- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
-- **AI Integration:** Google Gemini API (Flash 3.0)
+- Multi-user architecture for up to 5 separate users, each with an isolated profile, daily logs, and saved meals.
+- Gemini AI food logging with strict JSON parsing and preserved schema validation.
+- Clinical nutrition targets based on Mifflin-St Jeor, protein heuristics, micronutrient targets, and safety thresholds.
+- Personalized nutritional tips in Hebrew for calories, macros, vitamins, and minerals.
+- 3 AM logical day rollover and date navigation across daily, weekly, and monthly views.
+- Favorites workflow for re-logging saved meals from the add-meal modal.
+- Framer Motion transitions and micro-interactions across onboarding, dashboard navigation, and progress states.
+- Fully RTL interface tuned for Hebrew usage, including tooltips, navigation, and modal flows.
 
-## ✨ Features
+## Tech Stack
 
-- **AI Food Logging:** Use natural language to describe meals (in Hebrew) and leverage Gemini AI to instantly parse calories, macronutrients, and micronutrients.
-- **Biometric-Driven Dietary Targets:** Automatically calculate energy and macro goals based on the clinical Mifflin-St Jeor algorithm.
-- **Safety Toxicity Alerts (UL):** Monitor daily micronutrient intakes against Tolerable Upper Intake Levels to prevent toxic levels of vitamins/minerals.
-- **Advanced Navigation & Views:** Navigate intuitively between Daily, Weekly, and Monthly calendar views.
-- **RTL & Localized:** Built specifically for Hebrew speakers with complete RTL UI layout.
-- **Saved Favorites:** Easily save and re-log your favorite or frequent meals.
+- React 18
+- Vite 5
+- TypeScript
+- Zustand with persistence
+- Tailwind CSS
+- Radix UI primitives / shadcn-style components
+- Framer Motion
+- Google Generative AI SDK
+- React Hook Form + Zod
 
-## 📦 Getting Started
+## Core Product Areas
+
+### 1. Multi-user experience
+
+- Netflix-style welcome screen with user selection.
+- Add-user flow with per-user color identity.
+- Profile editing for both user identity and clinical profile data.
+
+### 2. AI logging and favorites
+
+- Natural-language meal parsing through Gemini.
+- Manual ingredient entry fallback.
+- Save any logged meal as a favorite and re-log it from the `מועדפים` tab.
+
+### 3. Clinical nutrition logic
+
+- Daily calorie and macro targets generated from clinical formulas.
+- Micronutrient targets and upper-limit safety alerts.
+- Personalized tooltip guidance derived from user age, gender, smoking status, and deficit goal.
+
+### 4. Mobile-first dashboard
+
+- Bottom navigation for Home, Calendar, Add Meal, and Profile.
+- Progressive disclosure with calories and protein emphasized first.
+- Full micronutrient detail hidden inside an accordion labeled `ערכים תזונתיים מלאים`.
+
+## Getting Started
 
 ### Prerequisites
-- Node.js (v18+ recommended)
-- A valid Google Gemini API Key from [Google AI Studio](https://aistudio.google.com/)
 
-### Installation & Setup
+- Node.js 18 or newer
+- A valid Gemini API key
 
-1. **Clone the repository:**
-   ```bash
-   git clone <your-repository-url>
-   cd health-app
-   ```
+### Installation
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-3. **Configure Environment Variables:**
-   Create a local environment file by copying the example:
-   ```bash
-   cp .env.example .env
-   ```
-   Open the newly created `.env` file and insert your Gemini API Key:
-   ```env
-   VITE_GEMINI_API_KEY=your_actual_api_key_here
-   ```
+### Environment Variables
 
-4. **Run the Development Server:**
-   ```bash
-   npm run dev
-   ```
-   
-Your application will be live at `http://localhost:5173`. 
+Copy `.env.example` to `.env` and fill in your key:
+
+```bash
+cp .env.example .env
+```
+
+```env
+VITE_GEMINI_API_KEY=your_google_ai_studio_api_key_here
+```
+
+`.env` is ignored by git and should never be committed.
+
+### Run the app
+
+```bash
+npm run dev
+```
+
+### Quality checks
+
+```bash
+npm run lint
+npm run build
+```
+
+## Project Notes
+
+- The Gemini integration, response schemas, and API error handling are intentionally preserved.
+- The 3 AM day-rollover logic remains the source of truth for all date grouping.
+- Persisted legacy single-user data migrates automatically into the new multi-user store on first load.
+
+## Repository Status
+
+The repository now includes:
+
+- `.env` ignored in `.gitignore`
+- `.env.example` with publish-safe placeholders
+- Working ESLint flat config
+- Updated UX architecture with modular React components

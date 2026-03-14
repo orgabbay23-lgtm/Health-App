@@ -1,10 +1,10 @@
-import { ChangeEvent } from "react";
+import { type ChangeEvent } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import {
-  DashboardPeriod,
-  NavigationDirection,
-  PeriodDetails,
+  type DashboardPeriod,
+  type NavigationDirection,
+  type PeriodDetails,
   canShiftReferenceDate,
   clampToHistoryWindow,
   dayKeyToDate,
@@ -41,19 +41,19 @@ export function DateNavigator({
   };
 
   return (
-    <div className="flex flex-col gap-4 rounded-[28px] border border-white/60 bg-white/80 p-4 shadow-[0_20px_45px_rgba(15,23,42,0.08)] backdrop-blur-sm md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 rounded-[28px] border border-white/70 bg-white/90 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between">
       <div className="space-y-1">
-        <p className="text-xs font-semibold tracking-[0.18em] text-sky-500">
-          TIME WINDOW
+        <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+          DATE NAVIGATOR
         </p>
-        <h2 className="text-xl font-semibold text-slate-900">
+        <h2 className="text-lg font-semibold text-slate-950">
           {periodDetails.label}
         </h2>
         <p className="text-sm text-slate-500">{periodDetails.caption}</p>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 p-1">
+        <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
           <Button
             type="button"
             variant="ghost"
@@ -72,13 +72,13 @@ export function DateNavigator({
             <ChevronRight size={18} />
           </Button>
 
-          <div className="min-w-[132px] px-2 text-center text-sm font-medium text-slate-700">
+          <span className="min-w-[92px] px-2 text-center text-sm font-medium text-slate-700">
             {periodMode === "daily"
               ? "יום"
               : periodMode === "weekly"
                 ? "שבוע"
                 : "חודש"}
-          </div>
+          </span>
 
           <Button
             type="button"
@@ -101,7 +101,7 @@ export function DateNavigator({
 
         <label className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
           <CalendarDays size={16} className="text-slate-400" />
-          <span className="text-sm text-slate-500">בחר תאריך</span>
+          <span className="text-sm text-slate-500">בחירת תאריך</span>
           <input
             type="date"
             dir="ltr"

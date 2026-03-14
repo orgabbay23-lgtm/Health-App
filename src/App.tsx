@@ -1,22 +1,23 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useAppStore } from "./store";
-import { OnboardingFlow } from "./features/onboarding/OnboardingFlow";
 import { Dashboard } from "./features/dashboard/Dashboard";
+import { OnboardingFlow } from "./features/onboarding/OnboardingFlow";
+import { WelcomeScreen } from "./features/users/WelcomeScreen";
+import { useActiveUser, useAppStore } from "./store";
 
 function App() {
   const hasHydrated = useAppStore((state) => state._hasHydrated);
-  const userProfile = useAppStore((state) => state.userProfile);
+  const activeUser = useActiveUser();
 
   if (!hasHydrated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_25%),linear-gradient(180deg,_#f8fbff_0%,_#edf4fb_52%,_#f8fafc_100%)]">
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(250,245,235,0.95),_rgba(255,255,255,0.96)_42%,_rgba(237,246,255,0.95)_80%)]">
         <motion.div
-          initial={{ opacity: 0.3, scale: 0.96 }}
+          initial={{ opacity: 0.4, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{
             repeat: Infinity,
             repeatType: "reverse",
-            duration: 0.8,
+            duration: 0.9,
           }}
           className="rounded-full border border-white/70 bg-white/90 px-6 py-4 text-base font-semibold text-slate-600 shadow-[0_18px_50px_rgba(15,23,42,0.08)]"
         >
@@ -26,17 +27,30 @@ function App() {
     );
   }
 
+  let screen = <WelcomeScreen />;
+  let key = "welcome";
+
+  if (activeUser) {
+    if (activeUser.profile) {
+      screen = <Dashboard />;
+      key = "dashboard";
+    } else {
+      screen = <OnboardingFlow />;
+      key = "onboarding";
+    }
+  }
+
   return (
     <div className="font-sans text-foreground" dir="rtl">
       <AnimatePresence mode="wait">
         <motion.div
-          key={userProfile ? "dashboard" : "onboarding"}
-          initial={{ opacity: 0, y: 16 }}
+          key={key}
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.24, ease: "easeOut" }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.26, ease: "easeOut" }}
         >
-          {userProfile ? <Dashboard /> : <OnboardingFlow />}
+          {screen}
         </motion.div>
       </AnimatePresence>
     </div>

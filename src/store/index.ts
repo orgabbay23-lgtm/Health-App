@@ -18,6 +18,17 @@ import {
 
 type MealSourceType = "food" | "supplement";
 
+export const MAX_USERS = 5;
+export const USER_ACCENT_TOKENS = [
+  "sun",
+  "sky",
+  "mint",
+  "rose",
+  "slate",
+] as const;
+
+export type UserAccentToken = (typeof USER_ACCENT_TOKENS)[number];
+
 export interface UserProfile extends NutritionProfileInput {
   targets: NutritionTargets;
 }
@@ -57,19 +68,45 @@ export interface DailyLog {
   aggregations: DailyAggregations;
 }
 
+export interface UserData {
+  id: string;
+  name: string;
+  accent: UserAccentToken;
+  createdAt: string;
+  profile: UserProfile | null;
+  dailyLogs: Record<string, DailyLog>;
+  savedMeals: SavedMeal[];
+}
+
+export interface CreateUserInput {
+  name: string;
+  accent?: UserAccentToken;
+}
+
+export interface CreateUserResult {
+  ok: boolean;
+  id?: string;
+  reason?: "limit" | "invalid";
+}
+
 interface AppState {
   _hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
 
-  userProfile: UserProfile | null;
+  users: Record<string, UserData>;
+  activeUserId: string | null;
+  selectUser: (userId: string | null) => void;
+  createUser: (input: CreateUserInput) => CreateUserResult;
+  updateActiveUserIdentity: (
+    details: Partial<Pick<UserData, "name" | "accent">>,
+  ) => void;
+
   setUserProfile: (profile: NutritionProfileInput) => void;
   updateProfileDetails: (details: Partial<NutritionProfileInput>) => void;
 
-  dailyLogs: Record<string, DailyLog>;
   addMealLog: (dayKey: string, meal: MealItem) => NutritionSafetyAlert[];
   removeMealLog: (dayKey: string, mealId: string) => void;
 
-  savedMeals: SavedMeal[];
   saveMealAsFavorite: (meal: MealItem) => boolean;
   removeSavedMeal: (savedMealId: string) => void;
   addSavedMealToDay: (
@@ -78,7 +115,12 @@ interface AppState {
   ) => NutritionSafetyAlert[];
 }
 
-interface PersistedAppState {
+interface PersistedAppStateV4 {
+  users?: Record<string, Partial<UserData>> | null;
+  activeUserId?: string | null;
+}
+
+interface PersistedLegacyAppState {
   userProfile?: Partial<UserProfile> | null;
   dailyLogs?: Record<string, Partial<DailyLog>> | null;
   savedMeals?: Partial<SavedMeal>[] | null;
@@ -148,7 +190,7 @@ function normalizeMealItem(meal: Partial<MealItem>): MealItem {
       typeof meal.timestamp === "string"
         ? meal.timestamp
         : new Date().toISOString(),
-    meal_name: typeof meal.meal_name === "string" ? meal.meal_name : "ארוחה",
+    meal_name: typeof meal.meal_name === "string" ? meal.meal_name : "Meal",
     calories: toFiniteNumber(meal.calories, 0),
     macronutrients: {
       protein: toFiniteNumber(meal.macronutrients?.protein, 0),
@@ -336,155 +378,437 @@ function appendMealToDailyLogs(
   };
 }
 
+function normalizeAccent(value: unknown, fallbackIndex = 0): UserAccentToken {
+  if (typeof value === "string" && USER_ACCENT_TOKENS.includes(value as UserAccentToken)) {
+    return value as UserAccentToken;
+  }
+
+  return USER_ACCENT_TOKENS[fallbackIndex % USER_ACCENT_TOKENS.length];
+}
+
+function sanitizeUserName(value: unknown, fallback = "User"): string {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed.slice(0, 24) : fallback;
+}
+
+function createUserData(
+  input: {
+    id?: string;
+    name?: string;
+    accent?: UserAccentToken;
+    createdAt?: string;
+    profile?: Partial<UserProfile> | UserProfile | null;
+    dailyLogs?: Record<string, Partial<DailyLog>> | Record<string, DailyLog> | null;
+    savedMeals?: Partial<SavedMeal>[] | SavedMeal[] | null;
+  },
+  index = 0,
+): UserData {
+  const id = String(input.id ?? crypto.randomUUID());
+
+  return {
+    id,
+    name: sanitizeUserName(input.name, `User ${index + 1}`),
+    accent: normalizeAccent(input.accent, index),
+    createdAt:
+      typeof input.createdAt === "string"
+        ? input.createdAt
+        : new Date().toISOString(),
+    profile: normalizeUserProfile(input.profile ?? null),
+    dailyLogs: normalizeDailyLogs(input.dailyLogs),
+    savedMeals: normalizeSavedMeals(input.savedMeals),
+  };
+}
+
+function normalizeUsers(
+  users: Record<string, Partial<UserData>> | null | undefined,
+): Record<string, UserData> {
+  return Object.entries(users ?? {}).reduce<Record<string, UserData>>(
+    (acc, [userId, user], index) => {
+      acc[userId] = createUserData(
+        {
+          id: userId,
+          name: user.name,
+          accent: user.accent,
+          createdAt: user.createdAt,
+          profile: user.profile,
+          dailyLogs: user.dailyLogs,
+          savedMeals: user.savedMeals,
+        },
+        index,
+      );
+
+      return acc;
+    },
+    {},
+  );
+}
+
+function removeMealFromDailyLogs(
+  dailyLogs: Record<string, DailyLog>,
+  dayKey: string,
+  mealId: string,
+): Record<string, DailyLog> {
+  const currentLog = dailyLogs[dayKey];
+  if (!currentLog) {
+    return dailyLogs;
+  }
+
+  const mealToRemove = currentLog.meals.find((meal) => meal.id === mealId);
+  if (!mealToRemove) {
+    return dailyLogs;
+  }
+
+  const nextMeals = currentLog.meals.filter((meal) => meal.id !== mealId);
+  const nextAggregations: DailyAggregations = {
+    calories: Math.max(
+      0,
+      currentLog.aggregations.calories - mealToRemove.calories,
+    ),
+    protein: Math.max(
+      0,
+      currentLog.aggregations.protein - mealToRemove.macronutrients.protein,
+    ),
+    carbs: Math.max(
+      0,
+      currentLog.aggregations.carbs - mealToRemove.macronutrients.carbs,
+    ),
+    fat: Math.max(0, currentLog.aggregations.fat - mealToRemove.macronutrients.fat),
+    micronutrients: subtractMicronutrients(
+      currentLog.aggregations.micronutrients,
+      mealToRemove.micronutrients,
+    ),
+  };
+
+  return {
+    ...dailyLogs,
+    [dayKey]: {
+      meals: nextMeals,
+      aggregations: nextAggregations,
+    },
+  };
+}
+
+function updateActiveUser(
+  state: Pick<AppState, "users" | "activeUserId">,
+  updater: (user: UserData) => UserData,
+): Pick<AppState, "users"> | Pick<AppState, "users" | "activeUserId"> {
+  if (!state.activeUserId) {
+    return state;
+  }
+
+  const activeUser = state.users[state.activeUserId];
+  if (!activeUser) {
+    return {
+      users: state.users,
+      activeUserId: null,
+    };
+  }
+
+  return {
+    users: {
+      ...state.users,
+      [state.activeUserId]: updater(activeUser),
+    },
+  };
+}
+
+function hasLegacyData(state: PersistedLegacyAppState): boolean {
+  return Boolean(
+    state.userProfile ||
+      (state.dailyLogs && Object.keys(state.dailyLogs).length > 0) ||
+      (state.savedMeals && state.savedMeals.length > 0),
+  );
+}
+
+function isPersistedAppStateV4(
+  state: PersistedAppStateV4 | PersistedLegacyAppState,
+): state is PersistedAppStateV4 {
+  return "users" in state || "activeUserId" in state;
+}
+
+function isPersistedLegacyAppState(
+  state: PersistedAppStateV4 | PersistedLegacyAppState,
+): state is PersistedLegacyAppState {
+  return (
+    "userProfile" in state || "dailyLogs" in state || "savedMeals" in state
+  );
+}
+
+function migratePersistedState(
+  persistedState: unknown,
+): Pick<AppState, "users" | "activeUserId"> {
+  const state = (persistedState ?? {}) as
+    | PersistedAppStateV4
+    | PersistedLegacyAppState;
+
+  if (isPersistedAppStateV4(state)) {
+    const users = normalizeUsers(state.users);
+    const activeUserId =
+      typeof state.activeUserId === "string" && users[state.activeUserId]
+        ? state.activeUserId
+        : Object.keys(users)[0] ?? null;
+
+    return {
+      users,
+      activeUserId,
+    };
+  }
+
+  if (!isPersistedLegacyAppState(state)) {
+    return {
+      users: {},
+      activeUserId: null,
+    };
+  }
+
+  if (!hasLegacyData(state)) {
+    return {
+      users: {},
+      activeUserId: null,
+    };
+  }
+
+  const migratedUser = createUserData(
+    {
+      id: "user-1",
+      name: "User 1",
+      accent: USER_ACCENT_TOKENS[0],
+      profile: state.userProfile,
+      dailyLogs: state.dailyLogs,
+      savedMeals: state.savedMeals,
+    },
+    0,
+  );
+
+  return {
+    users: {
+      [migratedUser.id]: migratedUser,
+    },
+    activeUserId: migratedUser.id,
+  };
+}
+
+export function getActiveUserFromState(
+  state: Pick<AppState, "users" | "activeUserId">,
+): UserData | null {
+  if (!state.activeUserId) {
+    return null;
+  }
+
+  return state.users[state.activeUserId] ?? null;
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       _hasHydrated: false,
       setHasHydrated: (state) => set({ _hasHydrated: state }),
 
-      userProfile: null,
-      setUserProfile: (profile) =>
-        set({ userProfile: buildUserProfile(profile) }),
-
-      updateProfileDetails: (details) =>
+      users: {},
+      activeUserId: null,
+      selectUser: (userId) =>
         set((state) => {
-          if (!state.userProfile) {
+          if (userId === null) {
+            return { activeUserId: null };
+          }
+
+          if (!state.users[userId]) {
             return state;
           }
 
-          return {
-            userProfile: buildUserProfile({
-              age: details.age ?? state.userProfile.age,
-              gender: details.gender ?? state.userProfile.gender,
-              height: details.height ?? state.userProfile.height,
-              weight: details.weight ?? state.userProfile.weight,
-              activityLevel:
-                details.activityLevel ?? state.userProfile.activityLevel,
-              goalDeficit: details.goalDeficit ?? state.userProfile.goalDeficit,
-              isSmoker: details.isSmoker ?? state.userProfile.isSmoker,
-            }),
-          };
+          return { activeUserId: userId };
         }),
 
-      dailyLogs: {},
+      createUser: ({ name, accent }) => {
+        let result: CreateUserResult = {
+          ok: false,
+          reason: "invalid",
+        };
+
+        set((state) => {
+          const trimmedName = sanitizeUserName(name, "");
+          if (!trimmedName) {
+            return state;
+          }
+
+          if (Object.keys(state.users).length >= MAX_USERS) {
+            result = {
+              ok: false,
+              reason: "limit",
+            };
+            return state;
+          }
+
+          const userId = crypto.randomUUID();
+          const user = createUserData(
+            {
+              id: userId,
+              name: trimmedName,
+              accent:
+                accent ??
+                USER_ACCENT_TOKENS[
+                  Object.keys(state.users).length % USER_ACCENT_TOKENS.length
+                ],
+            },
+            Object.keys(state.users).length,
+          );
+
+          result = {
+            ok: true,
+            id: userId,
+          };
+
+          return {
+            users: {
+              ...state.users,
+              [userId]: user,
+            },
+            activeUserId: userId,
+          };
+        });
+
+        return result;
+      },
+
+      updateActiveUserIdentity: (details) =>
+        set((state) =>
+          updateActiveUser(state, (activeUser) => ({
+            ...activeUser,
+            name:
+              details.name === undefined
+                ? activeUser.name
+                : sanitizeUserName(details.name, activeUser.name),
+            accent:
+              details.accent === undefined
+                ? activeUser.accent
+                : normalizeAccent(details.accent),
+          })),
+        ),
+
+      setUserProfile: (profile) =>
+        set((state) =>
+          updateActiveUser(state, (activeUser) => ({
+            ...activeUser,
+            profile: buildUserProfile(profile),
+          })),
+        ),
+
+      updateProfileDetails: (details) =>
+        set((state) =>
+          updateActiveUser(state, (activeUser) => {
+            if (!activeUser.profile) {
+              return activeUser;
+            }
+
+            return {
+              ...activeUser,
+              profile: buildUserProfile({
+                age: details.age ?? activeUser.profile.age,
+                gender: details.gender ?? activeUser.profile.gender,
+                height: details.height ?? activeUser.profile.height,
+                weight: details.weight ?? activeUser.profile.weight,
+                activityLevel:
+                  details.activityLevel ?? activeUser.profile.activityLevel,
+                goalDeficit:
+                  details.goalDeficit ?? activeUser.profile.goalDeficit,
+                isSmoker: details.isSmoker ?? activeUser.profile.isSmoker,
+              }),
+            };
+          }),
+        ),
+
       addMealLog: (dayKey, meal) => {
         let triggeredAlerts: NutritionSafetyAlert[] = [];
 
-        set((state) => {
-          const nextState = appendMealToDailyLogs(
-            state.dailyLogs,
-            state.userProfile,
-            dayKey,
-            meal,
-          );
+        set((state) =>
+          updateActiveUser(state, (activeUser) => {
+            const nextState = appendMealToDailyLogs(
+              activeUser.dailyLogs,
+              activeUser.profile,
+              dayKey,
+              meal,
+            );
 
-          triggeredAlerts = nextState.alerts;
+            triggeredAlerts = nextState.alerts;
 
-          return {
-            dailyLogs: nextState.dailyLogs,
-          };
-        });
+            return {
+              ...activeUser,
+              dailyLogs: nextState.dailyLogs,
+            };
+          }),
+        );
 
         return triggeredAlerts;
       },
 
       removeMealLog: (dayKey, mealId) =>
-        set((state) => {
-          const currentLog = state.dailyLogs[dayKey];
-          if (!currentLog) {
-            return state;
-          }
+        set((state) =>
+          updateActiveUser(state, (activeUser) => ({
+            ...activeUser,
+            dailyLogs: removeMealFromDailyLogs(
+              activeUser.dailyLogs,
+              dayKey,
+              mealId,
+            ),
+          })),
+        ),
 
-          const mealToRemove = currentLog.meals.find(
-            (meal) => meal.id === mealId,
-          );
-          if (!mealToRemove) {
-            return state;
-          }
-
-          const nextMeals = currentLog.meals.filter(
-            (meal) => meal.id !== mealId,
-          );
-          const nextAggregations: DailyAggregations = {
-            calories: Math.max(
-              0,
-              currentLog.aggregations.calories - mealToRemove.calories,
-            ),
-            protein: Math.max(
-              0,
-              currentLog.aggregations.protein -
-                mealToRemove.macronutrients.protein,
-            ),
-            carbs: Math.max(
-              0,
-              currentLog.aggregations.carbs - mealToRemove.macronutrients.carbs,
-            ),
-            fat: Math.max(
-              0,
-              currentLog.aggregations.fat - mealToRemove.macronutrients.fat,
-            ),
-            micronutrients: subtractMicronutrients(
-              currentLog.aggregations.micronutrients,
-              mealToRemove.micronutrients,
-            ),
-          };
-
-          return {
-            dailyLogs: {
-              ...state.dailyLogs,
-              [dayKey]: {
-                meals: nextMeals,
-                aggregations: nextAggregations,
-              },
-            },
-          };
-        }),
-
-      savedMeals: [],
       saveMealAsFavorite: (meal) => {
         let wasAdded = false;
 
-        set((state) => {
-          const normalizedMeal = normalizeMealItem(meal);
-          const signature = createMealSignature(normalizedMeal);
+        set((state) =>
+          updateActiveUser(state, (activeUser) => {
+            const normalizedMeal = normalizeMealItem(meal);
+            const signature = createMealSignature(normalizedMeal);
 
-          if (
-            state.savedMeals.some(
-              (savedMeal) => savedMeal.signature === signature,
-            )
-          ) {
-            return state;
-          }
+            if (
+              activeUser.savedMeals.some(
+                (savedMeal) => savedMeal.signature === signature,
+              )
+            ) {
+              return activeUser;
+            }
 
-          wasAdded = true;
+            wasAdded = true;
 
-          return {
-            savedMeals: [
-              {
-                id: crypto.randomUUID(),
-                savedAt: new Date().toISOString(),
-                signature,
-                meal: normalizedMeal,
-              },
-              ...state.savedMeals,
-            ],
-          };
-        });
+            return {
+              ...activeUser,
+              savedMeals: [
+                {
+                  id: crypto.randomUUID(),
+                  savedAt: new Date().toISOString(),
+                  signature,
+                  meal: normalizedMeal,
+                },
+                ...activeUser.savedMeals,
+              ],
+            };
+          }),
+        );
 
         return wasAdded;
       },
 
       removeSavedMeal: (savedMealId) =>
-        set((state) => ({
-          savedMeals: state.savedMeals.filter(
-            (savedMeal) => savedMeal.id !== savedMealId,
-          ),
-        })),
+        set((state) =>
+          updateActiveUser(state, (activeUser) => ({
+            ...activeUser,
+            savedMeals: activeUser.savedMeals.filter(
+              (savedMeal) => savedMeal.id !== savedMealId,
+            ),
+          })),
+        ),
 
       addSavedMealToDay: (dayKey, savedMealId) => {
-        const savedMeal = get().savedMeals.find(
+        const activeUser = getActiveUserFromState(get());
+        const savedMeal = activeUser?.savedMeals.find(
           (item) => item.id === savedMealId,
         );
+
         if (!savedMeal) {
           return [];
         }
@@ -498,24 +822,37 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "health-app-storage",
-      version: 3,
-      migrate: (persistedState: unknown) => {
-        const state = (persistedState ?? {}) as PersistedAppState;
-
-        return {
-          userProfile: normalizeUserProfile(state.userProfile),
-          dailyLogs: normalizeDailyLogs(state.dailyLogs),
-          savedMeals: normalizeSavedMeals(state.savedMeals),
-        };
-      },
+      version: 4,
+      migrate: (persistedState) => migratePersistedState(persistedState),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
       partialize: (state) => ({
-        userProfile: state.userProfile,
-        dailyLogs: state.dailyLogs,
-        savedMeals: state.savedMeals,
+        users: state.users,
+        activeUserId: state.activeUserId,
       }),
     },
   ),
 );
+
+export function useActiveUser() {
+  return useAppStore((state) => getActiveUserFromState(state));
+}
+
+export function useActiveUserProfile() {
+  return useAppStore(
+    (state) => getActiveUserFromState(state)?.profile ?? null,
+  );
+}
+
+export function useActiveDailyLogs() {
+  return useAppStore(
+    (state) => getActiveUserFromState(state)?.dailyLogs ?? {},
+  );
+}
+
+export function useActiveSavedMeals() {
+  return useAppStore(
+    (state) => getActiveUserFromState(state)?.savedMeals ?? [],
+  );
+}

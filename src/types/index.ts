@@ -1,1 +1,0 @@
-// Global types go here

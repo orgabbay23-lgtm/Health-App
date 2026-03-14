@@ -1,8 +1,3 @@
-import { HistoryArchive } from "../components/HistoryArchive";
-import { SnapshotHero } from "../components/SnapshotHero";
-import { DateNavigator } from "../components/DateNavigator";
-import { PeriodTabs } from "../components/PeriodTabs";
-import { PeriodView } from "../views/PeriodView";
 import type {
   AggregatedPeriodData,
   DashboardPeriod,
@@ -12,9 +7,15 @@ import type {
   DailyAggregations,
   DailyLog,
   MealItem,
-  UserProfile,
 } from "../../../store";
 import type { NutritionSafetyAlert } from "../../../utils/nutrition-utils";
+import { Card, CardContent } from "../../../components/ui/card";
+import { DateNavigator } from "../components/DateNavigator";
+import { HistoryArchive } from "../components/HistoryArchive";
+import { MealTimeline } from "../components/MealTimeline";
+import { PeriodBreakdown } from "../components/PeriodBreakdown";
+import { PeriodTabs } from "../components/PeriodTabs";
+import { SafetyAlertsCard } from "../components/SafetyAlertsCard";
 
 interface HistoryScreenProps {
   dailyLogs: Record<string, DailyLog>;
@@ -25,7 +26,6 @@ interface HistoryScreenProps {
   selectedDailyLog: DailyLog | null;
   safetyAlerts: NutritionSafetyAlert[];
   selectedDayKey: string;
-  userProfile: UserProfile;
   savedSignatures: Set<string>;
   onPeriodChange: (nextMode: DashboardPeriod) => void;
   onDateChange: (nextDate: Date) => void;
@@ -43,7 +43,6 @@ export function HistoryScreen({
   selectedDailyLog,
   safetyAlerts,
   selectedDayKey,
-  userProfile,
   savedSignatures,
   onPeriodChange,
   onDateChange,
@@ -52,23 +51,8 @@ export function HistoryScreen({
   onSaveFavorite,
 }: HistoryScreenProps) {
   return (
-    <div className="space-y-6">
-      <SnapshotHero
-        eyebrow="HISTORY"
-        title="מעבר מהיר בין ימים, שבועות וחודשים"
-        subtitle="כל הרישומים נשמרים לפי מפתח `YYYY-MM-DD`, ולכן אפשר לנווט אחורה עד חודשיים, להציג אגרגציות נקיות ולפתוח כל יום לעומק רק בלחיצה."
-        stats={[
-          { label: "טווח נבחר", value: periodDetails.label },
-          { label: "ימים מתועדים", value: String(periodData.loggedDays) },
-          {
-            label: "קלוריות בטווח",
-            value: `${Math.round(periodData.aggregations.calories)}`,
-          },
-          { label: "חודש אחורה", value: "עד 2 חודשים" },
-        ]}
-      />
-
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+    <div className="space-y-5">
+      <div className="space-y-4">
         <PeriodTabs value={periodMode} onChange={onPeriodChange} />
         <DateNavigator
           periodMode={periodMode}
@@ -77,25 +61,80 @@ export function HistoryScreen({
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <Card className="border-white/70 bg-white/90 shadow-[0_24px_64px_rgba(15,23,42,0.06)]">
+        <CardContent className="space-y-4 p-5">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+              HISTORY
+            </p>
+            <h2 className="text-2xl font-semibold text-slate-950">
+              ניווט חופשי אחורה עד חודשיים
+            </h2>
+            <p className="text-sm text-slate-500">
+              בחר תקופה למעלה, קפוץ לתאריך הרצוי, ואז פתח יום מסוים מתוך הארכיון
+              המהיר.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+            <div className="rounded-full bg-slate-100 px-3 py-1.5">
+              {periodData.loggedDays} ימים מתועדים
+            </div>
+            <div className="rounded-full bg-slate-100 px-3 py-1.5">
+              {Math.round(periodData.aggregations.calories)} קק"ל בתקופה
+            </div>
+            <div className="rounded-full bg-slate-100 px-3 py-1.5">
+              יעד חלבון: {Math.round(periodTargets.protein)} גרם
+            </div>
+            <div className="rounded-full bg-slate-100 px-3 py-1.5">
+              <span dir="ltr">{selectedDayKey}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {periodMode === "daily" && safetyAlerts.length > 0 ? (
+        <SafetyAlertsCard alerts={safetyAlerts} />
+      ) : null}
+
+      <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
         <HistoryArchive
           dailyLogs={dailyLogs}
           selectedDayKey={selectedDayKey}
           onSelect={onSelectDayKey}
         />
 
-        <PeriodView
-          periodMode={periodMode}
-          periodDetails={periodDetails}
-          userProfile={userProfile}
-          periodData={periodData}
-          periodTargets={periodTargets}
-          selectedDailyLog={selectedDailyLog}
-          safetyAlerts={safetyAlerts}
-          savedSignatures={savedSignatures}
-          onDeleteMeal={onDeleteMeal}
-          onSaveFavorite={onSaveFavorite}
-        />
+        <Card className="border-white/70 bg-white/90 shadow-[0_22px_56px_rgba(15,23,42,0.06)]">
+          <CardContent className="space-y-5 p-5">
+            <div className="space-y-1">
+              <h3 className="text-xl font-semibold text-slate-950">
+                {periodMode === "daily" ? "היום שנבחר" : "פירוט ימים בתקופה"}
+              </h3>
+              <p className="text-sm text-slate-500">
+                {periodMode === "daily"
+                  ? "כאן תראה את כל הארוחות של התאריך המסומן."
+                  : "פתח יום כלשהו כדי לראות מה נרשם בו ולשמור ארוחות למועדפים."}
+              </p>
+            </div>
+
+            {periodMode === "daily" ? (
+              <MealTimeline
+                meals={selectedDailyLog?.meals ?? []}
+                onDelete={(mealId) => onDeleteMeal(selectedDayKey, mealId)}
+                onSaveFavorite={onSaveFavorite}
+                savedSignatures={savedSignatures}
+                emptyText="אין רישומים לתאריך שנבחר."
+              />
+            ) : (
+              <PeriodBreakdown
+                days={periodData.days}
+                savedSignatures={savedSignatures}
+                onSaveFavorite={onSaveFavorite}
+                onDeleteMeal={onDeleteMeal}
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

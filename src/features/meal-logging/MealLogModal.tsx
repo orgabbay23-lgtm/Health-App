@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Heart, Plus, Trash2, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
-import { useAppStore } from "../../store";
+import { useActiveSavedMeals, useAppStore } from "../../store";
 import { getLogicalDayKey } from "../../utils/nutrition-utils";
 import { parseMealDescription } from "../../utils/gemini";
 import { Button } from "../../components/ui/button";
@@ -53,7 +53,7 @@ export function MealLogModal({
 }: MealLogModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const addMealLog = useAppStore((state) => state.addMealLog);
-  const savedMeals = useAppStore((state) => state.savedMeals);
+  const savedMeals = useActiveSavedMeals();
   const addSavedMealToDay = useAppStore((state) => state.addSavedMealToDay);
   const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
 
