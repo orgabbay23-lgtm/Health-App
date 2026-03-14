@@ -1,18 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
 import { ModalShell } from "../../components/ui/modal-shell";
 import {
-  USER_ACCENT_TOKENS,
   useActiveUser,
   useAppStore,
-  type UserAccentToken,
 } from "../../store";
-import { cn } from "../../utils/utils";
-import { accentThemeMap } from "../users/user-theme";
 import { ProfileFormFields } from "./ProfileFormFields";
 import {
   profileSchema,
@@ -27,13 +21,6 @@ interface EditProfileModalProps {
 export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const activeUser = useActiveUser();
   const updateProfileDetails = useAppStore((state) => state.updateProfileDetails);
-  const updateActiveUserIdentity = useAppStore(
-    (state) => state.updateActiveUserIdentity,
-  );
-  const [displayName, setDisplayName] = useState(activeUser?.name ?? "");
-  const [accent, setAccent] = useState<UserAccentToken>(
-    activeUser?.accent ?? USER_ACCENT_TOKENS[0],
-  );
 
   const {
     register,
@@ -61,8 +48,6 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       return;
     }
 
-    setDisplayName(activeUser.name);
-    setAccent(activeUser.accent);
     reset({
       age: activeUser.profile.age,
       gender: activeUser.profile.gender,
@@ -79,10 +64,6 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   }
 
   const onSubmit = (data: ProfileFormValues) => {
-    updateActiveUserIdentity({
-      name: displayName,
-      accent,
-    });
     updateProfileDetails(data);
     onClose();
   };
@@ -96,45 +77,6 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       className="max-w-md"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid gap-4">
-          <div className="space-y-2 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-            <label htmlFor="displayName" className="text-sm font-medium text-slate-700">
-              שם להצגה
-            </label>
-            <Input
-              id="displayName"
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              maxLength={24}
-            />
-          </div>
-
-          <div className="space-y-3 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-            <p className="text-sm font-medium text-slate-700">צבע מזהה</p>
-            <div className="grid grid-cols-5 gap-3">
-              {USER_ACCENT_TOKENS.map((token) => {
-                const theme = accentThemeMap[token];
-                const active = accent === token;
-
-                return (
-                  <button
-                    key={token}
-                    type="button"
-                    className={cn(
-                      "flex h-12 items-center justify-center rounded-2xl border transition",
-                      theme.button,
-                      active ? "ring-2 ring-slate-900 ring-offset-2" : "border-transparent",
-                    )}
-                    onClick={() => setAccent(token)}
-                  >
-                    {active ? <Check size={16} className="text-slate-900" /> : null}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
         <ProfileFormFields
           register={register}
           control={control}

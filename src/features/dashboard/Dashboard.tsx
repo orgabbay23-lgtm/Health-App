@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, Home, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { useShallow } from "zustand/react/shallow";
 import { Button } from "../../components/ui/button";
 import {
   EMPTY_MICRONUTRIENTS,
@@ -116,10 +115,8 @@ export function Dashboard() {
   const [referenceDate, setReferenceDate] = useState(() => getLogicalDate());
 
   const activeUser = useActiveUser();
-  const users = useAppStore(useShallow((state) => Object.values(state.users)));
   const removeMealLog = useAppStore((state) => state.removeMealLog);
   const saveMealAsFavorite = useAppStore((state) => state.saveMealAsFavorite);
-  const selectUser = useAppStore((state) => state.selectUser);
   
   // Guard against missing profile/user during state transitions
   const userProfile = activeUser?.profile ?? null;
@@ -164,8 +161,8 @@ export function Dashboard() {
     return createScaledTargets(baseTargets, targetMultiplier);
   }, [periodDetails.dayKeys.length, periodMode, userProfile]);
 
-  const onSaveFavorite = (meal: MealItem) => {
-    const wasAdded = saveMealAsFavorite(meal);
+  const onSaveFavorite = async (meal: MealItem) => {
+    const wasAdded = await saveMealAsFavorite(meal);
 
     if (wasAdded) {
       toast.success("הארוחה נשמרה במועדפים");
@@ -184,11 +181,6 @@ export function Dashboard() {
     setActiveScreen(screen);
   };
 
-  const onSelectUser = (userId: string | null) => {
-    selectUser(userId);
-    setActiveScreen("home");
-  };
-
   if (!activeUser || !userProfile) {
     return null;
   }
@@ -204,7 +196,6 @@ export function Dashboard() {
           selectedDayKey={selectedDayKey}
           onOpenMealModal={() => setIsMealModalOpen(true)}
           onOpenProfileModal={() => setIsProfileModalOpen(true)}
-          onSwitchUser={() => onSelectUser(null)}
         />
 
         <div className="hidden md:flex md:flex-wrap md:gap-2">
@@ -275,11 +266,9 @@ export function Dashboard() {
               <ProfileScreen
                 userProfile={userProfile}
                 activeUser={activeUser}
-                users={users}
                 savedMealsCount={savedMeals.length}
                 loggedDaysCount={Object.keys(dailyLogs).length}
                 onEditProfile={() => setIsProfileModalOpen(true)}
-                onSelectUser={onSelectUser}
               />
             ) : null}
           </motion.section>

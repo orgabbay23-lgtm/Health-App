@@ -1,39 +1,35 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Dashboard } from "./features/dashboard/Dashboard";
 import { OnboardingFlow } from "./features/onboarding/OnboardingFlow";
-import { WelcomeScreen } from "./features/users/WelcomeScreen";
-import { useActiveUser, useAppStore } from "./store";
+import { AuthScreen } from "./features/auth/AuthScreen";
+import { useAuth } from "./components/AuthProvider";
+import { useAppStore } from "./store";
 
 function App() {
-  const hasHydrated = useAppStore((state) => state._hasHydrated);
-  const activeUser = useActiveUser();
+  const { user, loading: authLoading } = useAuth();
+  const profile = useAppStore(state => state.profile);
+  const isLoadingData = useAppStore(state => state.isLoadingData);
 
-  // 1. Loading Guard: Show a clean initialization view until hydration is complete
-  if (!hasHydrated) {
+  if (authLoading || (user && isLoadingData)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(250,245,235,0.95),_rgba(255,255,255,0.96)_42%,_rgba(237,246,255,0.95)_80%)]">
         <motion.div
           initial={{ opacity: 0.4, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{
-            repeat: Infinity,
-            repeatType: "reverse",
-            duration: 0.9,
-          }}
+          transition={{ repeat: Infinity, repeatType: "reverse", duration: 0.9 }}
           className="rounded-full border border-white/70 bg-white/90 px-6 py-4 text-base font-semibold text-slate-600 shadow-[0_18px_50px_rgba(15,23,42,0.08)]"
         >
-          מתחבר למסד הנתונים...
+          מתחבר...
         </motion.div>
       </div>
     );
   }
 
-  // 2. Routing Logic: Decoupled from render side-effects
-  let screen = <WelcomeScreen />;
-  let key = "welcome";
+  let screen = <AuthScreen />;
+  let key = "auth";
 
-  if (activeUser?.id) {
-    if (activeUser.profile) {
+  if (user) {
+    if (profile) {
       screen = <Dashboard />;
       key = "dashboard";
     } else {

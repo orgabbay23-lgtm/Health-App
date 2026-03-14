@@ -14,7 +14,6 @@ import { UserAvatar } from "../users/UserAvatar";
 
 export function OnboardingFlow() {
   const activeUser = useActiveUser();
-  const selectUser = useAppStore((state) => state.selectUser);
   const setUserProfile = useAppStore((state) => state.setUserProfile);
 
   const {
@@ -85,7 +84,7 @@ export function OnboardingFlow() {
                 <FeaturePill label="Gemini 3.0 Flash" />
                 <FeaturePill label="Clinical formulas" />
                 <FeaturePill label="AI logging" />
-                <FeaturePill label="Multi-user ready" />
+                <FeaturePill label="Cloud Sync" />
               </div>
             </CardContent>
           </Card>
@@ -108,7 +107,7 @@ export function OnboardingFlow() {
                   type="button"
                   variant="ghost"
                   className="rounded-full"
-                  onClick={() => selectUser(null)}
+                  onClick={() => {}}
                 >
                   <ArrowRight size={16} className="ms-2" />
                   חזרה לבחירת משתמש

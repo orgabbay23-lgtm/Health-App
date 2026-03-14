@@ -1,4 +1,4 @@
-import { Settings2, Users } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { TipPopover } from "../../../components/ui/tip-popover";
@@ -9,26 +9,21 @@ import {
 import { formatNutritionValue } from "../../../utils/nutrition-utils";
 import type { UserData, UserProfile } from "../../../store";
 import { UserAvatar } from "../../users/UserAvatar";
-import { accentThemeMap } from "../../users/user-theme";
 
 interface ProfileScreenProps {
   userProfile: UserProfile;
   activeUser: UserData;
-  users: UserData[];
   savedMealsCount: number;
   loggedDaysCount: number;
   onEditProfile: () => void;
-  onSelectUser: (userId: string | null) => void;
 }
 
 export function ProfileScreen({
   userProfile,
   activeUser,
-  users,
   savedMealsCount,
   loggedDaysCount,
   onEditProfile,
-  onSelectUser,
 }: ProfileScreenProps) {
   const profileRows = [
     { label: "גיל", value: String(userProfile.age) },
@@ -93,17 +88,7 @@ export function ProfileScreen({
                 <Settings2 size={16} className="ms-2" />
                 עריכת פרופיל
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-full"
-                onClick={() => onSelectUser(null)}
-              >
-                <Users size={16} className="ms-2" />
-                מסך בחירת משתמש
-              </Button>
-            </div>
-          </div>
+            </div>          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <ProfileStat label="ימים מתועדים" value={String(loggedDaysCount)} />
@@ -119,66 +104,6 @@ export function ProfileScreen({
           </div>
         </CardContent>
       </Card>
-
-      {users.length > 1 ? (
-        <Card className="border-white/70 bg-white/90 shadow-[0_22px_56px_rgba(15,23,42,0.06)]">
-          <CardContent className="space-y-4 p-5">
-            <div className="space-y-1">
-              <h3 className="text-xl font-semibold text-slate-950">משתמשים באפליקציה</h3>
-              <p className="text-sm text-slate-500">
-                לחץ על משתמש אחר כדי לעבור לפרופיל שלו באופן מיידי.
-              </p>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {users.map((user) => {
-                const theme = accentThemeMap[user.accent];
-
-                return (
-                  <button
-                    key={user.id}
-                    type="button"
-                    className={`rounded-[24px] border p-4 text-right transition ${
-                      user.id === activeUser.id
-                        ? "border-slate-950 bg-slate-950 text-white"
-                        : "border-slate-200 bg-slate-50 hover:bg-white"
-                    }`}
-                    onClick={() => onSelectUser(user.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <UserAvatar
-                        name={user.name}
-                        accent={user.accent}
-                        size="sm"
-                        className={user.id === activeUser.id ? "ring-white/30" : ""}
-                      />
-                      <div className="space-y-1">
-                        <p className="font-semibold">{user.name}</p>
-                        <p
-                          className={`text-xs ${
-                            user.id === activeUser.id ? "text-slate-300" : "text-slate-500"
-                          }`}
-                        >
-                          {user.profile
-                            ? `${Object.keys(user.dailyLogs).length} ימים, ${user.savedMeals.length} מועדפים`
-                            : "דורש השלמת פרופיל"}
-                        </p>
-                      </div>
-                    </div>
-                    <div
-                      className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                        user.id === activeUser.id ? "bg-white/10 text-white" : theme.soft
-                      }`}
-                    >
-                      {user.id === activeUser.id ? "משתמש פעיל" : "מעבר מהיר"}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
 
       <div className="grid gap-5 xl:grid-cols-2">
         <Card className="border-white/70 bg-white/90 shadow-[0_22px_56px_rgba(15,23,42,0.06)]">

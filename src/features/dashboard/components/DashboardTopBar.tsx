@@ -1,15 +1,18 @@
-import { CalendarDays, Plus, Settings2, Users } from "lucide-react";
+import { LogOut, Plus, Settings2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
-import type { UserData } from "../../../store";
+import { supabase } from "../../../lib/supabase";
 import { UserAvatar } from "../../users/UserAvatar";
+import type { UserAccentToken } from "../../../store";
 
 interface DashboardTopBarProps {
-  activeUser: UserData;
+  activeUser: {
+    name: string;
+    accent: UserAccentToken;
+  };
   selectedDayKey: string;
   onOpenMealModal: () => void;
   onOpenProfileModal: () => void;
-  onSwitchUser: () => void;
 }
 
 export function DashboardTopBar({
@@ -17,8 +20,11 @@ export function DashboardTopBar({
   selectedDayKey,
   onOpenMealModal,
   onOpenProfileModal,
-  onSwitchUser,
 }: DashboardTopBarProps) {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <Card className="border-white/70 bg-white/88 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
       <CardContent className="space-y-5 p-5">
@@ -39,11 +45,11 @@ export function DashboardTopBar({
             <Button
               type="button"
               variant="outline"
-              className="rounded-full"
-              onClick={onSwitchUser}
+              className="rounded-full text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={handleLogout}
             >
-              <Users size={16} className="ms-2" />
-              החלף
+              <LogOut size={16} className="ms-2" />
+              התנתק
             </Button>
             <Button
               type="button"

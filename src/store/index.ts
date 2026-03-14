@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, subscribeWithSelector } from "zustand/middleware";
+import { supabase } from "../lib/supabase";
 import {
   ActivityLevel,
   EMPTY_MICRONUTRIENTS,
@@ -13,12 +13,10 @@ import {
   diffSafetyAlerts,
   evaluateMicronutrientSafety,
   normalizeMicronutrients,
-  subtractMicronutrients,
 } from "../utils/nutrition-utils";
 
 type MealSourceType = "food" | "supplement";
 
-export const MAX_USERS = 5;
 export const USER_ACCENT_TOKENS = [
   "sun",
   "sky",
@@ -28,6 +26,15 @@ export const USER_ACCENT_TOKENS = [
 ] as const;
 
 export type UserAccentToken = (typeof USER_ACCENT_TOKENS)[number];
+
+export interface UserData {
+  id: string;
+  name: string;
+  accent: UserAccentToken;
+  profile: UserProfile | null;
+  dailyLogs: Record<string, DailyLog>;
+  savedMeals: SavedMeal[];
+}
 
 export interface UserProfile extends NutritionProfileInput {
   targets: NutritionTargets;
@@ -68,64 +75,6 @@ export interface DailyLog {
   aggregations: DailyAggregations;
 }
 
-export interface UserData {
-  id: string;
-  name: string;
-  accent: UserAccentToken;
-  createdAt: string;
-  profile: UserProfile | null;
-  dailyLogs: Record<string, DailyLog>;
-  savedMeals: SavedMeal[];
-}
-
-export interface CreateUserInput {
-  name: string;
-  accent?: UserAccentToken;
-}
-
-export interface CreateUserResult {
-  ok: boolean;
-  id?: string;
-  reason?: "limit" | "invalid";
-}
-
-interface AppState {
-  _hasHydrated: boolean;
-  setHasHydrated: (state: boolean) => void;
-
-  users: Record<string, UserData>;
-  activeUserId: string | null;
-  selectUser: (userId: string | null) => void;
-  createUser: (input: CreateUserInput) => CreateUserResult;
-  updateActiveUserIdentity: (
-    details: Partial<Pick<UserData, "name" | "accent">>,
-  ) => void;
-
-  setUserProfile: (profile: NutritionProfileInput) => void;
-  updateProfileDetails: (details: Partial<NutritionProfileInput>) => void;
-
-  addMealLog: (dayKey: string, meal: MealItem) => NutritionSafetyAlert[];
-  removeMealLog: (dayKey: string, mealId: string) => void;
-
-  saveMealAsFavorite: (meal: MealItem) => boolean;
-  removeSavedMeal: (savedMealId: string) => void;
-  addSavedMealToDay: (
-    dayKey: string,
-    savedMealId: string,
-  ) => NutritionSafetyAlert[];
-}
-
-interface PersistedAppStateV4 {
-  users?: Record<string, Partial<UserData>> | null;
-  activeUserId?: string | null;
-}
-
-interface PersistedLegacyAppState {
-  userProfile?: Partial<UserProfile> | null;
-  dailyLogs?: Record<string, Partial<DailyLog>> | null;
-  savedMeals?: Partial<SavedMeal>[] | null;
-}
-
 const VALID_ACTIVITY_LEVELS: ActivityLevel[] = [
   "sedentary",
   "light",
@@ -144,7 +93,6 @@ function toRoundedNumber(value: unknown): number {
   if (!Number.isFinite(parsed)) {
     return 0;
   }
-
   return Math.round(parsed * 10) / 10;
 }
 
@@ -159,7 +107,6 @@ function normalizeGender(value: unknown): NutritionProfileInput["gender"] {
 }
 
 function buildUserProfile(profile: NutritionProfileInput): UserProfile {
-  // Ensure targets are only recalculated when profile data changes
   return {
     ...profile,
     targets: calculateNutritionTargets(profile),
@@ -169,10 +116,7 @@ function buildUserProfile(profile: NutritionProfileInput): UserProfile {
 function normalizeUserProfile(
   profile: Partial<UserProfile> | null | undefined,
 ): UserProfile | null {
-  if (!profile) {
-    return null;
-  }
-
+  if (!profile) return null;
   return buildUserProfile({
     age: toFiniteNumber(profile.age, 30),
     gender: normalizeGender(profile.gender),
@@ -187,10 +131,7 @@ function normalizeUserProfile(
 function normalizeMealItem(meal: Partial<MealItem>): MealItem {
   return {
     id: String(meal.id ?? crypto.randomUUID()),
-    timestamp:
-      typeof meal.timestamp === "string"
-        ? meal.timestamp
-        : new Date().toISOString(),
+    timestamp: typeof meal.timestamp === "string" ? meal.timestamp : new Date().toISOString(),
     meal_name: typeof meal.meal_name === "string" ? meal.meal_name : "Meal",
     calories: toFiniteNumber(meal.calories, 0),
     macronutrients: {
@@ -199,17 +140,13 @@ function normalizeMealItem(meal: Partial<MealItem>): MealItem {
       fat: toFiniteNumber(meal.macronutrients?.fat, 0),
     },
     micronutrients: normalizeMicronutrients(meal.micronutrients),
-    confidence_score:
-      meal.confidence_score === undefined
-        ? undefined
-        : toFiniteNumber(meal.confidence_score, 0),
+    confidence_score: meal.confidence_score === undefined ? undefined : toFiniteNumber(meal.confidence_score, 0),
     sourceType: meal.sourceType === "supplement" ? "supplement" : "food",
   };
 }
 
 export function createMealSignature(meal: Partial<MealItem>): string {
   const normalizedMeal = normalizeMealItem(meal);
-
   return [
     normalizedMeal.meal_name.trim().toLowerCase(),
     toRoundedNumber(normalizedMeal.calories),
@@ -217,44 +154,8 @@ export function createMealSignature(meal: Partial<MealItem>): string {
     toRoundedNumber(normalizedMeal.macronutrients.carbs),
     toRoundedNumber(normalizedMeal.macronutrients.fat),
     normalizedMeal.sourceType ?? "food",
-    ...MICRONUTRIENT_KEYS.map((key) =>
-      toRoundedNumber(normalizedMeal.micronutrients[key]),
-    ),
+    ...MICRONUTRIENT_KEYS.map((key) => toRoundedNumber(normalizedMeal.micronutrients[key])),
   ].join("|");
-}
-
-function normalizeSavedMeal(savedMeal: Partial<SavedMeal>): SavedMeal {
-  const meal = normalizeMealItem(savedMeal.meal ?? {});
-
-  return {
-    id: String(savedMeal.id ?? crypto.randomUUID()),
-    savedAt:
-      typeof savedMeal.savedAt === "string"
-        ? savedMeal.savedAt
-        : new Date().toISOString(),
-    signature:
-      typeof savedMeal.signature === "string"
-        ? savedMeal.signature
-        : createMealSignature(meal),
-    meal,
-  };
-}
-
-function normalizeSavedMeals(
-  savedMeals: Partial<SavedMeal>[] | null | undefined,
-): SavedMeal[] {
-  const seenSignatures = new Set<string>();
-
-  return (savedMeals ?? []).reduce<SavedMeal[]>((acc, savedMeal) => {
-    const normalizedSavedMeal = normalizeSavedMeal(savedMeal);
-    if (seenSignatures.has(normalizedSavedMeal.signature)) {
-      return acc;
-    }
-
-    seenSignatures.add(normalizedSavedMeal.signature);
-    acc.push(normalizedSavedMeal);
-    return acc;
-  }, []);
 }
 
 function createEmptyDailyLog(): DailyLog {
@@ -277,10 +178,7 @@ function aggregateMeals(meals: MealItem[]): DailyAggregations {
       protein: acc.protein + meal.macronutrients.protein,
       carbs: acc.carbs + meal.macronutrients.carbs,
       fat: acc.fat + meal.macronutrients.fat,
-      micronutrients: addMicronutrients(
-        acc.micronutrients,
-        meal.micronutrients,
-      ),
+      micronutrients: addMicronutrients(acc.micronutrients, meal.micronutrients),
     }),
     {
       calories: 0,
@@ -288,36 +186,13 @@ function aggregateMeals(meals: MealItem[]): DailyAggregations {
       carbs: 0,
       fat: 0,
       micronutrients: { ...EMPTY_MICRONUTRIENTS },
-    },
-  );
-}
-
-function normalizeDailyLogs(
-  dailyLogs: Record<string, Partial<DailyLog>> | null | undefined,
-): Record<string, DailyLog> {
-  return Object.entries(dailyLogs ?? {}).reduce<Record<string, DailyLog>>(
-    (acc, [dayKey, log]) => {
-      const meals = Array.isArray(log?.meals)
-        ? log.meals.map((meal) => normalizeMealItem(meal))
-        : [];
-
-      acc[dayKey] = {
-        meals,
-        aggregations: aggregateMeals(meals),
-      };
-
-      return acc;
-    },
-    {},
+    }
   );
 }
 
 function getSupplementalMagnesium(meals: MealItem[]): number {
   return meals.reduce((total, meal) => {
-    if (meal.sourceType !== "supplement") {
-      return total;
-    }
-
+    if (meal.sourceType !== "supplement") return total;
     return total + meal.micronutrients.magnesium;
   }, 0);
 }
@@ -327,43 +202,24 @@ function appendMealToDailyLogs(
   userProfile: UserProfile | null,
   dayKey: string,
   meal: MealItem,
-): {
-  dailyLogs: Record<string, DailyLog>;
-  alerts: NutritionSafetyAlert[];
-} {
+): { dailyLogs: Record<string, DailyLog>; alerts: NutritionSafetyAlert[] } {
   const currentLog = dailyLogs[dayKey] ?? createEmptyDailyLog();
   const normalizedMeal = normalizeMealItem(meal);
   const nextMeals = [...currentLog.meals, normalizedMeal];
-  const nextAggregations: DailyAggregations = {
-    calories: currentLog.aggregations.calories + normalizedMeal.calories,
-    protein:
-      currentLog.aggregations.protein + normalizedMeal.macronutrients.protein,
-    carbs: currentLog.aggregations.carbs + normalizedMeal.macronutrients.carbs,
-    fat: currentLog.aggregations.fat + normalizedMeal.macronutrients.fat,
-    micronutrients: addMicronutrients(
-      currentLog.aggregations.micronutrients,
-      normalizedMeal.micronutrients,
-    ),
-  };
+  const nextAggregations = aggregateMeals(nextMeals);
 
   let alerts: NutritionSafetyAlert[] = [];
-
   if (userProfile) {
     const previousAlerts = evaluateMicronutrientSafety(
       currentLog.aggregations.micronutrients,
       userProfile,
-      {
-        supplementalMagnesium: getSupplementalMagnesium(currentLog.meals),
-      },
+      { supplementalMagnesium: getSupplementalMagnesium(currentLog.meals) },
     );
     const nextAlerts = evaluateMicronutrientSafety(
       nextAggregations.micronutrients,
       userProfile,
-      {
-        supplementalMagnesium: getSupplementalMagnesium(nextMeals),
-      },
+      { supplementalMagnesium: getSupplementalMagnesium(nextMeals) },
     );
-
     alerts = diffSafetyAlerts(previousAlerts, nextAlerts);
   }
 
@@ -371,81 +227,9 @@ function appendMealToDailyLogs(
     alerts,
     dailyLogs: {
       ...dailyLogs,
-      [dayKey]: {
-        meals: nextMeals,
-        aggregations: nextAggregations,
-      },
+      [dayKey]: { meals: nextMeals, aggregations: nextAggregations },
     },
   };
-}
-
-function normalizeAccent(value: unknown, fallbackIndex = 0): UserAccentToken {
-  if (typeof value === "string" && USER_ACCENT_TOKENS.includes(value as UserAccentToken)) {
-    return value as UserAccentToken;
-  }
-
-  return USER_ACCENT_TOKENS[fallbackIndex % USER_ACCENT_TOKENS.length];
-}
-
-function sanitizeUserName(value: unknown, fallback = "User"): string {
-  if (typeof value !== "string") {
-    return fallback;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed.slice(0, 24) : fallback;
-}
-
-function createUserData(
-  input: {
-    id?: string;
-    name?: string;
-    accent?: UserAccentToken;
-    createdAt?: string;
-    profile?: Partial<UserProfile> | UserProfile | null;
-    dailyLogs?: Record<string, Partial<DailyLog>> | Record<string, DailyLog> | null;
-    savedMeals?: Partial<SavedMeal>[] | SavedMeal[] | null;
-  },
-  index = 0,
-): UserData {
-  const id = String(input.id ?? crypto.randomUUID());
-
-  return {
-    id,
-    name: sanitizeUserName(input.name, `User ${index + 1}`),
-    accent: normalizeAccent(input.accent, index),
-    createdAt:
-      typeof input.createdAt === "string"
-        ? input.createdAt
-        : new Date().toISOString(),
-    profile: normalizeUserProfile(input.profile ?? null),
-    dailyLogs: normalizeDailyLogs(input.dailyLogs),
-    savedMeals: normalizeSavedMeals(input.savedMeals),
-  };
-}
-
-function normalizeUsers(
-  users: Record<string, Partial<UserData>> | null | undefined,
-): Record<string, UserData> {
-  return Object.entries(users ?? {}).reduce<Record<string, UserData>>(
-    (acc, [userId, user], index) => {
-      acc[userId] = createUserData(
-        {
-          id: userId,
-          name: user.name,
-          accent: user.accent,
-          createdAt: user.createdAt,
-          profile: user.profile,
-          dailyLogs: user.dailyLogs,
-          savedMeals: user.savedMeals,
-        },
-        index,
-      );
-
-      return acc;
-    },
-    {},
-  );
 }
 
 function removeMealFromDailyLogs(
@@ -454,35 +238,10 @@ function removeMealFromDailyLogs(
   mealId: string,
 ): Record<string, DailyLog> {
   const currentLog = dailyLogs[dayKey];
-  if (!currentLog) {
-    return dailyLogs;
-  }
-
-  const mealToRemove = currentLog.meals.find((meal) => meal.id === mealId);
-  if (!mealToRemove) {
-    return dailyLogs;
-  }
+  if (!currentLog) return dailyLogs;
 
   const nextMeals = currentLog.meals.filter((meal) => meal.id !== mealId);
-  const nextAggregations: DailyAggregations = {
-    calories: Math.max(
-      0,
-      currentLog.aggregations.calories - mealToRemove.calories,
-    ),
-    protein: Math.max(
-      0,
-      currentLog.aggregations.protein - mealToRemove.macronutrients.protein,
-    ),
-    carbs: Math.max(
-      0,
-      currentLog.aggregations.carbs - mealToRemove.macronutrients.carbs,
-    ),
-    fat: Math.max(0, currentLog.aggregations.fat - mealToRemove.macronutrients.fat),
-    micronutrients: subtractMicronutrients(
-      currentLog.aggregations.micronutrients,
-      mealToRemove.micronutrients,
-    ),
-  };
+  const nextAggregations = aggregateMeals(nextMeals);
 
   return {
     ...dailyLogs,
@@ -493,372 +252,231 @@ function removeMealFromDailyLogs(
   };
 }
 
-function updateActiveUser(
-  state: Pick<AppState, "users" | "activeUserId">,
-  updater: (user: UserData) => UserData,
-): Pick<AppState, "users"> | Pick<AppState, "users" | "activeUserId"> {
-  if (!state.activeUserId) {
-    return state;
-  }
+interface AppState {
+  profile: UserProfile | null;
+  dailyLogs: Record<string, DailyLog>;
+  savedMeals: SavedMeal[];
+  isLoadingData: boolean;
+  userId: string | null;
 
-  const activeUser = state.users[state.activeUserId];
-  if (!activeUser) {
-    return {
-      users: state.users,
-      activeUserId: null,
-    };
-  }
-
-  return {
-    users: {
-      ...state.users,
-      [state.activeUserId]: updater(activeUser),
-    },
-  };
+  fetchUserData: (userId: string) => Promise<void>;
+  clearUserData: () => void;
+  setUserProfile: (profile: NutritionProfileInput) => Promise<void>;
+  updateProfileDetails: (details: Partial<NutritionProfileInput>) => Promise<void>;
+  addMealLog: (dayKey: string, meal: MealItem) => Promise<NutritionSafetyAlert[]>;
+  removeMealLog: (dayKey: string, mealId: string) => Promise<void>;
+  saveMealAsFavorite: (meal: MealItem) => Promise<boolean>;
+  removeSavedMeal: (savedMealId: string) => Promise<void>;
+  addSavedMealToDay: (dayKey: string, savedMealId: string) => Promise<NutritionSafetyAlert[]>;
 }
 
-function hasLegacyData(state: PersistedLegacyAppState): boolean {
-  return Boolean(
-    state.userProfile ||
-      (state.dailyLogs && Object.keys(state.dailyLogs).length > 0) ||
-      (state.savedMeals && state.savedMeals.length > 0),
-  );
-}
+export const useAppStore = create<AppState>()((set, get) => ({
+  profile: null,
+  dailyLogs: {},
+  savedMeals: [],
+  isLoadingData: false,
+  userId: null,
 
-function isPersistedAppStateV4(
-  state: PersistedAppStateV4 | PersistedLegacyAppState,
-): state is PersistedAppStateV4 {
-  return "users" in state || "activeUserId" in state;
-}
+  fetchUserData: async (userId: string) => {
+    set({ isLoadingData: true, userId });
+    try {
+      const [profileRes, logsRes, mealsRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', userId).single(),
+        supabase.from('daily_logs').select('*').eq('user_id', userId),
+        supabase.from('saved_meals').select('*').eq('user_id', userId),
+      ]);
 
-function isPersistedLegacyAppState(
-  state: PersistedAppStateV4 | PersistedLegacyAppState,
-): state is PersistedLegacyAppState {
-  return (
-    "userProfile" in state || "dailyLogs" in state || "savedMeals" in state
-  );
-}
+      let profile = null;
+      if (profileRes.data) {
+        profile = normalizeUserProfile({
+          age: profileRes.data.age,
+          gender: profileRes.data.gender,
+          height: profileRes.data.height,
+          weight: profileRes.data.weight,
+          activityLevel: profileRes.data.activity_level,
+          goalDeficit: profileRes.data.goals?.[0]?.deficit ?? 500,
+          isSmoker: profileRes.data.medical_conditions?.includes('smoker') ?? false,
+        });
+      }
 
-function migratePersistedState(
-  persistedState: unknown,
-): Pick<AppState, "users" | "activeUserId"> {
-  const state = (persistedState ?? {}) as
-    | PersistedAppStateV4
-    | PersistedLegacyAppState;
-
-  if (isPersistedAppStateV4(state)) {
-    const users = normalizeUsers(state.users);
-    const activeUserId =
-      typeof state.activeUserId === "string" && users[state.activeUserId]
-        ? state.activeUserId
-        : Object.keys(users)[0] ?? null;
-
-    return {
-      users,
-      activeUserId,
-    };
-  }
-
-  if (!isPersistedLegacyAppState(state)) {
-    return {
-      users: {},
-      activeUserId: null,
-    };
-  }
-
-  if (!hasLegacyData(state)) {
-    return {
-      users: {},
-      activeUserId: null,
-    };
-  }
-
-  const migratedUser = createUserData(
-    {
-      id: "user-1",
-      name: "User 1",
-      accent: USER_ACCENT_TOKENS[0],
-      profile: state.userProfile,
-      dailyLogs: state.dailyLogs,
-      savedMeals: state.savedMeals,
-    },
-    0,
-  );
-
-  return {
-    users: {
-      [migratedUser.id]: migratedUser,
-    },
-    activeUserId: migratedUser.id,
-  };
-}
-
-export function getActiveUserFromState(
-  state: Pick<AppState, "users" | "activeUserId">,
-): UserData | null {
-  if (!state.activeUserId) {
-    return null;
-  }
-
-  return state.users[state.activeUserId] ?? null;
-}
-
-export const useAppStore = create<AppState>()(
-  subscribeWithSelector(
-    persist(
-      (set, get) => ({
-        _hasHydrated: false,
-        setHasHydrated: (state) => {
-          set({ _hasHydrated: state });
-        },
-
-        users: {},
-        activeUserId: null,
-        selectUser: (userId) => {
-          set((state) => {
-            if (userId === null) {
-              return { activeUserId: null };
-            }
-
-            if (!state.users[userId]) {
-              return state;
-            }
-
-            return { activeUserId: userId };
-          });
-        },
-
-        createUser: ({ name, accent }) => {
-          let result: CreateUserResult = {
-            ok: false,
-            reason: "invalid",
+      const dailyLogs: Record<string, DailyLog> = {};
+      if (logsRes.data) {
+        logsRes.data.forEach(log => {
+          const meals = (log.meals || []).map(normalizeMealItem);
+          dailyLogs[log.date] = {
+            meals,
+            aggregations: aggregateMeals(meals),
           };
+        });
+      }
 
-          set((state) => {
-            const trimmedName = sanitizeUserName(name, "");
-            if (!trimmedName) {
-              return state;
-            }
-
-            if (Object.keys(state.users).length >= MAX_USERS) {
-              result = {
-                ok: false,
-                reason: "limit",
-              };
-              return state;
-            }
-
-            const userId = crypto.randomUUID();
-            const user = createUserData(
-              {
-                id: userId,
-                name: trimmedName,
-                accent:
-                  accent ??
-                  USER_ACCENT_TOKENS[
-                    Object.keys(state.users).length % USER_ACCENT_TOKENS.length
-                  ],
-              },
-              Object.keys(state.users).length,
-            );
-
-            result = {
-              ok: true,
-              id: userId,
-            };
-
-            return {
-              users: {
-                ...state.users,
-                [userId]: user,
-              },
-              activeUserId: userId,
-            };
+      const savedMeals: SavedMeal[] = [];
+      if (mealsRes.data) {
+        mealsRes.data.forEach(sm => {
+          savedMeals.push({
+            id: sm.id,
+            savedAt: sm.created_at,
+            signature: createMealSignature(sm.ingredients?.[0] || {}),
+            meal: normalizeMealItem(sm.ingredients?.[0] || {}),
           });
+        });
+      }
 
-          return result;
-        },
+      set({ profile, dailyLogs, savedMeals });
+    } catch (error) {
+      console.error("Error fetching user data", error);
+    } finally {
+      set({ isLoadingData: false });
+    }
+  },
 
-        updateActiveUserIdentity: (details) =>
-          set((state) =>
-            updateActiveUser(state, (activeUser) => ({
-              ...activeUser,
-              name:
-                details.name === undefined
-                  ? activeUser.name
-                  : sanitizeUserName(details.name, activeUser.name),
-              accent:
-                details.accent === undefined
-                  ? activeUser.accent
-                  : normalizeAccent(details.accent),
-            })),
-          ),
+  clearUserData: () => {
+    set({ profile: null, dailyLogs: {}, savedMeals: [], userId: null });
+  },
 
-        setUserProfile: (profile) =>
-          set((state) =>
-            updateActiveUser(state, (activeUser) => ({
-              ...activeUser,
-              profile: buildUserProfile(profile),
-            })),
-          ),
+  setUserProfile: async (profileInput) => {
+    const { userId } = get();
+    if (!userId) return;
+    const profile = buildUserProfile(profileInput);
+    set({ profile });
 
-        updateProfileDetails: (details) =>
-          set((state) =>
-            updateActiveUser(state, (activeUser) => {
-              if (!activeUser.profile) {
-                return activeUser;
-              }
+    await supabase.from('profiles').upsert({
+      id: userId,
+      age: profile.age,
+      gender: profile.gender,
+      height: profile.height,
+      weight: profile.weight,
+      activity_level: profile.activityLevel,
+      goals: [{ deficit: profile.goalDeficit }],
+      medical_conditions: profile.isSmoker ? ['smoker'] : [],
+      updated_at: new Date().toISOString()
+    });
+  },
 
-              return {
-                ...activeUser,
-                profile: buildUserProfile({
-                  age: details.age ?? activeUser.profile.age,
-                  gender: details.gender ?? activeUser.profile.gender,
-                  height: details.height ?? activeUser.profile.height,
-                  weight: details.weight ?? activeUser.profile.weight,
-                  activityLevel:
-                    details.activityLevel ?? activeUser.profile.activityLevel,
-                  goalDeficit:
-                    details.goalDeficit ?? activeUser.profile.goalDeficit,
-                  isSmoker: details.isSmoker ?? activeUser.profile.isSmoker,
-                }),
-              };
-            }),
-          ),
+  updateProfileDetails: async (details) => {
+    const { profile, setUserProfile } = get();
+    if (!profile) return;
+    await setUserProfile({ ...profile, ...details });
+  },
 
-        addMealLog: (dayKey, meal) => {
-          let triggeredAlerts: NutritionSafetyAlert[] = [];
+  addMealLog: async (dayKey, meal) => {
+    const { dailyLogs, profile, userId } = get();
+    if (!userId) return [];
+    
+    const { dailyLogs: nextLogs, alerts } = appendMealToDailyLogs(dailyLogs, profile, dayKey, meal);
+    set({ dailyLogs: nextLogs });
 
-          set((state) =>
-            updateActiveUser(state, (activeUser) => {
-              const nextState = appendMealToDailyLogs(
-                activeUser.dailyLogs,
-                activeUser.profile,
-                dayKey,
-                meal,
-              );
+    const logToSave = nextLogs[dayKey];
+    await supabase.from('daily_logs').upsert({
+      user_id: userId,
+      date: dayKey,
+      meals: logToSave.meals,
+      aggregations: logToSave.aggregations,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,date' });
 
-              triggeredAlerts = nextState.alerts;
+    return alerts;
+  },
 
-              return {
-                ...activeUser,
-                dailyLogs: nextState.dailyLogs,
-              };
-            }),
-          );
+  removeMealLog: async (dayKey, mealId) => {
+    const { dailyLogs, userId } = get();
+    if (!userId) return;
 
-          return triggeredAlerts;
-        },
+    const nextLogs = removeMealFromDailyLogs(dailyLogs, dayKey, mealId);
+    set({ dailyLogs: nextLogs });
 
-        removeMealLog: (dayKey, mealId) =>
-          set((state) =>
-            updateActiveUser(state, (activeUser) => ({
-              ...activeUser,
-              dailyLogs: removeMealFromDailyLogs(
-                activeUser.dailyLogs,
-                dayKey,
-                mealId,
-              ),
-            })),
-          ),
+    const logToSave = nextLogs[dayKey];
+    if (logToSave) {
+      await supabase.from('daily_logs').upsert({
+        user_id: userId,
+        date: dayKey,
+        meals: logToSave.meals,
+        aggregations: logToSave.aggregations,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,date' });
+    } else {
+       await supabase.from('daily_logs').delete().eq('user_id', userId).eq('date', dayKey);
+    }
+  },
 
-        saveMealAsFavorite: (meal) => {
-          let wasAdded = false;
+  saveMealAsFavorite: async (meal) => {
+    const { savedMeals, userId } = get();
+    if (!userId) return false;
 
-          set((state) =>
-            updateActiveUser(state, (activeUser) => {
-              const normalizedMeal = normalizeMealItem(meal);
-              const signature = createMealSignature(normalizedMeal);
+    const normalizedMeal = normalizeMealItem(meal);
+    const signature = createMealSignature(normalizedMeal);
 
-              if (
-                activeUser.savedMeals.some(
-                  (savedMeal) => savedMeal.signature === signature,
-                )
-              ) {
-                return activeUser;
-              }
+    if (savedMeals.some((sm) => sm.signature === signature)) {
+      return false;
+    }
 
-              wasAdded = true;
+    const newSavedMeal: SavedMeal = {
+      id: crypto.randomUUID(),
+      savedAt: new Date().toISOString(),
+      signature,
+      meal: normalizedMeal,
+    };
 
-              return {
-                ...activeUser,
-                savedMeals: [
-                  {
-                    id: crypto.randomUUID(),
-                    savedAt: new Date().toISOString(),
-                    signature,
-                    meal: normalizedMeal,
-                  },
-                  ...activeUser.savedMeals,
-                ],
-              };
-            }),
-          );
+    set({ savedMeals: [newSavedMeal, ...savedMeals] });
 
-          return wasAdded;
-        },
+    await supabase.from('saved_meals').insert({
+      id: newSavedMeal.id,
+      user_id: userId,
+      name: normalizedMeal.meal_name,
+      ingredients: [normalizedMeal],
+      created_at: newSavedMeal.savedAt,
+      updated_at: newSavedMeal.savedAt
+    });
 
-        removeSavedMeal: (savedMealId) =>
-          set((state) =>
-            updateActiveUser(state, (activeUser) => ({
-              ...activeUser,
-              savedMeals: activeUser.savedMeals.filter(
-                (savedMeal) => savedMeal.id !== savedMealId,
-              ),
-            })),
-          ),
+    return true;
+  },
 
-        addSavedMealToDay: (dayKey, savedMealId) => {
-          const activeUser = getActiveUserFromState(get());
-          const savedMeal = activeUser?.savedMeals.find(
-            (item) => item.id === savedMealId,
-          );
+  removeSavedMeal: async (savedMealId) => {
+    const { savedMeals, userId } = get();
+    if (!userId) return;
 
-          if (!savedMeal) {
-            return [];
-          }
+    set({ savedMeals: savedMeals.filter(sm => sm.id !== savedMealId) });
+    await supabase.from('saved_meals').delete().eq('id', savedMealId).eq('user_id', userId);
+  },
 
-          return get().addMealLog(dayKey, {
-            ...savedMeal.meal,
-            id: crypto.randomUUID(),
-            timestamp: new Date().toISOString(),
-          });
-        },
-      }),
-      {
-        name: "health-app-storage",
-        version: 4,
-        migrate: (persistedState) => migratePersistedState(persistedState),
-        onRehydrateStorage: () => (state) => {
-          state?.setHasHydrated(true);
-        },
-        partialize: (state) => ({
-          users: state.users,
-          activeUserId: state.activeUserId,
-        }),
-      },
-    ),
-  ),
-);
+  addSavedMealToDay: async (dayKey, savedMealId) => {
+    const { savedMeals } = get();
+    const savedMeal = savedMeals.find((sm) => sm.id === savedMealId);
+    if (!savedMeal) return [];
+
+    return get().addMealLog(dayKey, {
+      ...savedMeal.meal,
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+    });
+  }
+}));
 
 export function useActiveUser() {
-  return useAppStore((state) => getActiveUserFromState(state));
+  const userId = useAppStore(state => state.userId);
+  const profile = useAppStore(state => state.profile);
+  const dailyLogs = useAppStore(state => state.dailyLogs);
+  const savedMeals = useAppStore(state => state.savedMeals);
+  
+  if (!userId) return null;
+  return {
+    id: userId,
+    name: "משתמש",
+    accent: "sky" as const,
+    profile,
+    dailyLogs,
+    savedMeals,
+  };
 }
 
 export function useActiveUserProfile() {
-  return useAppStore(
-    (state) => getActiveUserFromState(state)?.profile ?? null,
-  );
+  return useAppStore((state) => state.profile);
 }
 
 export function useActiveDailyLogs() {
-  return useAppStore(
-    (state) => getActiveUserFromState(state)?.dailyLogs ?? {},
-  );
+  return useAppStore((state) => state.dailyLogs);
 }
 
 export function useActiveSavedMeals() {
-  return useAppStore(
-    (state) => getActiveUserFromState(state)?.savedMeals ?? [],
-  );
+  return useAppStore((state) => state.savedMeals);
 }

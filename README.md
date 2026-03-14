@@ -1,62 +1,41 @@
-# Health App
+# Health App (Cloud Migration)
 
-Health App is a mobile-first nutrition tracking application built with React, Vite, TypeScript, and Zustand. It combines a strict Gemini meal-parsing pipeline with clinical nutrition formulas, personalized Hebrew RTL UX, and multi-user local persistence.
+Health App is a mobile-first nutrition tracking application built with React, Vite, TypeScript, and Supabase. It features a "Bring Your Own Key" (BYOK) Gemini AI architecture and a cloud-synced database.
 
 ## Highlights
 
-- Multi-user architecture for up to 5 separate users, each with an isolated profile, daily logs, and saved meals.
-- Gemini AI food logging with robust fallback logic: attempts primary `gemini-3-flash-preview`, cascades to `gemini-2.5-flash` on rate-limit errors, strictly maintaining schema validation.
-- Clinical nutrition targets based on Mifflin-St Jeor, protein heuristics, micronutrient targets, and safety thresholds.
-- Hyper-minimalist, focused UI design with reduced clutter and strict container width limits (`max-w-4xl` for dashboards, `max-w-md` for forms).
-- 3 AM logical day rollover and date navigation across daily, weekly, and monthly views.
-- Favorites workflow for re-logging saved meals from the add-meal modal.
-- Framer Motion transitions and micro-interactions across onboarding, dashboard navigation, and progress states.
-- Fully RTL interface tuned for Hebrew usage, including tooltips, navigation, and modal flows.
+- **Cloud Sync:** Powered by Supabase for Authentication and PostgreSQL storage.
+- **BYOK Gemini AI:** Use your own Google Gemini API key, stored locally in your browser for maximum privacy.
+- **Gemini AI Logging:** Robust meal-parsing pipeline with primary `gemini-3-flash-preview` and fallback `gemini-2.5-flash`.
+- **Clinical Nutrition:** Miffln-St Jeor formulas, protein heuristics, and safety-first micronutrient tracking.
+- **RTL Hebrew UX:** Fully localized interface with Hebrew support across all screens.
 
 ## Tech Stack
 
-- React 18
-- Vite 5
-- TypeScript
-- Zustand with persistence
-- Tailwind CSS
-- Radix UI primitives / shadcn-style components
-- Framer Motion
+- React 18 + Vite 5
+- Supabase (Auth & Database)
+- Zustand (State Management)
+- Tailwind CSS + Framer Motion
 - Google Generative AI SDK
-- React Hook Form + Zod
 
-## Core Product Areas
+## Supabase Setup
 
-### 1. Multi-user experience
+To run this project with the cloud backend:
 
-- Netflix-style welcome screen with user selection.
-- Add-user flow with per-user color identity.
-- Profile editing for both user identity and clinical profile data.
-
-### 2. AI logging and favorites
-
-- Natural-language meal parsing through Gemini.
-- Manual ingredient entry fallback.
-- Save any logged meal as a favorite and re-log it from the `מועדפים` tab.
-
-### 3. Clinical nutrition logic
-
-- Daily calorie and macro targets generated from clinical formulas.
-- Micronutrient targets and upper-limit safety alerts.
-- Personalized tooltip guidance derived from user age, gender, smoking status, and deficit goal.
-
-### 4. Mobile-first dashboard
-
-- Bottom navigation for Home, Calendar, Add Meal, and Profile.
-- Progressive disclosure with calories and protein emphasized first.
-- Full micronutrient detail hidden inside an accordion labeled `ערכים תזונתיים מלאים`.
+1. Create a new project in [Supabase](https://supabase.com).
+2. Run the SQL commands in `supabase-schema.sql` using the Supabase SQL Editor to set up the tables and RLS policies.
+3. Copy your project URL and Anon Key into your `.env` file:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18 or newer
-- A valid Gemini API key
+- A Supabase project
 
 ### Installation
 
@@ -64,38 +43,21 @@ Health App is a mobile-first nutrition tracking application built with React, Vi
 npm install
 ```
 
-### Environment Variables
-
-Copy `.env.example` to `.env` and fill in your key:
-
-```bash
-cp .env.example .env
-```
-
-```env
-VITE_GEMINI_API_KEY=your_google_ai_studio_api_key_here
-```
-
-`.env` is ignored by git and should never be committed.
-
 ### Run the app
 
 ```bash
 npm run dev
 ```
 
-### Quality checks
+### Gemini API Key (BYOK)
 
-```bash
-npm run lint
-npm run build
-```
+When you first try to log a meal using AI, the app will prompt you for your Gemini API key. You can get one for free at [Google AI Studio](https://aistudio.google.com/app/apikey). This key is saved in your browser's `localStorage` and never sent to our servers.
 
-## Project Notes
+## Repository Notes
 
-- The Gemini integration, response schemas, and API error handling are intentionally preserved.
-- The 3 AM day-rollover logic remains the source of truth for all date grouping.
-- Persisted legacy single-user data migrates automatically into the new multi-user store on first load.
+- The 3 AM logical day rollover remains the source of truth for date grouping.
+- Authentication is handled via Supabase Email/Password and Google OAuth.
+- `.env` is fully ignored and should contain your Supabase credentials.
 
 ## Repository Status
 

@@ -120,32 +120,27 @@ const mealResponseParser = z.object({
 const SYSTEM_INSTRUCTION =
   "You are an expert clinical nutritionist and structured data extractor. Analyze Hebrew meal descriptions, estimate reasonable Israeli portion sizes when omitted, and return only valid JSON matching the requested schema. Do not return markdown, explanations, or extra keys.";
 
-function createMealModel(apiKey: string, modelName: string) {
-  const genAI = new GoogleGenerativeAI(apiKey);
-
-  return genAI.getGenerativeModel({
-    model: modelName,
-    systemInstruction: SYSTEM_INSTRUCTION,
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: mealResponseSchema,
-    },
-  });
-}
-
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
 export async function parseMealDescription(
   description: string,
 ): Promise<ParsedMealDescription> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+  const apiKey = localStorage.getItem("GEMINI_API_KEY") || "";
 
   if (!apiKey) {
-    throw new Error("Missing VITE_GEMINI_API_KEY in .env");
+    throw new Error("BYOK_REQUIRED");
   }
 
   const performRequest = async (modelName: string) => {
-    const model = createMealModel(apiKey, modelName);
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      systemInstruction: SYSTEM_INSTRUCTION,
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: mealResponseSchema,
+      },
+    });
     const result = await model.generateContent(description.trim());
     const responseText = result.response.text().trim();
 
