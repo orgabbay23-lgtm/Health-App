@@ -70,19 +70,18 @@ export function HomeScreen({
               OVERVIEW
             </p>
             <h2 className="text-2xl font-semibold text-slate-950">
-              תמונת מצב נקייה ל{periodMode === "daily" ? "יום" : periodMode === "weekly" ? "שבוע" : "חודש"} הנבחר
+              סיכום {periodMode === "daily" ? "יומי" : periodMode === "weekly" ? "שבועי" : "חודשי"}
             </h2>
-            <p className="text-sm text-slate-500">{periodDetails.caption}</p>
           </div>
 
           <div className="flex flex-wrap gap-3 text-sm text-slate-600">
             <div className="rounded-full bg-slate-100 px-3 py-1.5">
-              {periodData.loggedDays} ימים עם רישום
+              {periodData.loggedDays} ימי רישום
             </div>
             <div className="rounded-full bg-slate-100 px-3 py-1.5">
-              {periodData.totalMeals} ארוחות בתקופה
+              {periodData.totalMeals} ארוחות
             </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1.5">
+            <div className="rounded-full bg-slate-100 px-3 py-1.5 flex items-center gap-1">
               <span dir="ltr">{periodDetails.startKey}</span>
               <span className="mx-1">-</span>
               <span dir="ltr">{periodDetails.endKey}</span>
@@ -140,13 +139,8 @@ export function HomeScreen({
         <CardContent className="space-y-5 p-5">
           <div className="space-y-1">
             <h3 className="text-xl font-semibold text-slate-950">
-              {periodMode === "daily" ? "רישומים אחרונים" : "פירוט התקופה"}
+              {periodMode === "daily" ? "ארוחות" : "פירוט התקופה"}
             </h3>
-            <p className="text-sm text-slate-500">
-              {periodMode === "daily"
-                ? "כל ארוחה ניתנת למחיקה, לפתיחה מהירה ולשמירה כמועדפת."
-                : "פותחים יום כדי לראות ארוחות, למחוק פריטים או לשמור מועדפים."}
-            </p>
           </div>
 
           {periodMode === "daily" ? (
@@ -155,7 +149,7 @@ export function HomeScreen({
               onDelete={(mealId) => onDeleteMeal(periodDetails.startKey, mealId)}
               onSaveFavorite={onSaveFavorite}
               savedSignatures={savedSignatures}
-              emptyText="עדיין לא נרשמו ארוחות ביום הזה."
+              emptyText="אין ארוחות"
             />
           ) : (
             <PeriodBreakdown

@@ -26,14 +26,11 @@ export function DashboardTopBar({
           <div className="flex items-center gap-4">
             <UserAvatar name={activeUser.name} accent={activeUser.accent} size="md" />
             <div className="space-y-1">
-              <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-                ACTIVE PROFILE
-              </p>
               <h1 className="text-2xl font-semibold text-slate-950">
                 {activeUser.name}
               </h1>
-              <p className="text-sm text-slate-500">
-                היום הנבחר לרישום: <span dir="ltr">{selectedDayKey}</span>
+              <p className="text-sm text-slate-500" dir="ltr">
+                {selectedDayKey}
               </p>
             </div>
           </div>
@@ -46,7 +43,7 @@ export function DashboardTopBar({
               onClick={onSwitchUser}
             >
               <Users size={16} className="ms-2" />
-              החלפת משתמש
+              החלף
             </Button>
             <Button
               type="button"
@@ -55,7 +52,7 @@ export function DashboardTopBar({
               onClick={onOpenProfileModal}
             >
               <Settings2 size={16} className="ms-2" />
-              עריכת פרופיל
+              פרופיל
             </Button>
             <Button
               type="button"
@@ -63,18 +60,8 @@ export function DashboardTopBar({
               onClick={onOpenMealModal}
             >
               <Plus size={16} className="ms-2" />
-              הוספת ארוחה
+              ארוחה
             </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-3 text-sm text-slate-500">
-          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5">
-            <CalendarDays size={15} />
-            היסטוריה נשמרת לפי מפתח יומי `YYYY-MM-DD`
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5">
-            גלגול יום לוגי פעיל בשעה 03:00
           </div>
         </div>
       </CardContent>

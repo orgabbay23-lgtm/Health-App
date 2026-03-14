@@ -91,12 +91,12 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     <ModalShell
       isOpen={isOpen}
       onClose={onClose}
-      title="עריכת משתמש ופרופיל"
-      description="העדכון ישפיע רק על המשתמש הפעיל וישמור על כל היסטוריית המזון והמועדפים שלו."
-      className="max-w-4xl"
+      title="עריכת פרופיל"
+      description=""
+      className="max-w-md"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <div className="grid gap-4">
           <div className="space-y-2 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
             <label htmlFor="displayName" className="text-sm font-medium text-slate-700">
               שם להצגה

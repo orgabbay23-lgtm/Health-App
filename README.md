@@ -5,9 +5,9 @@ Health App is a mobile-first nutrition tracking application built with React, Vi
 ## Highlights
 
 - Multi-user architecture for up to 5 separate users, each with an isolated profile, daily logs, and saved meals.
-- Gemini AI food logging with strict JSON parsing and preserved schema validation.
+- Gemini AI food logging with robust fallback logic: attempts primary `gemini-3-flash-preview`, cascades to `gemini-2.5-flash` on rate-limit errors, strictly maintaining schema validation.
 - Clinical nutrition targets based on Mifflin-St Jeor, protein heuristics, micronutrient targets, and safety thresholds.
-- Personalized nutritional tips in Hebrew for calories, macros, vitamins, and minerals.
+- Hyper-minimalist, focused UI design with reduced clutter and strict container width limits (`max-w-4xl` for dashboards, `max-w-md` for forms).
 - 3 AM logical day rollover and date navigation across daily, weekly, and monthly views.
 - Favorites workflow for re-logging saved meals from the add-meal modal.
 - Framer Motion transitions and micro-interactions across onboarding, dashboard navigation, and progress states.

@@ -157,8 +157,8 @@ export function MealLogModal({
       isOpen={isOpen}
       onClose={onClose}
       title="הוספת ארוחה"
-      description={`הפעולה תירשם ליום ${targetDayKey}`}
-      className="max-w-3xl"
+      description=""
+      className="max-w-md"
     >
       <Tabs defaultValue="manual" className="w-full">
         <TabsList className="mb-6 grid h-auto w-full grid-cols-3 rounded-[22px] bg-slate-100 p-1">

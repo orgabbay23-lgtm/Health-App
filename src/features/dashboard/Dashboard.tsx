@@ -198,7 +198,7 @@ export function Dashboard() {
       className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(250,245,235,0.9),_rgba(255,255,255,0.96)_40%,_rgba(237,246,255,0.95)_78%),linear-gradient(180deg,_#f6f2ea_0%,_#f8fafc_50%,_#edf6ff_100%)]"
       dir="rtl"
     >
-      <div className="mx-auto max-w-6xl space-y-5 px-4 py-5 pb-28 md:pb-8">
+      <div className="mx-auto max-w-4xl space-y-5 px-4 py-5 pb-28 md:pb-8">
         <DashboardTopBar
           activeUser={activeUser}
           selectedDayKey={selectedDayKey}

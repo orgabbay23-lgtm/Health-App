@@ -2,7 +2,8 @@
 import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
 import { z } from "zod";
 
-const GEMINI_MODEL = "gemini-3-flash-preview";
+const PRIMARY_MODEL = "gemini-3-flash-preview";
+const FALLBACK_MODEL = "gemini-2.5-flash";
 
 const mealResponseSchema: Schema = {
   type: SchemaType.OBJECT,
@@ -119,11 +120,11 @@ const mealResponseParser = z.object({
 const SYSTEM_INSTRUCTION =
   "You are an expert clinical nutritionist and structured data extractor. Analyze Hebrew meal descriptions, estimate reasonable Israeli portion sizes when omitted, and return only valid JSON matching the requested schema. Do not return markdown, explanations, or extra keys.";
 
-function createMealModel(apiKey: string) {
+function createMealModel(apiKey: string, modelName: string) {
   const genAI = new GoogleGenerativeAI(apiKey);
 
   return genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
+    model: modelName,
     systemInstruction: SYSTEM_INSTRUCTION,
     generationConfig: {
       responseMimeType: "application/json",
@@ -143,9 +144,8 @@ export async function parseMealDescription(
     throw new Error("Missing VITE_GEMINI_API_KEY in .env");
   }
 
-  const model = createMealModel(apiKey);
-
-  try {
+  const performRequest = async (modelName: string) => {
+    const model = createMealModel(apiKey, modelName);
     const result = await model.generateContent(description.trim());
     const responseText = result.response.text().trim();
 
@@ -154,8 +154,28 @@ export async function parseMealDescription(
     }
 
     return mealResponseParser.parse(JSON.parse(responseText));
-  } catch (error) {
-    console.error("API Fetch Error:", error);
-    throw error;
+  };
+
+  try {
+    return await performRequest(PRIMARY_MODEL);
+  } catch (error: any) {
+    console.error(`Primary model (${PRIMARY_MODEL}) failed:`, error);
+    const isQuotaError =
+      error?.status === 429 ||
+      error?.message?.includes("429") ||
+      error?.message?.toLowerCase().includes("quota") ||
+      error?.message?.toLowerCase().includes("too many requests");
+
+    if (isQuotaError) {
+      console.warn(`Retrying with fallback model (${FALLBACK_MODEL})...`);
+      try {
+        return await performRequest(FALLBACK_MODEL);
+      } catch (fallbackError) {
+        console.error(`Fallback model (${FALLBACK_MODEL}) also failed:`, fallbackError);
+        throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
+      }
+    }
+    
+    throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
   }
 }
