@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, subscribeWithSelector } from "zustand/middleware";
+import { useShallow } from "zustand/react/shallow";
 import {
   ActivityLevel,
   EMPTY_MICRONUTRIENTS,
@@ -159,6 +160,7 @@ function normalizeGender(value: unknown): NutritionProfileInput["gender"] {
 }
 
 function buildUserProfile(profile: NutritionProfileInput): UserProfile {
+  // Ensure targets are only recalculated when profile data changes
   return {
     ...profile,
     targets: calculateNutritionTargets(profile),
@@ -603,235 +605,240 @@ export function getActiveUserFromState(
 }
 
 export const useAppStore = create<AppState>()(
-  persist(
-    (set, get) => ({
-      _hasHydrated: false,
-      setHasHydrated: (state) => set({ _hasHydrated: state }),
+  subscribeWithSelector(
+    persist(
+      (set, get) => ({
+        _hasHydrated: false,
+        setHasHydrated: (state) => {
+          set({ _hasHydrated: state });
+        },
 
-      users: {},
-      activeUserId: null,
-      selectUser: (userId) =>
-        set((state) => {
-          if (userId === null) {
-            return { activeUserId: null };
-          }
-
-          if (!state.users[userId]) {
-            return state;
-          }
-
-          return { activeUserId: userId };
-        }),
-
-      createUser: ({ name, accent }) => {
-        let result: CreateUserResult = {
-          ok: false,
-          reason: "invalid",
-        };
-
-        set((state) => {
-          const trimmedName = sanitizeUserName(name, "");
-          if (!trimmedName) {
-            return state;
-          }
-
-          if (Object.keys(state.users).length >= MAX_USERS) {
-            result = {
-              ok: false,
-              reason: "limit",
-            };
-            return state;
-          }
-
-          const userId = crypto.randomUUID();
-          const user = createUserData(
-            {
-              id: userId,
-              name: trimmedName,
-              accent:
-                accent ??
-                USER_ACCENT_TOKENS[
-                  Object.keys(state.users).length % USER_ACCENT_TOKENS.length
-                ],
-            },
-            Object.keys(state.users).length,
-          );
-
-          result = {
-            ok: true,
-            id: userId,
-          };
-
-          return {
-            users: {
-              ...state.users,
-              [userId]: user,
-            },
-            activeUserId: userId,
-          };
-        });
-
-        return result;
-      },
-
-      updateActiveUserIdentity: (details) =>
-        set((state) =>
-          updateActiveUser(state, (activeUser) => ({
-            ...activeUser,
-            name:
-              details.name === undefined
-                ? activeUser.name
-                : sanitizeUserName(details.name, activeUser.name),
-            accent:
-              details.accent === undefined
-                ? activeUser.accent
-                : normalizeAccent(details.accent),
-          })),
-        ),
-
-      setUserProfile: (profile) =>
-        set((state) =>
-          updateActiveUser(state, (activeUser) => ({
-            ...activeUser,
-            profile: buildUserProfile(profile),
-          })),
-        ),
-
-      updateProfileDetails: (details) =>
-        set((state) =>
-          updateActiveUser(state, (activeUser) => {
-            if (!activeUser.profile) {
-              return activeUser;
+        users: {},
+        activeUserId: null,
+        selectUser: (userId) => {
+          set((state) => {
+            if (userId === null) {
+              return { activeUserId: null };
             }
 
-            return {
-              ...activeUser,
-              profile: buildUserProfile({
-                age: details.age ?? activeUser.profile.age,
-                gender: details.gender ?? activeUser.profile.gender,
-                height: details.height ?? activeUser.profile.height,
-                weight: details.weight ?? activeUser.profile.weight,
-                activityLevel:
-                  details.activityLevel ?? activeUser.profile.activityLevel,
-                goalDeficit:
-                  details.goalDeficit ?? activeUser.profile.goalDeficit,
-                isSmoker: details.isSmoker ?? activeUser.profile.isSmoker,
-              }),
-            };
-          }),
-        ),
+            if (!state.users[userId]) {
+              return state;
+            }
 
-      addMealLog: (dayKey, meal) => {
-        let triggeredAlerts: NutritionSafetyAlert[] = [];
+            return { activeUserId: userId };
+          });
+        },
 
-        set((state) =>
-          updateActiveUser(state, (activeUser) => {
-            const nextState = appendMealToDailyLogs(
-              activeUser.dailyLogs,
-              activeUser.profile,
-              dayKey,
-              meal,
+        createUser: ({ name, accent }) => {
+          let result: CreateUserResult = {
+            ok: false,
+            reason: "invalid",
+          };
+
+          set((state) => {
+            const trimmedName = sanitizeUserName(name, "");
+            if (!trimmedName) {
+              return state;
+            }
+
+            if (Object.keys(state.users).length >= MAX_USERS) {
+              result = {
+                ok: false,
+                reason: "limit",
+              };
+              return state;
+            }
+
+            const userId = crypto.randomUUID();
+            const user = createUserData(
+              {
+                id: userId,
+                name: trimmedName,
+                accent:
+                  accent ??
+                  USER_ACCENT_TOKENS[
+                    Object.keys(state.users).length % USER_ACCENT_TOKENS.length
+                  ],
+              },
+              Object.keys(state.users).length,
             );
 
-            triggeredAlerts = nextState.alerts;
+            result = {
+              ok: true,
+              id: userId,
+            };
 
             return {
-              ...activeUser,
-              dailyLogs: nextState.dailyLogs,
+              users: {
+                ...state.users,
+                [userId]: user,
+              },
+              activeUserId: userId,
             };
-          }),
-        );
+          });
 
-        return triggeredAlerts;
-      },
+          return result;
+        },
 
-      removeMealLog: (dayKey, mealId) =>
-        set((state) =>
-          updateActiveUser(state, (activeUser) => ({
-            ...activeUser,
-            dailyLogs: removeMealFromDailyLogs(
-              activeUser.dailyLogs,
-              dayKey,
-              mealId,
-            ),
-          })),
-        ),
-
-      saveMealAsFavorite: (meal) => {
-        let wasAdded = false;
-
-        set((state) =>
-          updateActiveUser(state, (activeUser) => {
-            const normalizedMeal = normalizeMealItem(meal);
-            const signature = createMealSignature(normalizedMeal);
-
-            if (
-              activeUser.savedMeals.some(
-                (savedMeal) => savedMeal.signature === signature,
-              )
-            ) {
-              return activeUser;
-            }
-
-            wasAdded = true;
-
-            return {
+        updateActiveUserIdentity: (details) =>
+          set((state) =>
+            updateActiveUser(state, (activeUser) => ({
               ...activeUser,
-              savedMeals: [
-                {
-                  id: crypto.randomUUID(),
-                  savedAt: new Date().toISOString(),
-                  signature,
-                  meal: normalizedMeal,
-                },
-                ...activeUser.savedMeals,
-              ],
-            };
-          }),
-        );
+              name:
+                details.name === undefined
+                  ? activeUser.name
+                  : sanitizeUserName(details.name, activeUser.name),
+              accent:
+                details.accent === undefined
+                  ? activeUser.accent
+                  : normalizeAccent(details.accent),
+            })),
+          ),
 
-        return wasAdded;
-      },
+        setUserProfile: (profile) =>
+          set((state) =>
+            updateActiveUser(state, (activeUser) => ({
+              ...activeUser,
+              profile: buildUserProfile(profile),
+            })),
+          ),
 
-      removeSavedMeal: (savedMealId) =>
-        set((state) =>
-          updateActiveUser(state, (activeUser) => ({
-            ...activeUser,
-            savedMeals: activeUser.savedMeals.filter(
-              (savedMeal) => savedMeal.id !== savedMealId,
-            ),
-          })),
-        ),
+        updateProfileDetails: (details) =>
+          set((state) =>
+            updateActiveUser(state, (activeUser) => {
+              if (!activeUser.profile) {
+                return activeUser;
+              }
 
-      addSavedMealToDay: (dayKey, savedMealId) => {
-        const activeUser = getActiveUserFromState(get());
-        const savedMeal = activeUser?.savedMeals.find(
-          (item) => item.id === savedMealId,
-        );
+              return {
+                ...activeUser,
+                profile: buildUserProfile({
+                  age: details.age ?? activeUser.profile.age,
+                  gender: details.gender ?? activeUser.profile.gender,
+                  height: details.height ?? activeUser.profile.height,
+                  weight: details.weight ?? activeUser.profile.weight,
+                  activityLevel:
+                    details.activityLevel ?? activeUser.profile.activityLevel,
+                  goalDeficit:
+                    details.goalDeficit ?? activeUser.profile.goalDeficit,
+                  isSmoker: details.isSmoker ?? activeUser.profile.isSmoker,
+                }),
+              };
+            }),
+          ),
 
-        if (!savedMeal) {
-          return [];
-        }
+        addMealLog: (dayKey, meal) => {
+          let triggeredAlerts: NutritionSafetyAlert[] = [];
 
-        return get().addMealLog(dayKey, {
-          ...savedMeal.meal,
-          id: crypto.randomUUID(),
-          timestamp: new Date().toISOString(),
-        });
-      },
-    }),
-    {
-      name: "health-app-storage",
-      version: 4,
-      migrate: (persistedState) => migratePersistedState(persistedState),
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
-      },
-      partialize: (state) => ({
-        users: state.users,
-        activeUserId: state.activeUserId,
+          set((state) =>
+            updateActiveUser(state, (activeUser) => {
+              const nextState = appendMealToDailyLogs(
+                activeUser.dailyLogs,
+                activeUser.profile,
+                dayKey,
+                meal,
+              );
+
+              triggeredAlerts = nextState.alerts;
+
+              return {
+                ...activeUser,
+                dailyLogs: nextState.dailyLogs,
+              };
+            }),
+          );
+
+          return triggeredAlerts;
+        },
+
+        removeMealLog: (dayKey, mealId) =>
+          set((state) =>
+            updateActiveUser(state, (activeUser) => ({
+              ...activeUser,
+              dailyLogs: removeMealFromDailyLogs(
+                activeUser.dailyLogs,
+                dayKey,
+                mealId,
+              ),
+            })),
+          ),
+
+        saveMealAsFavorite: (meal) => {
+          let wasAdded = false;
+
+          set((state) =>
+            updateActiveUser(state, (activeUser) => {
+              const normalizedMeal = normalizeMealItem(meal);
+              const signature = createMealSignature(normalizedMeal);
+
+              if (
+                activeUser.savedMeals.some(
+                  (savedMeal) => savedMeal.signature === signature,
+                )
+              ) {
+                return activeUser;
+              }
+
+              wasAdded = true;
+
+              return {
+                ...activeUser,
+                savedMeals: [
+                  {
+                    id: crypto.randomUUID(),
+                    savedAt: new Date().toISOString(),
+                    signature,
+                    meal: normalizedMeal,
+                  },
+                  ...activeUser.savedMeals,
+                ],
+              };
+            }),
+          );
+
+          return wasAdded;
+        },
+
+        removeSavedMeal: (savedMealId) =>
+          set((state) =>
+            updateActiveUser(state, (activeUser) => ({
+              ...activeUser,
+              savedMeals: activeUser.savedMeals.filter(
+                (savedMeal) => savedMeal.id !== savedMealId,
+              ),
+            })),
+          ),
+
+        addSavedMealToDay: (dayKey, savedMealId) => {
+          const activeUser = getActiveUserFromState(get());
+          const savedMeal = activeUser?.savedMeals.find(
+            (item) => item.id === savedMealId,
+          );
+
+          if (!savedMeal) {
+            return [];
+          }
+
+          return get().addMealLog(dayKey, {
+            ...savedMeal.meal,
+            id: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+          });
+        },
       }),
-    },
+      {
+        name: "health-app-storage",
+        version: 4,
+        migrate: (persistedState) => migratePersistedState(persistedState),
+        onRehydrateStorage: () => (state) => {
+          state?.setHasHydrated(true);
+        },
+        partialize: (state) => ({
+          users: state.users,
+          activeUserId: state.activeUserId,
+        }),
+      },
+    ),
   ),
 );
 

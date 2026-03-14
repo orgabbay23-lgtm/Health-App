@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, Users } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { Card, CardContent } from "../../components/ui/card";
 import { MAX_USERS, useAppStore } from "../../store";
 import { CreateUserModal } from "./CreateUserModal";
@@ -9,7 +10,7 @@ import { accentThemeMap } from "./user-theme";
 
 export function WelcomeScreen() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const users = useAppStore((state) => Object.values(state.users));
+  const users = useAppStore(useShallow((state) => Object.values(state.users)));
   const selectUser = useAppStore((state) => state.selectUser);
 
   return (

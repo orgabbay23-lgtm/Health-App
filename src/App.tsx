@@ -8,6 +8,7 @@ function App() {
   const hasHydrated = useAppStore((state) => state._hasHydrated);
   const activeUser = useActiveUser();
 
+  // 1. Loading Guard: Show a clean initialization view until hydration is complete
   if (!hasHydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(250,245,235,0.95),_rgba(255,255,255,0.96)_42%,_rgba(237,246,255,0.95)_80%)]">
@@ -21,16 +22,17 @@ function App() {
           }}
           className="rounded-full border border-white/70 bg-white/90 px-6 py-4 text-base font-semibold text-slate-600 shadow-[0_18px_50px_rgba(15,23,42,0.08)]"
         >
-          טוען נתונים...
+          מתחבר למסד הנתונים...
         </motion.div>
       </div>
     );
   }
 
+  // 2. Routing Logic: Decoupled from render side-effects
   let screen = <WelcomeScreen />;
   let key = "welcome";
 
-  if (activeUser) {
+  if (activeUser?.id) {
     if (activeUser.profile) {
       screen = <Dashboard />;
       key = "dashboard";

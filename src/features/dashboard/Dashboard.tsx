@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, Home, UserRound } from "lucide-react";
 import { toast } from "sonner";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "../../components/ui/button";
 import {
   EMPTY_MICRONUTRIENTS,
@@ -115,10 +116,12 @@ export function Dashboard() {
   const [referenceDate, setReferenceDate] = useState(() => getLogicalDate());
 
   const activeUser = useActiveUser();
-  const users = useAppStore((state) => Object.values(state.users));
+  const users = useAppStore(useShallow((state) => Object.values(state.users)));
   const removeMealLog = useAppStore((state) => state.removeMealLog);
   const saveMealAsFavorite = useAppStore((state) => state.saveMealAsFavorite);
   const selectUser = useAppStore((state) => state.selectUser);
+  
+  // Guard against missing profile/user during state transitions
   const userProfile = activeUser?.profile ?? null;
   const dailyLogs = activeUser?.dailyLogs ?? EMPTY_DAILY_LOGS;
   const savedMeals = activeUser?.savedMeals ?? EMPTY_SAVED_MEALS;
