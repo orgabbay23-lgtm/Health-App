@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
-import { useShallow } from "zustand/react/shallow";
 import {
   ActivityLevel,
   EMPTY_MICRONUTRIENTS,
