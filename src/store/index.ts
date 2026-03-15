@@ -258,6 +258,7 @@ interface AppState {
   dailyLogs: Record<string, DailyLog>;
   savedMeals: SavedMeal[];
   isLoadingData: boolean;
+  isInitialized: boolean;
   userId: string | null;
 
   fetchUserData: (userId: string) => Promise<void>;
@@ -274,10 +275,11 @@ interface AppState {
 
 export const useAppStore = create<AppState>()((set, get) => ({
   profile: null,
-  name: "משתמש",
+  name: "",
   dailyLogs: {},
   savedMeals: [],
   isLoadingData: false,
+  isInitialized: false,
   userId: null,
 
   fetchUserData: async (userId: string) => {
@@ -291,10 +293,19 @@ export const useAppStore = create<AppState>()((set, get) => ({
       ]);
 
       let profile = null;
-      let name = "משתמש";
+      let name = "";
+
+      const metadataName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+      const fallbackName = user?.email?.split('@')[0] || "";
 
       if (profileRes.data) {
-        name = profileRes.data.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || "משתמש";
+        // If profile name is missing or the default placeholder, try to sync from metadata
+        if (!profileRes.data.name || profileRes.data.name === "משתמש") {
+           name = metadataName || fallbackName || "";
+        } else {
+           name = profileRes.data.name;
+        }
+        
         profile = normalizeUserProfile({
           age: profileRes.data.age,
           gender: profileRes.data.gender,
@@ -306,7 +317,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         });
       } else {
         // Fallback for user without profile yet
-        name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "משתמש";
+        name = metadataName || fallbackName || "";
       }
 
       const dailyLogs: Record<string, DailyLog> = {};
@@ -332,21 +343,22 @@ export const useAppStore = create<AppState>()((set, get) => ({
         });
       }
 
-      set({ profile, name, dailyLogs, savedMeals });
+      set({ profile, name, dailyLogs, savedMeals, isInitialized: true });
     } catch (error) {
       console.error("Error fetching user data", error);
+      set({ isInitialized: true }); // Still mark as initialized to allow UI to show
     } finally {
       set({ isLoadingData: false });
     }
   },
 
   clearUserData: () => {
-    set({ profile: null, name: "משתמש", dailyLogs: {}, savedMeals: [], userId: null });
+    set({ profile: null, name: "", dailyLogs: {}, savedMeals: [], userId: null, isInitialized: false });
   },
 
   setUserProfile: async (profileInput) => {
-    const { userId, name } = get();
-    if (!userId) return;
+    const { userId, name, isInitialized } = get();
+    if (!userId || !isInitialized) return;
     const profile = buildUserProfile(profileInput);
     set({ profile });
 
@@ -365,14 +377,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   updateProfileDetails: async (details) => {
-    const { profile, setUserProfile } = get();
-    if (!profile) return;
+    const { profile, setUserProfile, isInitialized } = get();
+    if (!profile || !isInitialized) return;
     await setUserProfile({ ...profile, ...details });
   },
 
   updateProfileName: async (name: string) => {
-    const { userId, profile } = get();
-    if (!userId) return;
+    const { userId, isInitialized } = get();
+    if (!userId || !isInitialized) return;
     
     set({ name });
     
@@ -381,13 +393,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
       name,
       updated_at: new Date().toISOString()
     });
-
-    // If profile exists, ensure name is kept in sync during next profile update
   },
 
   addMealLog: async (dayKey, meal) => {
-    const { dailyLogs, profile, userId } = get();
-    if (!userId) return [];
+    const { dailyLogs, profile, userId, isInitialized } = get();
+    if (!userId || !isInitialized) return [];
     
     const { dailyLogs: nextLogs, alerts } = appendMealToDailyLogs(dailyLogs, profile, dayKey, meal);
     set({ dailyLogs: nextLogs });
@@ -405,8 +415,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   removeMealLog: async (dayKey, mealId) => {
-    const { dailyLogs, userId } = get();
-    if (!userId) return;
+    const { dailyLogs, userId, isInitialized } = get();
+    if (!userId || !isInitialized) return;
 
     const nextLogs = removeMealFromDailyLogs(dailyLogs, dayKey, mealId);
     set({ dailyLogs: nextLogs });
@@ -426,8 +436,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   saveMealAsFavorite: async (meal) => {
-    const { savedMeals, userId } = get();
-    if (!userId) return false;
+    const { savedMeals, userId, isInitialized } = get();
+    if (!userId || !isInitialized) return false;
 
     const normalizedMeal = normalizeMealItem(meal);
     const signature = createMealSignature(normalizedMeal);
@@ -458,15 +468,17 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   removeSavedMeal: async (savedMealId) => {
-    const { savedMeals, userId } = get();
-    if (!userId) return;
+    const { savedMeals, userId, isInitialized } = get();
+    if (!userId || !isInitialized) return;
 
     set({ savedMeals: savedMeals.filter(sm => sm.id !== savedMealId) });
     await supabase.from('saved_meals').delete().eq('id', savedMealId).eq('user_id', userId);
   },
 
   addSavedMealToDay: async (dayKey, savedMealId) => {
-    const { savedMeals } = get();
+    const { savedMeals, isInitialized } = get();
+    if (!isInitialized) return [];
+    
     const savedMeal = savedMeals.find((sm) => sm.id === savedMealId);
     if (!savedMeal) return [];
 
@@ -476,6 +488,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       timestamp: new Date().toISOString(),
     });
   }
+}));
 }));
 
 export function useActiveUser() {

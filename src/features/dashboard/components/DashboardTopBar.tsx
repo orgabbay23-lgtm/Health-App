@@ -33,7 +33,7 @@ export function DashboardTopBar({
             <UserAvatar name={activeUser.name} accent={activeUser.accent} size="md" />
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold text-slate-950">
-                {activeUser.name}
+                {activeUser.name || "טוען..."}
               </h1>
               <p className="text-sm text-slate-500" dir="ltr">
                 {selectedDayKey}

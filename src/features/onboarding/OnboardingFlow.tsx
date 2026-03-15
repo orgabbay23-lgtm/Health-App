@@ -69,7 +69,7 @@ export function OnboardingFlow() {
                 <div className="space-y-1">
                   <p className="text-sm text-slate-500">פרופיל נבחר</p>
                   <h1 className="text-3xl font-semibold text-slate-950">
-                    {activeUser.name}
+                    {activeUser.name || "טוען..."}
                   </h1>
                 </div>
               </div>

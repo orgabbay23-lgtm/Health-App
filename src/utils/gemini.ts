@@ -122,7 +122,7 @@ const SYSTEM_INSTRUCTION =
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
-const getApiKey = () => localStorage.getItem('gemini_personal_api_key') || import.meta.env.VITE_GEMINI_API_KEY;
+const getApiKey = () => localStorage.getItem('gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY;
 
 export async function parseMealDescription(
   description: string,
@@ -167,7 +167,7 @@ export async function parseMealDescription(
       error?.message?.toLowerCase().includes("api key not found");
 
     if (isAuthError) {
-      localStorage.removeItem('gemini_personal_api_key');
+      localStorage.removeItem('gemini_api_key');
       throw new Error("API_KEY_INVALID");
     }
 
