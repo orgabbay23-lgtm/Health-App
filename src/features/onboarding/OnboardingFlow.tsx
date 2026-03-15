@@ -24,7 +24,7 @@ export function OnboardingFlow() {
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: activeUser.name === "משתמש" ? "" : activeUser.name,
+      name: activeUser?.name === "משתמש" ? "" : (activeUser?.name || ""),
       age: 30,
       gender: "male",
       height: 170,

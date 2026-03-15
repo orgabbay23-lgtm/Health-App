@@ -43,11 +43,6 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
     }
   };
 
-  const handleClear = () => {
-    // Note: Clearing from Vault might require another RPC if desired, but for now we just clear local state.
-    setKey("");
-  };
-
   return (
     <ModalShell isOpen={isOpen} onClose={onClose} title="הגדרת מפתח Gemini API">
       <div className="space-y-4 p-4" dir="rtl">

@@ -376,10 +376,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   updateProfileDetails: async (details) => {
-    const { profile, setUserProfile, name } = get();
+    const { profile, setUserProfile } = get();
     if (!profile) return;
     try {
-      await setUserProfile({ name: name || "משתמש", ...profile, ...details });
+      await setUserProfile({ ...profile, ...details });
     } catch (error) {
       // Error is already handled inside setUserProfile
     }
