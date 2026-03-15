@@ -262,11 +262,13 @@ interface AppState {
   savedMeals: SavedMeal[];
   isLoadingData: boolean;
   isAppReady: boolean;
+  _hasHydrated: boolean;
   userId: string | null;
   _lastFetchTime: number;
 
   fetchUserData: (userId: string, isSilent?: boolean) => Promise<void>;
   setAppReady: (ready: boolean) => void;
+  setHasHydrated: (hydrated: boolean) => void;
   clearUserData: () => void;
   setUserProfile: (profile: NutritionProfileInput) => Promise<void>;
   updateProfileDetails: (details: Partial<NutritionProfileInput>) => Promise<void>;
@@ -286,6 +288,7 @@ export const useAppStore = create<AppState>()(
       savedMeals: [],
       isLoadingData: false,
       isAppReady: false,
+      _hasHydrated: false,
       userId: null,
       _lastFetchTime: 0,
 
@@ -370,6 +373,10 @@ export const useAppStore = create<AppState>()(
         if (ready) {
           set({ isAppReady: true });
         }
+      },
+
+      setHasHydrated: (hydrated: boolean) => {
+        set({ _hasHydrated: hydrated });
       },
 
       clearUserData: () => {
@@ -519,6 +526,11 @@ export const useAppStore = create<AppState>()(
     savedMeals: state.savedMeals,
     userId: state.userId,
   }),
+  onRehydrateStorage: () => (state) => {
+    if (state) {
+      state.setHasHydrated(true);
+    }
+  },
 }
 )
 );

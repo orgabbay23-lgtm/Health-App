@@ -56,8 +56,13 @@
 
   html {
     direction: rtl;
-    scroll-behavior: smooth;
-    overscroll-behavior-y: none;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
     @apply bg-background;
   }
@@ -65,16 +70,19 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Assistant', 'Heebo', system-ui, sans-serif;
-    min-height: 100vh;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
-    overscroll-behavior: none;
   }
 
   #root {
-    min-height: 100vh;
+    height: 100%;
   }
 }
 
@@ -94,6 +102,36 @@
   .neo-blur {
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* iOS Immutable App Shell — position:fixed container detached from Safari's
+     dynamic viewport units. Prevents dvh resize events from triggering layout
+     thrashing and FLIP recalculation failures in Framer Motion. */
+  .ios-app-shell {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    background-color: hsl(var(--background));
+  }
+
+  /* Internal scrollable canvas — all vertical scrolling occurs here,
+     isolating it from the browser chrome so the address bar never
+     triggers resize events during scroll. */
+  .ios-scroll-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Animated Mesh Background Blobs */

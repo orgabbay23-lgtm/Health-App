@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { CalendarDays, Home, Plus, UserRound } from "lucide-react";
 import { cn } from "../../../utils/utils";
 import type { DashboardScreen } from "../types";
+import { SafeLayoutMotion } from "../../../components/SafeLayoutMotion";
 
 interface BottomNavigationProps {
   activeScreen: DashboardScreen;
@@ -59,7 +60,7 @@ export function BottomNavigation({
                 }
               >
                 {active && (
-                  <motion.div
+                  <SafeLayoutMotion
                     layoutId="active-nav-bg"
                     className="absolute inset-0 bg-slate-900/5 rounded-2xl -z-10"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
@@ -75,9 +76,9 @@ export function BottomNavigation({
                     )} 
                   />
                   {active && (
-                    <motion.div 
+                    <SafeLayoutMotion
                       layoutId="active-nav-dot"
-                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-slate-950" 
+                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-slate-950"
                     />
                   )}
                 </div>

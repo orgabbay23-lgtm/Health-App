@@ -106,3 +106,24 @@
         1.  **Strict One-Way Latch:** Moved `isAppReady` to the Zustand store. Once set to `true`, it is IMMUTABLE and cannot be reset except by an explicit `SIGNED_OUT` event.
         2.  **Aggressive Auth Filtering:** Updated `onAuthStateChange` to silently handle `TOKEN_REFRESHED` and `USER_UPDATED`. If a profile already exists in the store, background syncs are strictly non-blocking and skip all loading state toggles.
     * **Standard:** **iOS Background Visibility/Token Refresh Rule:** Auth listeners must silently ignore `TOKEN_REFRESHED` for UI blocking/state resets to prevent Safari remounts. Initialization states must be implemented as one-way latches in persistent storage.
+
+## 8. iOS PWA Architecture (Immutable Shell & Visibility-Aware Motion)
+
+* **Immutable CSS Shell (iOS Scroll Lock):**
+    * The app uses a dual-layer layout: `.ios-app-shell` (a `position: fixed` container with safe-area-inset padding) wraps `.ios-scroll-canvas` (the sole scrollable element).
+    * `html` and `body` are locked (`overflow: hidden`, `height: 100%`, `width: 100%`, `overscroll-behavior: none`). All vertical scrolling is delegated exclusively to `.ios-scroll-canvas`.
+    * This architecture prevents Safari's dynamic viewport units (`dvh`) from triggering resize events during address bar transitions, keyboard invocation, or tab focus changes.
+    * **Rule:** Never use `min-h-screen`, `h-screen`, or `100vh`/`100dvh` on root layout containers. Use the shell classes instead.
+
+* **SafeLayoutMotion Component:**
+    * All Framer Motion elements that use `layout` or `layoutId` props MUST use `<SafeLayoutMotion>` (from `src/components/SafeLayoutMotion.tsx`) instead of raw `<motion.div>`.
+    * This wrapper strips `layout` and `layoutId` when `document.visibilityState` is `hidden`, preventing FLIP bounding-box calculations against corrupted DOM metrics during iOS Safari's freeze-thaw cycle.
+    * The visibility state is tracked via `useIsVisible()` hook (`src/hooks/useVisibilityState.ts`) using `useSyncExternalStore` for tear-free concurrent rendering.
+
+* **Zustand Hydration Gate:**
+    * The store exposes `_hasHydrated` (set via `onRehydrateStorage` callback). `App.tsx` gates rendering on both `_hasHydrated` and `isAppReady` to prevent Flash of Unstyled Content (FOUC) from localStorage desync during concurrent renders.
+
+* **PWA Manifest & Meta Tags:**
+    * `manifest.json` enforces `"display": "standalone"` with `display_override` fallback chain.
+    * Viewport meta uses `viewport-fit=cover`, `maximum-scale=1.0`, `user-scalable=no`.
+    * Theme colors are media-query-split for light/dark scheme support.

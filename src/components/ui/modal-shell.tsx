@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { Button } from "./button";
 import { cn } from "../../utils/utils";
+import { SafeLayoutMotion } from "../SafeLayoutMotion";
 
 interface ModalShellProps {
   isOpen: boolean;
@@ -79,15 +80,15 @@ export function ModalShell({
             onClick={onClose}
           />
           
-          <motion.div
+          <SafeLayoutMotion
             ref={modalRef}
             layout
             initial={{ opacity: 0, y: "100%", scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: "100%", scale: 0.95 }}
-            transition={{ 
-              type: "spring", 
-              damping: 28, 
+            transition={{
+              type: "spring",
+              damping: 28,
               stiffness: 320,
               mass: 0.8
             }}
@@ -142,7 +143,7 @@ export function ModalShell({
             <div className="max-h-[calc(92vh-120px)] overflow-y-auto px-8 pb-10 md:max-h-[calc(90vh-140px)]">
               {children}
             </div>
-          </motion.div>
+          </SafeLayoutMotion>
         </div>
       ) : null}
     </AnimatePresence>
