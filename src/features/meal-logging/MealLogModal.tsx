@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Trash2, Plus, Heart, WandSparkles } from "lucide-react";
+import { Trash2, Plus, Heart, WandSparkles, Pencil } from "lucide-react";
 import { cn } from "../../utils/utils";
 import { toast } from "sonner";
 import { useActiveSavedMeals, useAppStore } from "../../store";
@@ -21,6 +21,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../components/ui/tabs";
+import { EditFavoriteModal } from "./EditFavoriteModal";
+import { FoodTypeahead } from "./FoodTypeahead";
+import type { SavedMeal } from "../../store";
 
 const aiSchema = z.object({
   description: z.string().min(2, "תיאור הארוחה חייב להכיל לפחות 2 תווים"),
@@ -57,6 +60,7 @@ export function MealLogModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isByokOpen, setIsByokOpen] = useState(false);
   const [pendingDescription, setPendingDescription] = useState<string | null>(null);
+  const [editingMeal, setEditingMeal] = useState<SavedMeal | null>(null);
   
   const addMealLog = useAppStore((state) => state.addMealLog);
   const savedMeals = useActiveSavedMeals();
@@ -72,17 +76,19 @@ export function MealLogModal({
     resolver: zodResolver(aiSchema),
   });
 
-  const {
-    control: manualControl,
-    register: registerManual,
-    handleSubmit: handleManualSubmit,
-    reset: resetManual,
-  } = useForm<ManualFormValues>({
+  const manualFormMethods = useForm<ManualFormValues>({
     resolver: zodResolver(manualSchema),
     defaultValues: {
       ingredients: [{ foodName: "", quantity: 1, unit: "גרם" }],
     },
   });
+
+  const {
+    control: manualControl,
+    register: registerManual,
+    handleSubmit: handleManualSubmit,
+    reset: resetManual,
+  } = manualFormMethods;
 
   const { fields, append, remove } = useFieldArray({
     control: manualControl,
@@ -247,40 +253,37 @@ export function MealLogModal({
             </TabsContent>
 
             <TabsContent value="manual" className="mt-8">
-              <motion.form
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                onSubmit={handleManualSubmit(onManualSubmit)}
-                className="space-y-6"
-              >
-                <div className="space-y-4">
-                  {fields.map((field, index) => (
-                    <motion.div 
-                      key={field.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-end gap-3 p-4 rounded-3xl bg-slate-50/50 border border-slate-100"
-                    >
-                      <div className="flex-1 space-y-2">
-                        <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">מאכל</Label>
-                        <Input
-                          placeholder="שם המאכל"
-                          className="bg-white border-none shadow-sm rounded-xl"
-                          {...registerManual(`ingredients.${index}.foodName`)}
-                        />
-                      </div>
-                      <div className="w-20 space-y-2">
-                        <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">כמות</Label>
-                        <Input
-                          type="number"
-                          className="bg-white border-none shadow-sm rounded-xl"
-                          {...registerManual(`ingredients.${index}.quantity`, {
-                            valueAsNumber: true,
-                          })}
-                        />
-                      </div>
+              <FormProvider {...manualFormMethods}>
+                <motion.form
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  onSubmit={handleManualSubmit(onManualSubmit)}
+                  className="space-y-6"
+                >
+                  <div className="space-y-4">
+                    {fields.map((field, index) => (
+                      <motion.div 
+                        key={field.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="flex items-end gap-3 p-4 rounded-3xl bg-slate-50/50 border border-slate-100"
+                      >
+                        <div className="flex-1 space-y-2">
+                          <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">מאכל</Label>
+                          <FoodTypeahead index={index} />
+                        </div>
+                        <div className="w-20 space-y-2">
+                          <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">כמות</Label>
+                          <Input
+                            type="number"
+                            className="bg-white border-none shadow-sm rounded-xl"
+                            {...registerManual(`ingredients.${index}.quantity`, {
+                              valueAsNumber: true,
+                            })}
+                          />
+                        </div>
                       <div className="w-28 space-y-2">
                         <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">יחידה</Label>
                         <Select
@@ -323,6 +326,7 @@ export function MealLogModal({
                   {isSubmitting ? "מעבד..." : "שמור ארוחה"}
                 </Button>
               </motion.form>
+              </FormProvider>
             </TabsContent>
 
             <TabsContent value="saved" className="mt-8">
@@ -362,17 +366,30 @@ export function MealLogModal({
                           </p>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeSavedMeal(saved.id);
-                        }}
-                      >
-                        <Trash2 size={18} />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-slate-200 hover:text-blue-500 hover:bg-blue-50 rounded-xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingMeal(saved);
+                          }}
+                        >
+                          <Pencil size={16} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeSavedMeal(saved.id);
+                          }}
+                        >
+                          <Trash2 size={18} />
+                        </Button>
+                      </div>
                     </motion.div>
                   ))
                 )}
@@ -386,6 +403,12 @@ export function MealLogModal({
         isOpen={isByokOpen}
         onClose={() => setIsByokOpen(false)}
         onSuccess={handleByokSuccess}
+      />
+
+      <EditFavoriteModal
+        isOpen={editingMeal !== null}
+        onClose={() => setEditingMeal(null)}
+        savedMeal={editingMeal}
       />
     </>
   );

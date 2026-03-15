@@ -276,6 +276,7 @@ interface AppState {
   removeMealLog: (dayKey: string, mealId: string) => Promise<void>;
   saveMealAsFavorite: (meal: MealItem) => Promise<boolean>;
   removeSavedMeal: (savedMealId: string) => Promise<void>;
+  updateSavedMeal: (savedMealId: string, updates: { meal_name: string; meal: MealItem }) => Promise<boolean>;
   addSavedMealToDay: (dayKey: string, savedMealId: string) => Promise<NutritionSafetyAlert[]>;
 }
 
@@ -553,6 +554,44 @@ export const useAppStore = create<AppState>()(
       set({ savedMeals: previousSavedMeals });
       toast.error("שגיאה במחיקת הארוחה מהמועדפים. השינוי בוטל.");
     }
+  },
+
+  updateSavedMeal: async (savedMealId, updates) => {
+    const { savedMeals, userId } = get();
+    if (!userId) return false;
+
+    const index = savedMeals.findIndex(sm => sm.id === savedMealId);
+    if (index === -1) return false;
+
+    const previousSavedMeals = savedMeals;
+    const normalizedMeal = normalizeMealItem(updates.meal);
+    const newSignature = createMealSignature(normalizedMeal);
+
+    const updatedSavedMeal: SavedMeal = {
+      ...savedMeals[index],
+      signature: newSignature,
+      meal: { ...normalizedMeal, meal_name: updates.meal_name },
+    };
+
+    const nextSavedMeals = [...savedMeals];
+    nextSavedMeals[index] = updatedSavedMeal;
+    set({ savedMeals: nextSavedMeals });
+
+    const { error } = await supabase.from('saved_meals').update({
+      name: updates.meal_name,
+      ingredients: [updatedSavedMeal.meal],
+      updated_at: new Date().toISOString(),
+    }).eq('id', savedMealId).eq('user_id', userId);
+
+    if (error) {
+      console.error("Error updating saved meal", error);
+      set({ savedMeals: previousSavedMeals });
+      toast.error("שגיאה בעדכון הארוחה במועדפים. השינוי בוטל.");
+      return false;
+    }
+
+    toast.success("הארוחה עודכנה בהצלחה");
+    return true;
   },
 
   addSavedMealToDay: async (dayKey, savedMealId) => {

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, Home, UserRound } from "lucide-react";
+import { CalendarDays, Home, Plus, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../utils/utils";
@@ -231,6 +231,21 @@ export function Dashboard() {
                 </motion.div>
               );
             })}
+            
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="md:ms-2"
+            >
+              <Button
+                type="button"
+                className="rounded-full px-6 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200/50 border-none"
+                onClick={() => setIsMealModalOpen(true)}
+              >
+                <Plus size={18} className="ms-2" />
+                <span className="font-bold">הוספת ארוחה</span>
+              </Button>
+            </motion.div>
           </div>
 
           <AnimatePresence mode="wait">

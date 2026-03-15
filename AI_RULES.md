@@ -187,17 +187,44 @@
 
 ## 13. Clinical Constants (RDA Targets - March 2026)
 The following 14 micronutrient RDA values are strictly enforced based on clinical truth tables for adults (>13y):
-- **Iodine (éåã):** 150mcg (Male/Female)
-- **Zinc (àáõ):** 11mg (Male) | 8mg (Female)
-- **Folic Acid (çåîöä ôåìéú):** 400mcg (Male/Female)
+- **Iodine (ï¿½ï¿½ï¿½):** 150mcg (Male/Female)
+- **Zinc (ï¿½ï¿½ï¿½):** 11mg (Male) | 8mg (Female)
+- **Folic Acid (ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½):** 400mcg (Male/Female)
 - **Vitamin K:** 120mcg (Male) | 90mcg (Female)
-- **Selenium (ñìðéåí):** 55mcg (Male/Female)
+- **Selenium (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½):** 55mcg (Male/Female)
 - **Vitamin B6:** 1.3mg (Male/Female)
 - **Vitamin B3 (Niacin):** 16mg (Male) | 14mg (Female)
 - **Vitamin B1 (Thiamine):** 1.2mg (Male) | 1.1mg (Female)
 - **Vitamin B2 (Riboflavin):** 1.3mg (Male) | 1.1mg (Female)
 - **Vitamin B5:** 5mg (Male/Female)
 - **Biotin (B7):** 30mcg (Male/Female)
-- **Copper (ðçåùú):** 900mcg (0.9mg) (Male/Female)
-- **Manganese (îðâï):** 2.3mg (Male) | 1.8mg (Female)
-- **Chromium (ëøåí):** 35mcg (Male) | 25mcg (Female)
+- **Copper (ï¿½ï¿½ï¿½ï¿½ï¿½):** 900mcg (0.9mg) (Male/Female)
+- **Manganese (ï¿½ï¿½ï¿½ï¿½):** 2.3mg (Male) | 1.8mg (Female)
+- **Chromium (ï¿½ï¿½ï¿½ï¿½):** 35mcg (Male) | 25mcg (Female)
+
+## 14. Favorites Template Logic (Updated March 2026)
+
+* **Template vs. Log Separation (CRITICAL):**
+    * Saved Meals (Favorites) are **templates** stored in the `saved_meals` table. They are independent of historical meal logs in `daily_logs`.
+    * When a user edits a Favorite via `updateSavedMeal`, **only the template** in `saved_meals` is updated. Historical `daily_logs` entries that were previously created from that template are NEVER retroactively modified.
+    * `addSavedMealToDay` creates a **new copy** of the template's data (with a fresh `id` and `timestamp`) in the daily log. After creation, the logged meal has no live link back to the template.
+
+* **`updateSavedMeal` Store Action:**
+    * Accepts `savedMealId` and an object `{ meal_name, meal }`.
+    * Performs optimistic update with rollback on Supabase failure.
+    * Recalculates `signature` from the updated meal data.
+    * Updates only `saved_meals` table (`name`, `ingredients`, `updated_at`). Does NOT touch `daily_logs`.
+
+* **`EditFavoriteModal` Component:**
+    * Located at `src/features/meal-logging/EditFavoriteModal.tsx`.
+    * Allows renaming, editing ingredient list (add/remove/modify quantities), and shows real-time macro recalculation.
+    * Follows Glassmorphism aesthetic, RTL logical properties (`ms-2`), minimum 13px font labels, and Immutable Shell constraints (no `h-screen`).
+    * Accessed via pencil icon in the MealLogModal's "Saved" tab.
+
+* **Rule:** Any future feature that modifies Favorites must respect the template/log boundary. Never write to `daily_logs` when updating a Favorite template, and never write to `saved_meals` when editing a historical log.
+
+## 15. Smart Autocomplete Architecture (Updated March 2026)
+* **Food Database:** The project contains a local static database of 1000 common Israeli food items (src/utils/food-suggestions.ts) to enable rapid offline-first autocompletion without network roundtrips.
+* **Search Priority:** The Typeahead component (FoodTypeahead.tsx) prioritizes historical user meals (dailyLogs) before searching the static 1000-item database, ensuring personal favorites bubble to the top.
+* **UI/UX:** The suggestion dropdown utilizes ramer-motion for smooth entry/exit, adheres to Glassmorphism principles (g-white/80 backdrop-blur-xl), uses ms-2 and 	ext-right for RTL correctness, and features a minimum font size of 14px (	ext-sm) for accessibility.
+* **Stability:** The dropdown is rendered within the normal layout but utilizes bsolute z-[100] to avoid clipping, complying with absolute overlays without triggering viewport shifts on iOS.
