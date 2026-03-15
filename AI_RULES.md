@@ -47,8 +47,17 @@
 - ✅ UI/UX Overhaul: Premium Glassmorphism & Native feel established.
 - ✅ Supabase Vault & BYOK: Fully operational and secure.
 - 🔄 **CURRENT PHASE:** Infusing vibrant, purposeful color into the UI to make it "alive" while maintaining a premium feel. Focusing on nutrient color-coding and dynamic visual feedback.
-## 5. Bug Fix History & Lessons Learned
+## 6. Native PWA & Mobile UX
+* **Theme Sync:** `index.html` must include `meta name="theme-color"` matching the primary background (`#f8fafc`) and `apple-mobile-web-app-status-bar-style: black-translucent`.
+* **Safe Area Insets:** Use `pt-safe-top` and `pb-safe-bottom` (defined in `tailwind.config.js`) for layout containers and floating bars (like Bottom Navigation) to prevent overlap with device hardware (notches/home indicators).
+* **Scroll Hygiene:** Apply `overscroll-behavior: none` to `html` and `body` to disable browser pull-to-refresh/rubber-banding, ensuring a "one continuous surface" feel.
+
+## 7. Bug Fix History & Lessons Learned
 * **2026-03-15: Smart Tips Visibility Fix**
     * **Issue:** "Smart Tips" were being clipped by `overflow: hidden` on parent cards or overlapped by other dashboard layers despite high Z-index.
     * **Fix:** Refactored `TipPopover` to use **React Portals** (`createPortal`), rendering it directly under `document.body`.
     * **Standard:** All floating/popover elements must use Portals and a fixed Z-index (default `z-[100]`) to bypass parent stacking contexts and overflow constraints.
+* **2026-03-15: Mobile PWA Unification Fix**
+    * **Issue:** Unrelated system colors (status bar/browser chrome) were visible, and the bottom navigation overlapped the iOS home indicator.
+    * **Fix:** Synced `theme-color`, added `black-translucent` status bar, applied `overscroll-behavior: none`, and integrated `pt-safe-top`/`pb-safe-bottom` in the layout.
+    * **Standard:** Follow the "Native PWA & Mobile UX" rules for all future UI additions.

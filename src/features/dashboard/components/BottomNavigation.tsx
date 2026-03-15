@@ -26,7 +26,7 @@ export function BottomNavigation({
   onOpenMealModal,
 }: BottomNavigationProps) {
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-50 md:hidden pb-safe">
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-50 md:hidden pb-safe-bottom">
       <motion.div 
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

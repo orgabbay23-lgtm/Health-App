@@ -59,6 +59,7 @@
     scroll-behavior: smooth;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+    @apply bg-background;
   }
 
   body {
@@ -69,6 +70,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    overscroll-behavior: none;
   }
 
   #root {
