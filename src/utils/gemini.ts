@@ -123,15 +123,11 @@ const SYSTEM_INSTRUCTION =
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
-let cachedApiKey: string | null = null;
-
 export function clearCachedApiKey() {
-  cachedApiKey = null;
+  // No-op: Cache killed to guarantee fresh key on every request
 }
 
 const getApiKey = async (): Promise<string> => {
-  if (cachedApiKey) return cachedApiKey;
-
   const { data: apiKey, error: vaultError } = await supabase.rpc('get_user_api_key');
   
   if (vaultError) {
@@ -139,31 +135,37 @@ const getApiKey = async (): Promise<string> => {
     throw new Error("VAULT_ERROR");
   }
 
-  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+  let rawKey = apiKey;
+  if (typeof apiKey === 'object' && apiKey !== null) {
+    rawKey = Object.values(apiKey)[0] || JSON.stringify(apiKey);
+  }
+
+  let finalKey = String(rawKey).replace(/^["']|["']$/g, '').replace(/\s+/g, '').trim();
+
+  if (!finalKey || finalKey === 'undefined' || finalKey === 'null') {
     const envKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!envKey) {
       throw new Error("MISSING_API_KEY");
     }
-    return envKey;
+    finalKey = String(envKey).replace(/^["']|["']$/g, '').replace(/\s+/g, '').trim();
   }
 
-  cachedApiKey = apiKey;
-  return apiKey;
+  return finalKey;
 };
 
 export async function parseMealDescription(
   description: string,
 ): Promise<ParsedMealDescription> {
   try {
-    const rawApiKey = await getApiKey();
-    const sanitizedKey = String(rawApiKey).replace(/^["']|["']$/g, '').replace(/\s+/g, '').trim();
+    const finalKey = await getApiKey();
 
-    if (!sanitizedKey) {
+    if (!finalKey) {
       throw new Error("MISSING_API_KEY");
     }
 
     const performRequest = async (modelName: string) => {
-      const genAI = new GoogleGenerativeAI(sanitizedKey);
+      console.log("DEBUG KEY - Type:", typeof finalKey, "| Length:", finalKey.length, "| Starts with:", finalKey.substring(0, 5), "| Ends with:", finalKey.substring(finalKey.length - 3));
+      const genAI = new GoogleGenerativeAI(finalKey);
       const model = genAI.getGenerativeModel({
         model: modelName,
         systemInstruction: SYSTEM_INSTRUCTION,
@@ -197,7 +199,6 @@ export async function parseMealDescription(
         apiError?.message?.toLowerCase().includes("api key not found");
 
       if (isAuthError) {
-        clearCachedApiKey();
         throw new Error("API_KEY_INVALID");
       }
 
@@ -207,7 +208,6 @@ export async function parseMealDescription(
         apiError?.message?.includes("API_KEY_INVALID");
 
       if (isInvalidKeyError) {
-        clearCachedApiKey();
         throw new Error("INVALID_KEY_FROM_GOOGLE");
       }
 
