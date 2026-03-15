@@ -67,67 +67,83 @@ export function ModalShell({
   }, [isOpen, onClose]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen ? (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 px-0 md:px-4 pb-0 md:py-6 backdrop-blur-sm"
-          dir="rtl"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
+        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center overflow-hidden" dir="rtl">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+            onClick={onClose}
+          />
+          
           <motion.div
             ref={modalRef}
+            layout
+            initial={{ opacity: 0, y: "100%", scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: "100%", scale: 0.95 }}
+            transition={{ 
+              type: "spring", 
+              damping: 28, 
+              stiffness: 320,
+              mass: 0.8
+            }}
             className={cn(
-              "relative w-full overflow-hidden border-t md:border border-white/55 bg-white/95 text-right shadow-soft-xl",
+              "relative w-full overflow-hidden bg-white/80 backdrop-blur-2xl text-right shadow-soft-2xl border border-white/60",
               // Mobile: Bottom sheet
-              "mt-auto max-h-[90vh] rounded-t-sheet rounded-b-none",
+              "mt-auto max-h-[92vh] rounded-t-[3rem] rounded-b-none pb-safe",
               // Desktop: Centered modal
-              "md:mt-0 md:max-h-[92vh] md:max-w-2xl md:rounded-card pb-[env(safe-area-inset-bottom)] md:pb-0",
+              "md:mt-0 md:max-h-[90vh] md:max-w-2xl md:rounded-[3rem] md:mb-8",
               className,
             )}
-            initial={{ opacity: 0, y: "100%" }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
             onClick={(event) => event.stopPropagation()}
             tabIndex={-1}
           >
-            {/* Mobile drag indicator handle */}
-            <div className="w-full flex justify-center pt-3 pb-1 md:hidden">
-              <div className="h-1.5 w-12 rounded-full bg-slate-300"></div>
+            {/* Mesh Background inside modal */}
+            <div className="absolute inset-0 pointer-events-none opacity-20 overflow-hidden -z-10">
+              <div className="absolute -top-[20%] -left-[20%] w-[60%] h-[60%] rounded-full bg-blue-100 blur-[80px]" />
+              <div className="absolute -bottom-[20%] -right-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100 blur-[80px]" />
             </div>
 
-            <div className="flex items-start justify-between gap-4 border-b border-slate-200/80 px-6 py-4 md:py-5">
-              <div className="space-y-1">
-                <h2 className="text-xl font-semibold text-slate-900">
+            {/* Mobile drag indicator handle */}
+            <div className="w-full flex justify-center pt-4 pb-2 md:hidden">
+              <div className="h-1.5 w-16 rounded-full bg-slate-200/80"></div>
+            </div>
+
+            <div className="flex items-start justify-between gap-4 px-8 py-6 md:py-8">
+              <div className="space-y-1.5">
+                <h2 className="text-2xl font-black text-slate-950 tracking-tight">
                   {title}
                 </h2>
                 {description ? (
-                  <p className="text-sm leading-6 text-slate-500">
+                  <p className="text-sm font-medium text-slate-400">
                     {description}
                   </p>
                 ) : null}
               </div>
 
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 min-h-[44px] min-w-[44px]"
-                onClick={onClose}
-                aria-label="סגור חלון"
-              >
-                <X size={20} />
-              </Button>
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-900 h-11 w-11 border border-slate-100"
+                  onClick={onClose}
+                  aria-label="סגור חלון"
+                >
+                  <X size={20} />
+                </Button>
+              </motion.div>
             </div>
 
-            <div className="max-h-[calc(90vh-100px)] overflow-y-auto px-6 py-6 md:max-h-[calc(92vh-92px)]">
+            <div className="max-h-[calc(92vh-120px)] overflow-y-auto px-8 pb-10 md:max-h-[calc(90vh-140px)]">
               {children}
             </div>
           </motion.div>
-        </motion.div>
+        </div>
       ) : null}
     </AnimatePresence>
   );

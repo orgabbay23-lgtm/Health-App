@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -180,156 +181,204 @@ export function MealLogModal({
     <>
       <ModalShell isOpen={isOpen} onClose={onClose} title="הוספת ארוחה">
         <Tabs defaultValue="ai" dir="rtl" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="ai" className="flex items-center gap-2">
-              <WandSparkles className="h-4 w-4" />
-              בינה מלאכותית
+          <TabsList className="grid w-full grid-cols-3 h-14">
+            <TabsTrigger value="ai" className="gap-2">
+              <WandSparkles size={16} />
+              AI
             </TabsTrigger>
-            <TabsTrigger value="manual" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
+            <TabsTrigger value="manual" className="gap-2">
+              <Plus size={16} />
               ידני
             </TabsTrigger>
-            <TabsTrigger value="saved" className="flex items-center gap-2">
-              <Heart className="h-4 w-4" />
+            <TabsTrigger value="saved" className="gap-2">
+              <Heart size={16} />
               מועדפים
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="ai" className="mt-4 space-y-4">
-            <form onSubmit={handleAiSubmit(onAiSubmit)} className="space-y-4 relative">
-              <div className={cn("space-y-2 transition-all duration-500", isSubmitting ? "opacity-50 blur-[2px]" : "")}>
-                <Label htmlFor="description">מה אכלת?</Label>
-                <Input
-                  id="description"
-                  placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
-                  {...registerAi("description")}
-                  disabled={isSubmitting}
-                />
-                {aiErrors.description && (
-                  <p className="text-sm text-red-500">
-                    {aiErrors.description.message}
-                  </p>
-                )}
-              </div>
-              <Button type="submit" className={cn("w-full transition-all duration-500", isSubmitting ? "bg-slate-800" : "")} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
-                    </span>
-                    מנתח עם בינה מלאכותית...
-                  </span>
-                ) : (
-                  "הוסף ארוחה"
-                )}
-              </Button>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="manual" className="mt-4 space-y-4">
-            <form
-              onSubmit={handleManualSubmit(onManualSubmit)}
-              className="space-y-4"
-            >
-              <div className="space-y-4">
-                {fields.map((field, index) => (
-                  <div key={field.id} className="flex items-end gap-2">
-                    <div className="flex-1 space-y-2">
-                      <Label>מאכל</Label>
-                      <Input
-                        placeholder="שם המאכל"
-                        {...registerManual(`ingredients.${index}.foodName`)}
-                      />
-                    </div>
-                    <div className="w-20 space-y-2">
-                      <Label>כמות</Label>
-                      <Input
-                        type="number"
-                        {...registerManual(`ingredients.${index}.quantity`, {
-                          valueAsNumber: true,
-                        })}
-                      />
-                    </div>
-                    <div className="w-28 space-y-2">
-                      <Label>יחידה</Label>
-                      <Select
-                        {...registerManual(`ingredients.${index}.unit`)}
-                      >
-                        <option value="גרם">גרם</option>
-                        <option value="יחידות">יחידות</option>
-                        <option value="כוסות">כוסות</option>
-                        <option value="כפות">כפות</option>
-                      </Select>
-                    </div>
-                    {fields.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="mb-0.5 text-red-500 hover:text-red-600"
-                        onClick={() => remove(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => append({ foodName: "", quantity: 1, unit: "גרם" })}
+          <AnimatePresence mode="wait">
+            <TabsContent value="ai" className="mt-8">
+              <motion.form 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                onSubmit={handleAiSubmit(onAiSubmit)} 
+                className="space-y-6"
               >
-                <Plus className="ml-2 h-4 w-4" />
-                הוסף מאכל
-              </Button>
-
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "מעבד..." : "שמור ארוחה"}
-              </Button>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="saved" className="mt-4">
-            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-              {savedMeals.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 italic">
-                  אין ארוחות שמורות עדיין
+                <div className={cn("space-y-3 transition-all duration-500", isSubmitting ? "opacity-50 blur-sm" : "")}>
+                  <Label htmlFor="description" className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">ספר לי מה אכלת...</Label>
+                  <div className="relative group">
+                    <Input
+                      id="description"
+                      placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
+                      className="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-lg font-medium px-6"
+                      {...registerAi("description")}
+                      disabled={isSubmitting}
+                    />
+                    <div className="absolute inset-0 rounded-2xl border border-slate-900/5 pointer-events-none group-focus-within:border-slate-950/20 transition-colors" />
+                  </div>
+                  {aiErrors.description && (
+                    <p className="text-xs font-bold text-rose-500 px-1">
+                      {aiErrors.description.message}
+                    </p>
+                  )}
                 </div>
-              ) : (
-                savedMeals.map((saved) => (
-                  <div
-                    key={saved.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
-                  >
-                    <div
-                      className="flex-1 cursor-pointer"
+                
+                <Button 
+                  type="submit" 
+                  size="lg"
+                  className="w-full h-16 rounded-2xl text-lg" 
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-3">
+                      <motion.div 
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                      />
+                      מנתח...
+                    </span>
+                  ) : (
+                    "הוסף ארוחה"
+                  )}
+                </Button>
+              </motion.form>
+            </TabsContent>
+
+            <TabsContent value="manual" className="mt-8">
+              <motion.form
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                onSubmit={handleManualSubmit(onManualSubmit)}
+                className="space-y-6"
+              >
+                <div className="space-y-4">
+                  {fields.map((field, index) => (
+                    <motion.div 
+                      key={field.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="flex items-end gap-3 p-4 rounded-3xl bg-slate-50/50 border border-slate-100"
+                    >
+                      <div className="flex-1 space-y-2">
+                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">מאכל</Label>
+                        <Input
+                          placeholder="שם המאכל"
+                          className="bg-white border-none shadow-sm rounded-xl"
+                          {...registerManual(`ingredients.${index}.foodName`)}
+                        />
+                      </div>
+                      <div className="w-20 space-y-2">
+                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">כמות</Label>
+                        <Input
+                          type="number"
+                          className="bg-white border-none shadow-sm rounded-xl"
+                          {...registerManual(`ingredients.${index}.quantity`, {
+                            valueAsNumber: true,
+                          })}
+                        />
+                      </div>
+                      <div className="w-28 space-y-2">
+                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">יחידה</Label>
+                        <Select
+                          className="bg-white border-none shadow-sm rounded-xl h-10"
+                          {...registerManual(`ingredients.${index}.unit`)}
+                        >
+                          <option value="גרם">גרם</option>
+                          <option value="יחידות">יחידות</option>
+                          <option value="כוסות">כוסות</option>
+                          <option value="כפות">כפות</option>
+                        </Select>
+                      </div>
+                      {fields.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="text-slate-300 hover:text-rose-500 rounded-xl"
+                          onClick={() => remove(index)}
+                        >
+                          <Trash2 size={18} />
+                        </Button>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full h-12 rounded-xl border-dashed border-2 border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-white"
+                  onClick={() => append({ foodName: "", quantity: 1, unit: "גרם" })}
+                >
+                  <Plus className="ml-2 h-4 w-4" />
+                  הוסף מרכיב נוסף
+                </Button>
+
+                <Button type="submit" size="lg" className="w-full h-16 rounded-2xl text-lg" disabled={isSubmitting}>
+                  {isSubmitting ? "מעבד..." : "שמור ארוחה"}
+                </Button>
+              </motion.form>
+            </TabsContent>
+
+            <TabsContent value="saved" className="mt-8">
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-3 max-h-[450px] overflow-y-auto pr-1"
+              >
+                {savedMeals.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
+                      <Heart className="text-slate-200" size={32} />
+                    </div>
+                    <p className="text-sm font-bold text-slate-400">אין ארוחות שמורות עדיין</p>
+                  </div>
+                ) : (
+                  savedMeals.map((saved, index) => (
+                    <motion.div
+                      key={saved.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.04 }}
+                      className="group flex items-center justify-between p-4 rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-slate-200 transition-all cursor-pointer"
                       onClick={() => onAddSavedMeal(saved.id)}
                     >
-                      <p className="font-medium text-slate-800">
-                        {saved.meal.meal_name}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {saved.meal.calories} קלוריות | {saved.meal.macronutrients.protein}ג חלבון
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-slate-400 hover:text-red-500"
-                      onClick={() => removeSavedMeal(saved.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
-          </TabsContent>
+                      <div className="flex gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Heart size={20} fill="currentColor" />
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-950">
+                            {saved.meal.meal_name}
+                          </p>
+                          <p className="text-xs font-bold text-slate-400">
+                            {saved.meal.calories} קלוריות · {saved.meal.macronutrients.protein}ג' חלבון
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSavedMeal(saved.id);
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </Button>
+                    </motion.div>
+                  ))
+                )}
+              </motion.div>
+            </TabsContent>
+          </AnimatePresence>
         </Tabs>
       </ModalShell>
 

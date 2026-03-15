@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, Home, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
+import { cn } from "../../utils/utils";
 import {
   EMPTY_MICRONUTRIENTS,
   MICRONUTRIENT_KEYS,
@@ -187,45 +188,73 @@ export function Dashboard() {
 
   return (
     <div
-      className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(250,245,235,0.9),_rgba(255,255,255,0.96)_40%,_rgba(237,246,255,0.95)_78%),linear-gradient(180deg,_#f6f2ea_0%,_#f8fafc_50%,_#edf6ff_100%)]"
+      className="min-h-screen bg-slate-50 relative overflow-x-hidden"
       dir="rtl"
     >
-      <div className="mx-auto max-w-4xl space-y-5 px-4 py-5 pb-28 md:pb-8">
-        <DashboardTopBar
-          activeUser={activeUser}
-          selectedDayKey={selectedDayKey}
-          onOpenMealModal={() => setIsMealModalOpen(true)}
-          onOpenProfileModal={() => setIsProfileModalOpen(true)}
-        />
+      {/* Sophisticated background for desktop */}
+      <div className="fixed inset-0 pointer-events-none opacity-40 overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-200/30 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-200/30 blur-[120px]" />
+        <div className="absolute top-[20%] right-[-5%] w-[30%] h-[30%] rounded-full bg-teal-100/20 blur-[100px]" />
+      </div>
 
-        <div className="hidden md:flex md:flex-wrap md:gap-2">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            const active = activeScreen === item.key;
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="relative mx-auto max-w-2xl min-h-screen bg-white/30 backdrop-blur-[2px] border-x border-white/20 shadow-2xl"
+      >
+        <div className="space-y-8 px-4 py-8 pb-32 md:pb-12">
+          <DashboardTopBar
+            activeUser={activeUser}
+            selectedDayKey={selectedDayKey}
+            onOpenMealModal={() => setIsMealModalOpen(true)}
+            onOpenProfileModal={() => setIsProfileModalOpen(true)}
+          />
 
-            return (
-              <Button
-                key={item.key}
-                type="button"
-                variant={active ? "default" : "outline"}
-                className={active ? "rounded-full" : "rounded-full border-white/70 bg-white/88"}
-                onClick={() => onSelectScreen(item.key)}
-              >
-                <Icon size={16} className="ms-2" />
-                {item.label}
-              </Button>
-            );
-          })}
-        </div>
+          <div className="hidden md:flex md:flex-wrap md:gap-3">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const active = activeScreen === item.key;
 
-        <AnimatePresence mode="wait">
-          <motion.section
-            key={activeScreen}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.24, ease: "easeOut" }}
-          >
+              return (
+                <motion.div
+                  key={item.key}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    type="button"
+                    variant={active ? "default" : "outline"}
+                    className={cn(
+                      "rounded-full px-6 transition-all duration-300",
+                      active 
+                        ? "shadow-lg shadow-slate-200" 
+                        : "border-white/70 bg-white/60 backdrop-blur-md hover:bg-white/90"
+                    )}
+                    onClick={() => onSelectScreen(item.key)}
+                  >
+                    <Icon size={16} className="ms-2" />
+                    <span className="font-bold">{item.label}</span>
+                  </Button>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.section
+              key={activeScreen}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 260,
+                damping: 25,
+                duration: 0.4 
+              }}
+            >
             {activeScreen === "home" ? (
               <HomeScreen
                 periodMode={periodMode}
@@ -274,6 +303,7 @@ export function Dashboard() {
           </motion.section>
         </AnimatePresence>
       </div>
+    </motion.div>
 
       <BottomNavigation
         activeScreen={activeScreen}

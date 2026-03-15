@@ -1,3 +1,4 @@
+import { motion, type Variants } from "framer-motion";
 import type {
   AggregatedPeriodData,
   DashboardPeriod,
@@ -52,115 +53,134 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const meals = selectedDailyLog?.meals ?? [];
 
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 260, 
+        damping: 20 
+      }
+    }
+  };
+
   return (
-    <div className="space-y-5">
-      <div className="space-y-4">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-10"
+    >
+      <motion.div variants={itemVariants} className="space-y-6">
         <PeriodTabs value={periodMode} onChange={onPeriodChange} />
         <DateNavigator
           periodMode={periodMode}
           periodDetails={periodDetails}
           onDateChange={onDateChange}
         />
-      </div>
+      </motion.div>
 
-      <Card className="border-white/70 bg-[linear-gradient(135deg,_rgba(255,255,255,0.96),_rgba(249,250,251,0.92))] shadow-soft-sm rounded-card">
-        <CardContent className="space-y-4 p-5">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-              OVERVIEW
-            </p>
-            <h2 className="text-2xl font-semibold text-slate-950">
-              סיכום {periodMode === "daily" ? "יומי" : periodMode === "weekly" ? "שבועי" : "חודשי"}
-            </h2>
-          </div>
-
-          <div className="flex flex-wrap gap-3 text-sm text-slate-600">
-            <div className="rounded-full bg-slate-100 px-3 py-1.5">
-              {periodData.loggedDays} ימי רישום
-            </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1.5">
-              {periodData.totalMeals} ארוחות
-            </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1.5 flex items-center gap-1">
-              <span dir="ltr">{periodDetails.startKey}</span>
-              <span className="mx-1">-</span>
-              <span dir="ltr">{periodDetails.endKey}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {userProfile.targets.guidanceFlags.length > 0 ? (
-        <GuidanceCard flags={userProfile.targets.guidanceFlags} />
-      ) : null}
-
-      {periodMode === "daily" && safetyAlerts.length > 0 ? (
-        <SafetyAlertsCard alerts={safetyAlerts} />
-      ) : null}
-
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Level 1: Hero Section (Calories) */}
+      <motion.section variants={itemVariants} className="flex flex-col items-center">
         <PrimaryNutrientCard
           nutrient="calories"
           current={periodData.aggregations.calories}
           target={periodTargets.calories}
           userProfile={userProfile}
         />
-        <PrimaryNutrientCard
+      </motion.section>
+
+      {/* Level 2: Macronutrients */}
+      <motion.section variants={itemVariants} className="grid grid-cols-3 gap-4">
+        <CompactNutrientCard
           nutrient="protein"
           current={periodData.aggregations.protein}
           target={periodTargets.protein}
           userProfile={userProfile}
-          index={1}
+          index={0}
         />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
         <CompactNutrientCard
           nutrient="carbs"
           current={periodData.aggregations.carbs}
           target={periodTargets.carbs}
           userProfile={userProfile}
+          index={1}
         />
         <CompactNutrientCard
           nutrient="fat"
           current={periodData.aggregations.fat}
           target={periodTargets.fat}
           userProfile={userProfile}
+          index={2}
         />
-      </div>
+      </motion.section>
 
-      <FullNutritionAccordion
-        current={periodData.aggregations.micronutrients}
-        target={periodTargets.micronutrients}
-        userProfile={userProfile}
-      />
+      {userProfile.targets.guidanceFlags.length > 0 && (
+        <motion.div variants={itemVariants}>
+          <GuidanceCard flags={userProfile.targets.guidanceFlags} />
+        </motion.div>
+      )}
 
-      <Card className="border-white/70 bg-white/90 shadow-soft-sm rounded-card">
-        <CardContent className="space-y-5 p-5 leading-relaxed">
-          <div className="space-y-1">
-            <h3 className="text-xl font-semibold text-slate-950">
-              {periodMode === "daily" ? "ארוחות" : "פירוט התקופה"}
-            </h3>
-          </div>
+      {periodMode === "daily" && safetyAlerts.length > 0 && (
+        <motion.div variants={itemVariants}>
+          <SafetyAlertsCard alerts={safetyAlerts} />
+        </motion.div>
+      )}
 
-          {periodMode === "daily" ? (
-            <MealTimeline
-              meals={meals}
-              onDelete={(mealId) => onDeleteMeal(periodDetails.startKey, mealId)}
-              onSaveFavorite={onSaveFavorite}
-              savedSignatures={savedSignatures}
-              emptyText="אין ארוחות"
-            />
-          ) : (
-            <PeriodBreakdown
-              days={periodData.days}
-              savedSignatures={savedSignatures}
-              onSaveFavorite={onSaveFavorite}
-              onDeleteMeal={onDeleteMeal}
-            />
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      {/* Level 3: Micronutrients */}
+      <motion.div variants={itemVariants}>
+        <FullNutritionAccordion
+          current={periodData.aggregations.micronutrients}
+          target={periodTargets.micronutrients}
+          userProfile={userProfile}
+        />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <Card className="border border-white/60 bg-white/30 backdrop-blur-xl shadow-soft-2xl rounded-[3rem] overflow-hidden">
+          <CardContent className="space-y-8 p-8 md:p-10">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-black tracking-tight text-slate-950">
+                {periodMode === "daily" ? "ארוחות" : "פירוט תקופה"}
+              </h3>
+              {periodMode === "daily" && meals.length > 0 && (
+                <div className="bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
+                  {meals.length} פריטים
+                </div>
+              )}
+            </div>
+
+            {periodMode === "daily" ? (
+              <MealTimeline
+                meals={meals}
+                onDelete={(mealId) => onDeleteMeal(periodDetails.startKey, mealId)}
+                onSaveFavorite={onSaveFavorite}
+                savedSignatures={savedSignatures}
+                emptyText="עוד לא רשמת כלום היום..."
+              />
+            ) : (
+              <PeriodBreakdown
+                days={periodData.days}
+                savedSignatures={savedSignatures}
+                onSaveFavorite={onSaveFavorite}
+                onDeleteMeal={onDeleteMeal}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </motion.div>
   );
 }

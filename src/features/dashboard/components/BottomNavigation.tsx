@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { CalendarDays, Home, Plus, UserRound } from "lucide-react";
 import { cn } from "../../../utils/utils";
 import type { DashboardScreen } from "../types";
@@ -25,36 +26,75 @@ export function BottomNavigation({
   onOpenMealModal,
 }: BottomNavigationProps) {
   return (
-    <div className="fixed bottom-0 left-0 w-full z-50 md:hidden pb-[env(safe-area-inset-bottom)]">
-      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800">
-        <div className="grid grid-cols-4 gap-2 p-2 pb-3">
-          {navigationItems.map((item) => {
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-50 md:hidden pb-safe">
+      <motion.div 
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.5 }}
+        className="bg-white/60 backdrop-blur-2xl border border-white/50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] rounded-[3rem] p-3 neo-blur"
+      >
+        <div className="flex items-center justify-around">
+          {navigationItems.map((item, index) => {
             const Icon = item.icon;
-            const active = item.key !== "add" && activeScreen === item.key;
+            const isAdd = item.key === "add";
+            const active = !isAdd && activeScreen === item.key;
 
             return (
-              <button
+              <motion.button
                 key={item.key}
                 type="button"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 + (index * 0.05) }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
                 className={cn(
-                  "rounded-button px-2 py-2 text-xs font-medium transition min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1",
-                  item.key === "add"
-                    ? "bg-slate-950 text-white shadow-soft-sm"
-                    : active
-                      ? "text-slate-950 dark:text-white"
-                      : "text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800",
+                  "relative flex flex-col items-center justify-center transition-all duration-300",
+                  isAdd 
+                    ? "h-16 w-16 rounded-[2rem] bg-slate-950 text-white shadow-2xl -mt-12 border-[6px] border-slate-50/50" 
+                    : "flex-1 h-12 rounded-2xl"
                 )}
                 onClick={() =>
-                  item.key === "add" ? onOpenMealModal() : onNavigate(item.key)
+                  isAdd ? onOpenMealModal() : onNavigate(item.key as DashboardScreen)
                 }
               >
-                <Icon size={20} className={active ? "text-blue-500" : ""} />
-                <span className="text-[10px] leading-none">{item.label}</span>
-              </button>
+                {active && (
+                  <motion.div
+                    layoutId="active-nav-bg"
+                    className="absolute inset-0 bg-slate-900/5 rounded-2xl -z-10"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                
+                <div className="relative">
+                  <Icon 
+                    size={isAdd ? 32 : 24} 
+                    className={cn(
+                      "transition-all duration-300",
+                      active ? "text-slate-950 scale-110" : isAdd ? "text-white" : "text-slate-400"
+                    )} 
+                  />
+                  {active && (
+                    <motion.div 
+                      layoutId="active-nav-dot"
+                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-slate-950" 
+                    />
+                  )}
+                </div>
+
+                {!isAdd && (
+                   <span className={cn(
+                     "text-[9px] font-black mt-1 uppercase tracking-tighter transition-colors duration-300",
+                     active ? "text-slate-950" : "text-slate-400"
+                   )}>
+                     {item.label}
+                   </span>
+                )}
+              </motion.button>
             );
           })}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

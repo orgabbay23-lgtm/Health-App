@@ -1,8 +1,9 @@
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
+import { motion } from "framer-motion";
 import {
   formatNutritionValue,
-  NutritionSafetyAlert,
+  type NutritionSafetyAlert,
 } from "../../../utils/nutrition-utils";
 
 interface SafetyAlertsCardProps {
@@ -15,45 +16,35 @@ export function SafetyAlertsCard({ alerts }: SafetyAlertsCardProps) {
   }
 
   return (
-    <Card className="rounded-[30px] border-rose-200/70 bg-rose-50/85 shadow-[0_18px_42px_rgba(244,63,94,0.12)]">
-      <CardContent className="space-y-4 p-6">
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-white/80 p-3 text-rose-600 shadow-sm">
-            <AlertTriangle size={18} />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">
-              התראות בטיחות
-            </h3>
-            <p className="text-sm text-slate-500">
-              האזהרות מחושבות מול גבולות הצריכה העליונים
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {alerts.map((alert) => (
-            <div
-              key={alert.id}
-              className="rounded-[20px] border border-white/70 bg-white/92 p-4 shadow-sm"
-            >
-              <div className="flex items-center justify-between gap-4">
-                <p className="font-semibold text-rose-600">{alert.title}</p>
-                <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600">
-                  חריגה
-                </span>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-3"
+    >
+      {alerts.map((alert) => (
+        <Card key={alert.id} className="border-none bg-rose-50/60 backdrop-blur-sm shadow-soft-sm rounded-3xl overflow-hidden">
+          <CardContent className="flex flex-col gap-3 p-5">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white/80 text-rose-500 shadow-sm">
+                <AlertTriangle size={18} />
               </div>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {alert.message}
-              </p>
-              <p className="mt-3 text-xs text-slate-400">
-                נוכחי: {formatNutritionValue(alert.currentValue)} {alert.unit} |
-                גבול: {formatNutritionValue(alert.limit)} {alert.unit}
-              </p>
+              <h4 className="text-sm font-bold text-rose-900/80 leading-tight">
+                {alert.title}
+              </h4>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+
+            <p className="text-sm font-medium text-rose-800/70 leading-relaxed px-1">
+              {alert.message}
+            </p>
+
+            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-rose-400 mt-1 px-1">
+              <span>נוכחי: {formatNutritionValue(alert.currentValue)} {alert.unit}</span>
+              <span>גבול: {formatNutritionValue(alert.limit)} {alert.unit}</span>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </motion.div>
   );
 }
+

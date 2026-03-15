@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { Card, CardContent } from "../../../components/ui/card";
 import { TipPopover } from "../../../components/ui/tip-popover";
 import {
@@ -7,12 +8,14 @@ import {
 } from "../../../utils/nutritional-tips";
 import { formatNutritionValue } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
+import { getProgressAppearance } from "./progress-tone";
 
 interface CompactNutrientCardProps {
-  nutrient: Extract<TrackedNutrientKey, "carbs" | "fat">;
+  nutrient: Extract<TrackedNutrientKey, "protein" | "carbs" | "fat">;
   current: number;
   target: number;
   userProfile: UserProfile;
+  index?: number;
 }
 
 export function CompactNutrientCard({
@@ -20,28 +23,66 @@ export function CompactNutrientCard({
   current,
   target,
   userProfile,
+  index = 0,
 }: CompactNutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
+  const appearance = getProgressAppearance(current, target);
+  const percentage = Math.min(Math.max(appearance.percentage, 0), 100);
 
   return (
-    <Card className="border-white/70 bg-white/86 shadow-[0_18px_42px_rgba(15,23,42,0.05)]">
-      <CardContent className="flex items-start justify-between gap-3 p-4">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-slate-500">{meta.label}</p>
-          <p className="text-lg font-semibold text-slate-950">
-            {formatNutritionValue(current)}
-            <span className="ms-2 text-sm font-normal text-slate-400">
-              / {formatNutritionValue(target)} {meta.unit}
-            </span>
-          </p>
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.96 }}
+      transition={{ 
+        delay: index * 0.1, 
+        duration: 0.5,
+        type: "spring",
+        stiffness: 260,
+        damping: 20
+      }}
+      className="flex-1"
+    >
+      <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-xl rounded-[2rem] overflow-hidden border border-white/60">
+        <CardContent className="flex flex-col gap-4 p-5">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{meta.label}</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl font-black text-slate-950">{formatNutritionValue(current)}</span>
+                <span className="text-[10px] font-bold text-slate-400">/ {formatNutritionValue(target)}</span>
+              </div>
+            </div>
+            
+            <motion.div 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="h-8 w-8 flex items-center justify-center rounded-xl bg-white shadow-sm border border-slate-100/50"
+            >
+              <TipPopover
+                content={generateNutritionalTip(nutrient, userProfile)}
+                label={`טיפ עבור ${meta.label}`}
+                className="scale-90"
+              />
+            </motion.div>
+          </div>
 
-        <TipPopover
-          content={generateNutritionalTip(nutrient, userProfile)}
-          label={`טיפ עבור ${meta.label}`}
-          className="shrink-0"
-        />
-      </CardContent>
-    </Card>
+          <div className="h-2 w-full bg-slate-100/50 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${percentage}%` }}
+              transition={{ 
+                type: "spring",
+                stiffness: 50,
+                damping: 15,
+                delay: 0.3 + (index * 0.1) 
+              }}
+              className={`h-full rounded-full ${appearance.barClass} shadow-[0_0_10px_rgba(var(--primary),0.2)]`}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

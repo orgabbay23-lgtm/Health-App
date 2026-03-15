@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, ChevronDown, Sparkles, Trash2 } from "lucide-react";
+import { Heart, ChevronDown, Sparkles, Trash2, Coffee, Utensils, Sandwich, Apple, Moon, Pill } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { NUTRIENT_META } from "../../../utils/nutritional-tips";
 import { formatNutritionValue } from "../../../utils/nutrition-utils";
 import { MealItem, createMealSignature } from "../../../store";
+import { cn } from "../../../utils/utils";
 
 interface MealTimelineProps {
   meals: MealItem[];
@@ -17,6 +18,17 @@ interface MealTimelineProps {
 
 const highlightedMicros = ["fiber", "calcium", "iron", "vitaminC"] as const;
 
+function getMealIcon(mealName: string, sourceType?: string) {
+  if (sourceType === "supplement") return Pill;
+  
+  const name = mealName.toLowerCase();
+  if (name.includes("בוקר") || name.includes("breakfast")) return Coffee;
+  if (name.includes("צהריים") || name.includes("lunch")) return Utensils;
+  if (name.includes("ערב") || name.includes("dinner")) return Moon;
+  if (name.includes("ביניים") || name.includes("snack") || name.includes("נשנוש")) return Apple;
+  return Sandwich;
+}
+
 export function MealTimeline({
   meals,
   onDelete,
@@ -26,16 +38,24 @@ export function MealTimeline({
 }: MealTimelineProps) {
   if (meals.length === 0) {
     return (
-      <Card className="rounded-[28px] border-dashed border-slate-300 bg-white/70">
-        <CardContent className="p-8 text-center text-sm text-slate-500">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center justify-center py-16 px-6 text-center"
+      >
+        <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center mb-6 shadow-inner border border-white">
+          <Sparkles className="text-slate-200 w-10 h-10" />
+        </div>
+        <h3 className="text-xl font-black text-slate-800 mb-2">היום שלך מתחיל כאן...</h3>
+        <p className="text-sm text-slate-400 font-medium max-w-[200px] leading-relaxed">
           {emptyText}
-        </CardContent>
-      </Card>
+        </p>
+      </motion.div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <AnimatePresence initial={false}>
         {meals.map((meal, index) => (
           <MealTimelineItem
@@ -71,117 +91,142 @@ function MealTimelineItem({
   isSaved,
 }: MealTimelineItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const Icon = getMealIcon(meal.meal_name, meal.sourceType);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ delay: index * 0.04, duration: 0.24 }}
+      initial={{ opacity: 0, x: -15 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ 
+        delay: index * 0.05, 
+        duration: 0.4,
+        type: "spring",
+        stiffness: 260,
+        damping: 20
+      }}
+      whileHover={{ x: 4 }}
     >
-      <Card className="overflow-hidden rounded-[26px] border-white/65 bg-white/92 shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
-        <CardContent className="space-y-4 p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <h4 className="text-lg font-semibold text-slate-900">
-                  {meal.meal_name}
-                </h4>
-                {meal.sourceType === "supplement" ? (
-                  <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
-                    תוסף
-                  </span>
-                ) : null}
+      <Card className="overflow-hidden rounded-[2rem] border border-white/60 bg-white/50 backdrop-blur-md shadow-soft-xl transition-all duration-300">
+        <CardContent className="p-0">
+          <div className="p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex gap-4">
+                <div className={cn(
+                  "w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm border border-white shrink-0",
+                  meal.sourceType === "supplement" ? "bg-violet-50 text-violet-500" : "bg-slate-50 text-slate-400"
+                )}>
+                  <Icon size={22} />
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-lg font-black text-slate-950 leading-tight">
+                      {meal.meal_name}
+                    </h4>
+                    {meal.sourceType === "supplement" && (
+                      <span className="text-[10px] font-black uppercase tracking-widest text-violet-500 bg-violet-100/50 px-2 py-0.5 rounded-full">
+                        תוסף
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400">
+                      {formatMealTime(meal.timestamp)}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-slate-200" />
+                    <span className="text-xs font-black text-slate-950">
+                      {formatNutritionValue(meal.calories)} קק"ל
+                    </span>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-slate-500">
-                {formatMealTime(meal.timestamp)}
-              </p>
-              <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                <span className="rounded-full bg-slate-100 px-3 py-1">
-                  {formatNutritionValue(meal.calories)} קק"ל
-                </span>
-                <span className="rounded-full bg-slate-100 px-3 py-1">
-                  חלבון {formatNutritionValue(meal.macronutrients.protein)} ג'
-                </span>
-                <span className="rounded-full bg-slate-100 px-3 py-1">
-                  פחמימות {formatNutritionValue(meal.macronutrients.carbs)} ג'
-                </span>
-                <span className="rounded-full bg-slate-100 px-3 py-1">
-                  שומן {formatNutritionValue(meal.macronutrients.fat)} ג'
-                </span>
-              </div>
-            </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {onSaveFavorite ? (
-                <Button
-                  type="button"
-                  variant={isSaved ? "secondary" : "outline"}
-                  className="rounded-full"
-                  onClick={() => onSaveFavorite(meal)}
-                  disabled={isSaved}
-                >
-                  <Heart size={16} className="ms-2" />
-                  {isSaved ? "נשמר במועדפים" : "שמור כמועדף"}
-                </Button>
-              ) : null}
+              <div className="flex items-center gap-1">
+                {onSaveFavorite && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "rounded-xl h-10 w-10 transition-all",
+                      isSaved ? "text-rose-500 bg-rose-50" : "text-slate-300 hover:text-rose-400 hover:bg-rose-50/50"
+                    )}
+                    onClick={() => onSaveFavorite(meal)}
+                    disabled={isSaved}
+                  >
+                    <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
+                  </Button>
+                )}
 
-              <Button
-                type="button"
-                variant="ghost"
-                className="rounded-full text-slate-500"
-                onClick={() => setIsExpanded((current) => !current)}
-              >
-                <ChevronDown
-                  size={16}
-                  className={`ms-2 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                />
-                פרטים
-              </Button>
-
-              {canDelete && onDelete ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="rounded-full text-rose-500 hover:bg-rose-50 hover:text-rose-600"
-                  onClick={() => onDelete(meal.id)}
-                  aria-label={`מחק את ${meal.meal_name}`}
+                  className="rounded-xl h-10 w-10 text-slate-300 hover:text-slate-600 hover:bg-slate-50"
+                  onClick={() => setIsExpanded((current) => !current)}
                 >
-                  <Trash2 size={18} />
+                  <ChevronDown
+                    size={18}
+                    className={cn("transition-transform duration-300", isExpanded && "rotate-180")}
+                  />
                 </Button>
-              ) : null}
+
+                {canDelete && onDelete && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-xl h-10 w-10 text-slate-200 hover:text-rose-500 hover:bg-rose-50"
+                    onClick={() => onDelete(meal.id)}
+                  >
+                    <Trash2 size={18} />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[
+                { label: "חלבון", value: meal.macronutrients.protein, color: "bg-blue-50 text-blue-600" },
+                { label: "פחמימות", value: meal.macronutrients.carbs, color: "bg-emerald-50 text-emerald-600" },
+                { label: "שומן", value: meal.macronutrients.fat, color: "bg-amber-50 text-amber-600" }
+              ].map((macro) => (
+                <div key={macro.label} className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter", macro.color)}>
+                  {macro.label}: {formatNutritionValue(macro.value)} ג'
+                </div>
+              ))}
             </div>
           </div>
 
-          <AnimatePresence initial={false}>
-            {isExpanded ? (
+          <AnimatePresence>
+            {isExpanded && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
-                className="overflow-hidden"
+                transition={{ duration: 0.3, type: "spring", stiffness: 200, damping: 25 }}
+                className="overflow-hidden bg-slate-50/50 border-t border-white/50"
               >
-                <div className="grid grid-cols-1 gap-3 rounded-[22px] bg-slate-50/90 p-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="p-6 grid grid-cols-2 gap-3">
                   {highlightedMicros.map((key) => (
                     <div
                       key={key}
-                      className="rounded-2xl bg-white px-4 py-3 shadow-sm"
+                      className="rounded-2xl bg-white/80 p-3 border border-white shadow-sm flex flex-col gap-1"
                     >
-                      <p className="text-xs font-semibold text-slate-400">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         {NUTRIENT_META[key].label}
                       </p>
-                      <div className="mt-1 flex items-center gap-2 text-sm font-medium text-slate-700">
-                        <Sparkles size={14} className="text-sky-500" />
-                        {formatNutritionValue(meal.micronutrients[key])}{" "}
-                        {NUTRIENT_META[key].unit}
+                      <div className="flex items-center gap-1 text-sm font-black text-slate-900">
+                        <Sparkles size={12} className="text-sky-400" />
+                        {formatNutritionValue(meal.micronutrients[key])}
+                        <span className="text-[10px] text-slate-400">{NUTRIENT_META[key].unit}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </motion.div>
-            ) : null}
+            )}
           </AnimatePresence>
         </CardContent>
       </Card>

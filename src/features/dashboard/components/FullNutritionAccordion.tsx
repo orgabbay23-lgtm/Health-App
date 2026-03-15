@@ -23,16 +23,13 @@ export function FullNutritionAccordion({
     <Accordion type="single" collapsible>
       <AccordionItem value="full-nutrition">
         <AccordionTrigger>
-          <div className="space-y-1">
-            <p className="text-base font-semibold text-slate-950">
-              ערכים תזונתיים מלאים
-            </p>
-            <p className="text-sm text-slate-500">
-              ויטמינים ומינרלים נפתחים רק כשצריך, כדי לשמור על מסך בית נקי וברור.
+          <div className="flex items-center gap-3">
+            <p className="text-xl font-black text-slate-950">
+              ערכים תזונתיים
             </p>
           </div>
         </AccordionTrigger>
-        <AccordionContent>
+        <AccordionContent className="px-8 pb-8">
           <NutrientGrid
             current={current}
             target={target}

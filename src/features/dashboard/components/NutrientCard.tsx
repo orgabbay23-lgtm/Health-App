@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "../../../components/ui/card";
-import { Progress } from "../../../components/ui/progress";
 import { TipPopover } from "../../../components/ui/tip-popover";
 import {
   NUTRIENT_META,
@@ -28,43 +27,51 @@ export function NutrientCard({
 }: NutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
   const appearance = getProgressAppearance(current, target);
+  const percentage = Math.min(Math.max(appearance.percentage, 0), 100);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03, duration: 0.25 }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.02, duration: 0.3 }}
     >
-      <Card className="rounded-[24px] border-white/65 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-        <CardContent className="space-y-4 p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-slate-900">
+      <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-sm rounded-[1.5rem] overflow-hidden">
+        <CardContent className="flex flex-col gap-3 p-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
                   {meta.label}
                 </p>
                 <TipPopover
                   content={generateNutritionalTip(nutrient, userProfile)}
                   label={`טיפ עבור ${meta.label}`}
+                  className="scale-75 -ms-1"
                 />
               </div>
-              <p className="text-sm text-slate-500">
-                {formatNutritionValue(current)} / {formatNutritionValue(target)}{" "}
-                {meta.unit}
-              </p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-bold text-slate-900 leading-none">
+                  {formatNutritionValue(current)}
+                </span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                  / {formatNutritionValue(target)} {meta.unit}
+                </span>
+              </div>
             </div>
 
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${appearance.badgeClass}`}
-            >
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${appearance.badgeClass}`}>
               {appearance.percentage}%
             </span>
           </div>
 
-          <Progress
-            value={Math.min(appearance.percentage, 100)}
-            indicatorClassName={appearance.barClass}
-          />
+          <div className="h-1.5 w-full bg-slate-100/80 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${percentage}%` }}
+              transition={{ duration: 1, ease: "easeOut", delay: 0.1 + (index * 0.05) }}
+              className={`h-full rounded-full ${appearance.barClass}`}
+            />
+          </div>
         </CardContent>
       </Card>
     </motion.div>

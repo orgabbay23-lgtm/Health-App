@@ -1,4 +1,4 @@
-import { Settings2 } from "lucide-react";
+import { Settings2, LogOut } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { TipPopover } from "../../../components/ui/tip-popover";
@@ -9,6 +9,8 @@ import {
 import { formatNutritionValue } from "../../../utils/nutrition-utils";
 import type { UserData, UserProfile } from "../../../store";
 import { UserAvatar } from "../../users/UserAvatar";
+import { supabase } from "../../../lib/supabase";
+import { clearCachedApiKey } from "../../../utils/gemini";
 
 interface ProfileScreenProps {
   userProfile: UserProfile;
@@ -25,18 +27,17 @@ export function ProfileScreen({
   loggedDaysCount,
   onEditProfile,
 }: ProfileScreenProps) {
+  const handleLogout = async () => {
+    clearCachedApiKey();
+    await supabase.auth.signOut();
+  };
+
   const profileRows = [
     { label: "גיל", value: String(userProfile.age) },
     { label: "מגדר", value: userProfile.gender === "female" ? "נקבה" : "זכר" },
     { label: 'גובה', value: `${userProfile.height} ס"מ` },
     { label: 'משקל', value: `${userProfile.weight} ק"ג` },
-    {
-      label: "יעד",
-      value:
-        userProfile.goalDeficit > 0
-          ? `גרעון של ${userProfile.goalDeficit} קק"ל`
-          : "שמירה על המשקל",
-    },
+    { label: "יעד", value: userProfile.goalDeficit > 0 ? `${userProfile.goalDeficit} קק"ל` : "שמירה" },
     { label: "עישון", value: userProfile.isSmoker ? "כן" : "לא" },
   ];
 
@@ -60,62 +61,58 @@ export function ProfileScreen({
   ];
 
   return (
-    <div className="space-y-5">
-      <Card className="overflow-hidden border-white/70 bg-[linear-gradient(150deg,_rgba(255,255,255,0.96),_rgba(250,245,235,0.95))] shadow-[0_28px_72px_rgba(15,23,42,0.08)]">
-        <CardContent className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
+    <div className="space-y-6">
+      <Card className="overflow-hidden border-none bg-white/40 backdrop-blur-md shadow-soft-xl rounded-[2.5rem]">
+        <CardContent className="grid gap-8 p-8 lg:grid-cols-[1fr_auto]">
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-5">
               <UserAvatar
                 name={activeUser.name}
                 accent={activeUser.accent}
                 size="lg"
+                className="h-20 w-20 ring-4 ring-white shadow-md"
               />
-              <div className="space-y-1">
-                <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-                  PROFILE
-                </p>
-                <h2 className="text-3xl font-semibold text-slate-950">
+              <div className="space-y-0.5">
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight">
                   {activeUser.name}
                 </h2>
-                <p className="text-sm text-slate-500">
-                  יעדים קליניים, פרטים אישיים וניהול משתמשים במקום אחד.
-                </p>
+                <div className="flex gap-2">
+                   <span className="text-xs font-bold text-slate-400 uppercase bg-white/50 px-3 py-1 rounded-full">{loggedDaysCount} ימי רישום</span>
+                   <span className="text-xs font-bold text-slate-400 uppercase bg-white/50 px-3 py-1 rounded-full">{savedMealsCount} מועדפים</span>
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Button type="button" className="rounded-full" onClick={onEditProfile}>
-                <Settings2 size={16} className="ms-2" />
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" className="rounded-2xl h-11 px-6 bg-slate-950 shadow-lg" onClick={onEditProfile}>
+                <Settings2 size={18} className="ms-2" />
                 עריכת פרופיל
               </Button>
-            </div>          </div>
+              <Button type="button" variant="outline" className="rounded-2xl h-11 px-6 border-slate-200 text-red-500 hover:bg-red-50 hover:text-red-600" onClick={handleLogout}>
+                <LogOut size={18} className="ms-2" />
+                התנתקות
+              </Button>
+            </div>
+          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <ProfileStat label="ימים מתועדים" value={String(loggedDaysCount)} />
-            <ProfileStat label="מועדפים" value={String(savedMealsCount)} />
+          <div className="grid grid-cols-2 gap-3 min-w-[240px]">
             <ProfileStat
               label="BMR"
-              value={`${formatNutritionValue(userProfile.targets.calculations.bmr)} קק"ל`}
+              value={`${formatNutritionValue(userProfile.targets.calculations.bmr)}`}
             />
             <ProfileStat
               label="TDEE"
-              value={`${formatNutritionValue(userProfile.targets.calculations.tdee)} קק"ל`}
+              value={`${formatNutritionValue(userProfile.targets.calculations.tdee)}`}
             />
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Card className="border-white/70 bg-white/90 shadow-[0_22px_56px_rgba(15,23,42,0.06)]">
-          <CardContent className="space-y-4 p-5">
-            <div className="space-y-1">
-              <h3 className="text-xl font-semibold text-slate-950">פרטים אישיים</h3>
-              <p className="text-sm text-slate-500">
-                הנתונים שמזינים את כל החישובים הקליניים.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-6">
+        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-lg rounded-[2rem]">
+          <CardContent className="space-y-6 p-8">
+            <h3 className="text-xl font-bold text-slate-900">נתונים אישיים</h3>
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
               {profileRows.map((row) => (
                 <ProfileRow key={row.label} label={row.label} value={row.value} />
               ))}
@@ -123,27 +120,21 @@ export function ProfileScreen({
           </CardContent>
         </Card>
 
-        <Card className="border-white/70 bg-white/90 shadow-[0_22px_56px_rgba(15,23,42,0.06)]">
-          <CardContent className="space-y-4 p-5">
-            <div className="space-y-1">
-              <h3 className="text-xl font-semibold text-slate-950">יעדי מאקרו</h3>
-              <p className="text-sm text-slate-500">
-                כל יעד כולל טיפ מותאם אישית לפי גיל, מגדר ומטרה.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
+        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-lg rounded-[2rem]">
+          <CardContent className="space-y-6 p-8">
+            <h3 className="text-xl font-bold text-slate-900">יעדים קליניים</h3>
+            <div className="grid gap-4 grid-cols-2">
               {targetRows.map((row) => (
                 <div
                   key={row.nutrient}
-                  className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3"
+                  className="rounded-3xl border border-white bg-white/50 p-5 shadow-sm"
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <p className="text-xs font-semibold tracking-[0.14em] text-slate-400">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                         {NUTRIENT_META[row.nutrient].label}
                       </p>
-                      <p className="text-sm font-medium text-slate-800">{row.value}</p>
+                      <p className="text-lg font-bold text-slate-900">{row.value}</p>
                     </div>
                     <TipPopover
                       content={generateNutritionalTip(row.nutrient, userProfile)}
@@ -152,22 +143,14 @@ export function ProfileScreen({
                   </div>
                 </div>
               ))}
-              <ProfileRow
-                label="רצפה קלינית"
-                value={`${formatNutritionValue(userProfile.targets.calculations.clinicalCalorieFloor)} קק"ל`}
-              />
-              <ProfileRow
-                label="משקל ייחוס"
-                value={`${formatNutritionValue(userProfile.targets.calculations.referenceWeight)} ק"ג`}
-              />
             </div>
 
             {userProfile.targets.guidanceFlags.length > 0 ? (
-              <div className="space-y-3 rounded-[24px] bg-slate-50 p-4">
+              <div className="space-y-2">
                 {userProfile.targets.guidanceFlags.map((flag) => (
                   <div
                     key={flag}
-                    className="rounded-2xl border border-white bg-white px-4 py-3 text-sm leading-6 text-slate-600"
+                    className="rounded-2xl border border-blue-100 bg-blue-50/50 px-5 py-3 text-sm font-medium text-blue-700"
                   >
                     {flag}
                   </div>
@@ -183,22 +166,23 @@ export function ProfileScreen({
 
 function ProfileStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[24px] border border-white/70 bg-white/92 p-4 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-      <p className="text-xs font-semibold tracking-[0.14em] text-slate-400">
+    <div className="rounded-[1.5rem] border border-white bg-white/80 p-5 shadow-sm">
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
+      <p className="mt-1 text-2xl font-black text-slate-900 tracking-tighter">{value}</p>
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">קק"ל / יום</p>
     </div>
   );
 }
 
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3">
-      <p className="text-xs font-semibold tracking-[0.14em] text-slate-400">
+    <div className="rounded-[1.25rem] border border-white bg-white/40 p-4">
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
         {label}
       </p>
-      <p className="mt-1 text-sm font-medium text-slate-800">{value}</p>
+      <p className="mt-1 text-base font-bold text-slate-900">{value}</p>
     </div>
   );
 }

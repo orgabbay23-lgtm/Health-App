@@ -51,8 +51,8 @@ export function HistoryScreen({
   onSaveFavorite,
 }: HistoryScreenProps) {
   return (
-    <div className="space-y-5">
-      <div className="space-y-4">
+    <div className="space-y-8">
+      <div className="space-y-6">
         <PeriodTabs value={periodMode} onChange={onPeriodChange} />
         <DateNavigator
           periodMode={periodMode}
@@ -61,32 +61,19 @@ export function HistoryScreen({
         />
       </div>
 
-      <Card className="border-white/70 bg-white/90 shadow-[0_24px_64px_rgba(15,23,42,0.06)]">
-        <CardContent className="space-y-4 p-5">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-              HISTORY
-            </p>
-            <h2 className="text-2xl font-semibold text-slate-950">
-              ניווט חופשי אחורה עד חודשיים
-            </h2>
-            <p className="text-sm text-slate-500">
-              בחר תקופה למעלה, קפוץ לתאריך הרצוי, ואז פתח יום מסוים מתוך הארכיון
-              המהיר.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3 text-sm text-slate-600">
-            <div className="rounded-full bg-slate-100 px-3 py-1.5">
-              {periodData.loggedDays} ימים מתועדים
+      <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-lg rounded-[2rem]">
+        <CardContent className="space-y-4 p-6">
+          <div className="flex flex-wrap gap-2 text-sm">
+            <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
+              {periodData.loggedDays} ימים
             </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1.5">
-              {Math.round(periodData.aggregations.calories)} קק"ל בתקופה
+            <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
+              {Math.round(periodData.aggregations.calories)} קק"ל
             </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1.5">
-              יעד חלבון: {Math.round(periodTargets.protein)} גרם
+            <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
+              {Math.round(periodTargets.protein)}ג חלבון
             </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1.5">
+            <div className="rounded-full bg-slate-900 px-4 py-2 font-bold text-white uppercase tracking-tighter ms-auto">
               <span dir="ltr">{selectedDayKey}</span>
             </div>
           </div>
@@ -97,25 +84,18 @@ export function HistoryScreen({
         <SafetyAlertsCard alerts={safetyAlerts} />
       ) : null}
 
-      <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <HistoryArchive
           dailyLogs={dailyLogs}
           selectedDayKey={selectedDayKey}
           onSelect={onSelectDayKey}
         />
 
-        <Card className="border-white/70 bg-white/90 shadow-[0_22px_56px_rgba(15,23,42,0.06)]">
-          <CardContent className="space-y-5 p-5">
-            <div className="space-y-1">
-              <h3 className="text-xl font-semibold text-slate-950">
-                {periodMode === "daily" ? "היום שנבחר" : "פירוט ימים בתקופה"}
-              </h3>
-              <p className="text-sm text-slate-500">
-                {periodMode === "daily"
-                  ? "כאן תראה את כל הארוחות של התאריך המסומן."
-                  : "פתח יום כלשהו כדי לראות מה נרשם בו ולשמור ארוחות למועדפים."}
-              </p>
-            </div>
+        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-xl rounded-[2.5rem] overflow-hidden">
+          <CardContent className="space-y-6 p-6 md:p-8">
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">
+              {periodMode === "daily" ? "ארוחות ביום שנבחר" : "פירוט התקופה"}
+            </h3>
 
             {periodMode === "daily" ? (
               <MealTimeline
@@ -123,7 +103,7 @@ export function HistoryScreen({
                 onDelete={(mealId) => onDeleteMeal(selectedDayKey, mealId)}
                 onSaveFavorite={onSaveFavorite}
                 savedSignatures={savedSignatures}
-                emptyText="אין רישומים לתאריך שנבחר."
+                emptyText="אין תיעוד לתאריך זה."
               />
             ) : (
               <PeriodBreakdown
