@@ -1,53 +1,22 @@
-import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Dashboard } from "./features/dashboard/Dashboard";
 import { OnboardingFlow } from "./features/onboarding/OnboardingFlow";
 import { AuthScreen } from "./features/auth/AuthScreen";
 import { AuthCallback } from "./features/auth/AuthCallback";
+import { useAuth } from "./components/AuthProvider";
 import { useAppStore } from "./store";
-import { supabase } from "./lib/supabase";
 
 function App() {
-  const [appReady, setAppReady] = useState(false);
+  const { user, loading: authLoading } = useAuth();
   const profile = useAppStore(state => state.profile);
-  const fetchUserData = useAppStore(state => state.fetchUserData);
-  const userId = useAppStore(state => state.userId);
+  const isLoadingData = useAppStore(state => state.isLoadingData);
   const isCallback = window.location.pathname === "/auth/callback";
-
-  useEffect(() => {
-    async function initApp() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          await fetchUserData(session.user.id);
-        }
-      } catch (error) {
-        console.error("App initialization failed", error);
-      } finally {
-        setAppReady(true);
-      }
-    }
-
-    initApp();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        if (useAppStore.getState().userId !== session.user.id) {
-          await fetchUserData(session.user.id);
-        }
-      } else {
-        useAppStore.getState().clearUserData();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [fetchUserData]);
 
   if (isCallback) {
     return <AuthCallback />;
   }
 
-  if (!appReady) {
+  if (authLoading || (user && isLoadingData)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(250,245,235,0.95),_rgba(255,255,255,0.96)_42%,_rgba(237,246,255,0.95)_80%)]">
         <motion.div
@@ -65,7 +34,7 @@ function App() {
   let screen = <AuthScreen />;
   let key = "auth";
 
-  if (userId) {
+  if (user) {
     if (profile) {
       screen = <Dashboard />;
       key = "dashboard";

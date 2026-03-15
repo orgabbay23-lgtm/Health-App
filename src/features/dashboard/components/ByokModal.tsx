@@ -10,7 +10,7 @@ interface ByokModalProps {
   onSuccess: (key: string) => void;
 }
 
-const STORAGE_KEY = 'gemini_api_key';
+const STORAGE_KEY = 'gemini_personal_api_key';
 
 export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
   const [key, setKey] = useState("");
