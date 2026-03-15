@@ -13,7 +13,7 @@ interface ByokModalProps {
 }
 
 export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
-  const [key, setKey] = useState("");
+  const [inputKey, setInputKey] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -24,7 +24,7 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
   if (!isMounted) return null;
 
   const handleSave = async () => {
-    const rawCleanKey = key.replace(/\s+/g, '').trim();
+    const rawCleanKey = inputKey.replace(/\s+/g, '').trim();
     if (rawCleanKey) {
       setIsSaving(true);
       try {
@@ -56,8 +56,8 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
             id="api-key"
             type="password"
             placeholder="AIza..."
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
+            value={inputKey}
+            onChange={(e) => setInputKey(e.target.value)}
             className="text-left"
             dir="ltr"
           />

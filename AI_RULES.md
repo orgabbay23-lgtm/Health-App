@@ -41,8 +41,3 @@
 * **Zero TypeScript Errors:** Vercel strictly enforces build checks. Do NOT leave unused imports (e.g., `TS6133`), variables, or hanging syntax issues (`TS1128`).
 * **Env Variables:** Handled securely via `import.meta.env`. `.env` is fully ignored.
 
----
-**Current Phase / Next Steps (Last Updated: Feature Revert & Vault Migration)**
-1. Fixing "Edit Profile" DB write issues.
-2. Personalizing the app with dynamic user names everywhere.
-3. Migrating API Key storage to Supabase Vault via custom SQL RPCs.

@@ -128,26 +128,24 @@ export function clearCachedApiKey() {
 }
 
 const getApiKey = async (): Promise<string> => {
-  const { data: apiKey, error: vaultError } = await supabase.rpc('get_user_api_key');
+  const { data: vaultData, error: vaultError } = await supabase.rpc('get_user_api_key');
   
   if (vaultError) {
     console.error("Vault retrieval error:", vaultError);
     throw new Error("VAULT_ERROR");
   }
 
-  let rawKey = apiKey;
-  if (typeof apiKey === 'object' && apiKey !== null) {
-    rawKey = Object.values(apiKey)[0] || JSON.stringify(apiKey);
+  let finalKey = "";
+  if (typeof vaultData === 'string') {
+    finalKey = vaultData.trim();
   }
-
-  let finalKey = String(rawKey).replace(/^["']|["']$/g, '').replace(/\s+/g, '').trim();
 
   if (!finalKey || finalKey === 'undefined' || finalKey === 'null') {
     const envKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!envKey) {
       throw new Error("MISSING_API_KEY");
     }
-    finalKey = String(envKey).replace(/^["']|["']$/g, '').replace(/\s+/g, '').trim();
+    finalKey = String(envKey).trim();
   }
 
   return finalKey;
