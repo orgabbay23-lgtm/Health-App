@@ -46,7 +46,7 @@ export function MealTimeline({
         <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center mb-6 shadow-inner border border-white">
           <Sparkles className="text-slate-200 w-10 h-10" />
         </div>
-        <h3 className="text-xl font-black text-slate-800 mb-2">היום שלך מתחיל כאן...</h3>
+        <h3 className="text-xl font-black text-slate-800 mb-2">אין ארוחות עדיין</h3>
         <p className="text-sm text-slate-400 font-medium max-w-[200px] leading-relaxed">
           {emptyText}
         </p>
@@ -117,7 +117,7 @@ function MealTimelineItem({
       }}
       whileHover={{ x: 4 }}
     >
-      <Card className="overflow-hidden rounded-[2rem] border border-white/60 bg-white/50 backdrop-blur-md shadow-soft-xl transition-all duration-300">
+      <Card className="rounded-[2rem] border border-white/60 bg-white/50 backdrop-blur-md shadow-soft-xl transition-all duration-300">
         <CardContent className="p-0">
           <div className="p-6">
             <div className="flex items-start justify-between gap-4">

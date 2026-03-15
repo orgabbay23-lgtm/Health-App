@@ -188,16 +188,16 @@ export function Dashboard() {
 
   return (
     <div
-      className="min-h-screen relative overflow-x-hidden"
+      className="relative overflow-x-hidden"
       dir="rtl"
     >
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="relative mx-auto max-w-2xl min-h-screen bg-white/20 backdrop-blur-[2px] border-x border-white/10 shadow-2xl"
+        className="relative mx-auto max-w-2xl bg-white/20 backdrop-blur-[2px] border-x border-white/10 shadow-2xl"
       >
-        <div className="space-y-8 px-4 py-6 pt-safe-top pb-32 md:pb-12 pb-safe-bottom">
+        <div className="space-y-8 px-4 py-6 pt-safe-top pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-12">
           <DashboardTopBar
             periodMode={periodMode}
             onPeriodChange={setPeriodMode}

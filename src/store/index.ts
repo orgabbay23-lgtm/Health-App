@@ -293,11 +293,11 @@ export const useAppStore = create<AppState>()(
       _lastFetchTime: 0,
 
       fetchUserData: async (userId: string, isSilent?: boolean) => {
-        // Prevent redundant fetches within 5 seconds unless explicit
         const now = Date.now();
-        const { userId: existingUserId, profile: existingProfile, isLoadingData, _lastFetchTime } = get();
-        
-        if (existingUserId === userId && isLoadingData && (now - _lastFetchTime < 5000)) {
+        const { userId: existingUserId, profile: existingProfile, _lastFetchTime } = get();
+
+        // FIX: Independent time check — prevent redundant fetches within 5 seconds
+        if (existingUserId === userId && (now - _lastFetchTime < 5000)) {
           return;
         }
 
@@ -305,9 +305,9 @@ export const useAppStore = create<AppState>()(
         if (!shouldBeSilent) {
           set({ isLoadingData: true });
         }
-        
+
         set({ userId, _lastFetchTime: now });
-        
+
         try {
           const [profileRes, logsRes, mealsRes] = await Promise.all([
             supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
@@ -335,7 +335,6 @@ export const useAppStore = create<AppState>()(
               isSmoker: profileRes.data.medical_conditions?.includes('smoker') ?? false,
             });
           } else if (!existingProfile) {
-            // Only set to null if we don't have one and didn't find one
             profile = null;
           }
 
@@ -350,14 +349,19 @@ export const useAppStore = create<AppState>()(
             });
           }
 
+          // FIX: Merge optimistic saved meals with server data instead of wholesale overwrite
           let savedMeals = [...get().savedMeals];
           if (mealsRes.data) {
-            savedMeals = mealsRes.data.map(sm => ({
+            const serverMeals = mealsRes.data.map(sm => ({
               id: sm.id,
               savedAt: sm.created_at,
               signature: createMealSignature(sm.ingredients?.[0] || {}),
               meal: normalizeMealItem(sm.ingredients?.[0] || {}),
             }));
+            const serverIds = new Set(serverMeals.map(sm => sm.id));
+            // Keep local optimistic entries not yet on server, prepend them
+            const localOnly = savedMeals.filter(sm => !serverIds.has(sm.id));
+            savedMeals = [...localOnly, ...serverMeals];
           }
 
           set({ name, profile, dailyLogs, savedMeals });
@@ -381,7 +385,8 @@ export const useAppStore = create<AppState>()(
 
       clearUserData: () => {
         set({ name: null, profile: null, dailyLogs: {}, savedMeals: [], userId: null, _lastFetchTime: 0, isAppReady: false });
-        localStorage.removeItem('app-storage'); // Force clear persistence
+        // FIX: Use Zustand persist clearStorage instead of raw localStorage
+        useAppStore.persist.clearStorage();
       },
 
   setUserProfile: async (profileInput) => {
@@ -404,7 +409,7 @@ export const useAppStore = create<AppState>()(
       });
 
       if (error) throw error;
-      
+
       set({ profile, name: profileInput.name });
       toast.success("הפרופיל נשמר בהצלחה");
     } catch (error) {
@@ -427,18 +432,29 @@ export const useAppStore = create<AppState>()(
   addMealLog: async (dayKey, meal) => {
     const { dailyLogs, profile, userId } = get();
     if (!userId) return [];
-    
+
+    // Snapshot for rollback
+    const previousLogs = dailyLogs;
+
     const { dailyLogs: nextLogs, alerts } = appendMealToDailyLogs(dailyLogs, profile, dayKey, meal);
     set({ dailyLogs: nextLogs });
 
+    // FIX: Check Supabase error and roll back optimistic update on failure
     const logToSave = nextLogs[dayKey];
-    await supabase.from('daily_logs').upsert({
+    const { error } = await supabase.from('daily_logs').upsert({
       user_id: userId,
       date: dayKey,
       meals: logToSave.meals,
       aggregations: logToSave.aggregations,
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id,date' });
+
+    if (error) {
+      console.error("Error saving meal log", error);
+      set({ dailyLogs: previousLogs });
+      toast.error("שגיאה בשמירת הארוחה בשרת. השינוי בוטל.");
+      return [];
+    }
 
     return alerts;
   },
@@ -447,20 +463,33 @@ export const useAppStore = create<AppState>()(
     const { dailyLogs, userId } = get();
     if (!userId) return;
 
+    // Snapshot for rollback
+    const previousLogs = dailyLogs;
+
     const nextLogs = removeMealFromDailyLogs(dailyLogs, dayKey, mealId);
     set({ dailyLogs: nextLogs });
 
+    // FIX: Check Supabase error and roll back on failure
     const logToSave = nextLogs[dayKey];
+    let error;
     if (logToSave) {
-      await supabase.from('daily_logs').upsert({
+      const res = await supabase.from('daily_logs').upsert({
         user_id: userId,
         date: dayKey,
         meals: logToSave.meals,
         aggregations: logToSave.aggregations,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id,date' });
+      error = res.error;
     } else {
-       await supabase.from('daily_logs').delete().eq('user_id', userId).eq('date', dayKey);
+      const res = await supabase.from('daily_logs').delete().eq('user_id', userId).eq('date', dayKey);
+      error = res.error;
+    }
+
+    if (error) {
+      console.error("Error removing meal log", error);
+      set({ dailyLogs: previousLogs });
+      toast.error("שגיאה במחיקת הארוחה מהשרת. השינוי בוטל.");
     }
   },
 
@@ -482,9 +511,13 @@ export const useAppStore = create<AppState>()(
       meal: normalizedMeal,
     };
 
+    // Snapshot for rollback
+    const previousSavedMeals = savedMeals;
+
     set({ savedMeals: [newSavedMeal, ...savedMeals] });
 
-    await supabase.from('saved_meals').insert({
+    // FIX: Check Supabase error and roll back on failure
+    const { error } = await supabase.from('saved_meals').insert({
       id: newSavedMeal.id,
       user_id: userId,
       name: normalizedMeal.meal_name,
@@ -493,6 +526,13 @@ export const useAppStore = create<AppState>()(
       updated_at: newSavedMeal.savedAt
     });
 
+    if (error) {
+      console.error("Error saving favorite meal", error);
+      set({ savedMeals: previousSavedMeals });
+      toast.error("שגיאה בשמירת הארוחה במועדפים. השינוי בוטל.");
+      return false;
+    }
+
     return true;
   },
 
@@ -500,8 +540,19 @@ export const useAppStore = create<AppState>()(
     const { savedMeals, userId } = get();
     if (!userId) return;
 
+    // Snapshot for rollback
+    const previousSavedMeals = savedMeals;
+
     set({ savedMeals: savedMeals.filter(sm => sm.id !== savedMealId) });
-    await supabase.from('saved_meals').delete().eq('id', savedMealId).eq('user_id', userId);
+
+    // FIX: Check Supabase error and roll back on failure
+    const { error } = await supabase.from('saved_meals').delete().eq('id', savedMealId).eq('user_id', userId);
+
+    if (error) {
+      console.error("Error removing saved meal", error);
+      set({ savedMeals: previousSavedMeals });
+      toast.error("שגיאה במחיקת הארוחה מהמועדפים. השינוי בוטל.");
+    }
   },
 
   addSavedMealToDay: async (dayKey, savedMealId) => {
@@ -526,10 +577,20 @@ export const useAppStore = create<AppState>()(
     savedMeals: state.savedMeals,
     userId: state.userId,
   }),
-  onRehydrateStorage: () => (state) => {
-    if (state) {
-      state.setHasHydrated(true);
+  // FIX: Wrap onRehydrateStorage in try/catch to handle corrupted storage
+  onRehydrateStorage: () => (state, error) => {
+    if (error || !state) {
+      console.error("Zustand hydration failed, clearing corrupted storage:", error);
+      try {
+        localStorage.removeItem("app-storage");
+      } catch {
+        // localStorage may be unavailable
+      }
+      // Still mark as hydrated so the app doesn't get stuck on the loading screen
+      useAppStore.getState().setHasHydrated(true);
+      return;
     }
+    state.setHasHydrated(true);
   },
 }
 )
@@ -541,7 +602,7 @@ export function useActiveUser() {
   const profile = useAppStore(state => state.profile);
   const dailyLogs = useAppStore(state => state.dailyLogs);
   const savedMeals = useAppStore(state => state.savedMeals);
-  
+
   if (!userId) return null;
   return {
     id: userId,
@@ -565,4 +626,3 @@ export function useActiveDailyLogs() {
 export function useActiveSavedMeals() {
   return useAppStore((state) => state.savedMeals);
 }
-

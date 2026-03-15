@@ -129,7 +129,7 @@ export function clearCachedApiKey() {
 
 const getApiKey = async (): Promise<string> => {
   const { data: vaultData, error: vaultError } = await supabase.rpc('get_user_api_key');
-  
+
   if (vaultError) {
     console.error("Vault retrieval error:", vaultError);
     throw new Error("VAULT_ERROR");
@@ -140,12 +140,9 @@ const getApiKey = async (): Promise<string> => {
     finalKey = vaultData.trim();
   }
 
+  // FIX: Removed env variable fallback — all keys must go through Vault per AI_RULES.md Section 4
   if (!finalKey || finalKey === 'undefined' || finalKey === 'null') {
-    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!envKey) {
-      throw new Error("MISSING_API_KEY");
-    }
-    finalKey = String(envKey).trim();
+    throw new Error("MISSING_API_KEY");
   }
 
   return finalKey;
@@ -162,7 +159,7 @@ export async function parseMealDescription(
     }
 
     const performRequest = async (modelName: string) => {
-      console.log("DEBUG KEY - Type:", typeof finalKey, "| Length:", finalKey.length, "| Starts with:", finalKey.substring(0, 5), "| Ends with:", finalKey.substring(finalKey.length - 3));
+      // FIX: Removed console.log that leaked API key content
       const genAI = new GoogleGenerativeAI(finalKey);
       const model = genAI.getGenerativeModel({
         model: modelName,
@@ -185,14 +182,12 @@ export async function parseMealDescription(
     try {
       return await performRequest(PRIMARY_MODEL);
     } catch (apiError: any) {
-      console.error(`Primary model (${PRIMARY_MODEL}) failed:`, apiError);
-      
-      const isAuthError = 
-        apiError?.status === 401 || 
-        apiError?.status === 403 || 
-        apiError?.message?.includes("401") || 
-        apiError?.message?.includes("403") || 
-        apiError?.message?.toLowerCase().includes("unauthorized") || 
+      const isAuthError =
+        apiError?.status === 401 ||
+        apiError?.status === 403 ||
+        apiError?.message?.includes("401") ||
+        apiError?.message?.includes("403") ||
+        apiError?.message?.toLowerCase().includes("unauthorized") ||
         apiError?.message?.toLowerCase().includes("invalid api key") ||
         apiError?.message?.toLowerCase().includes("api key not found");
 
@@ -200,9 +195,9 @@ export async function parseMealDescription(
         throw new Error("API_KEY_INVALID");
       }
 
-      const isInvalidKeyError = 
-        apiError?.status === 400 || 
-        apiError?.message?.includes("400") || 
+      const isInvalidKeyError =
+        apiError?.status === 400 ||
+        apiError?.message?.includes("400") ||
         apiError?.message?.includes("API_KEY_INVALID");
 
       if (isInvalidKeyError) {
@@ -216,23 +211,19 @@ export async function parseMealDescription(
         apiError?.message?.toLowerCase().includes("too many requests");
 
       if (isQuotaError) {
-        console.warn(`Retrying with fallback model (${FALLBACK_MODEL})...`);
         try {
           return await performRequest(FALLBACK_MODEL);
-        } catch (fallbackError) {
-          console.error(`Fallback model (${FALLBACK_MODEL}) also failed:`, fallbackError);
+        } catch {
           throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
         }
       }
-      
+
       throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
     }
   } catch (error: any) {
-    console.error("Gemini API Error details:", error);
     if (error.message === "MISSING_API_KEY" || error.message === "API_KEY_INVALID" || error.message === "INVALID_KEY_FROM_GOOGLE") {
       throw error;
     }
     throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
   }
 }
-

@@ -56,7 +56,7 @@ export function PrimaryNutrientCard({
         </div>
       )}
 
-      <Card className="border-none bg-white/40 backdrop-blur-xl shadow-soft-2xl rounded-[3rem] border border-white/60">
+      <Card className="border border-white/60 bg-white/40 backdrop-blur-xl shadow-soft-2xl rounded-[3rem]">
         <CardContent className="flex flex-col items-center gap-8 p-10">
           <div className="relative flex h-56 w-56 items-center justify-center">
             <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
@@ -128,7 +128,7 @@ export function PrimaryNutrientCard({
             <motion.div 
               whileHover={{ scale: 1.1, rotate: 5 }}
               whileTap={{ scale: 0.9 }}
-              className="h-12 w-12 flex items-center justify-center rounded-2xl bg-white shadow-soft-lg border border-slate-100"
+              className="h-12 w-12 flex items-center justify-center rounded-2xl bg-white shadow-soft-xl border border-slate-100"
             >
                 <TipPopover
                   content={generateNutritionalTip(nutrient, userProfile)}

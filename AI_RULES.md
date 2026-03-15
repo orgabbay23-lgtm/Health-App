@@ -127,3 +127,33 @@
     * `manifest.json` enforces `"display": "standalone"` with `display_override` fallback chain.
     * Viewport meta uses `viewport-fit=cover`, `maximum-scale=1.0`, `user-scalable=no`.
     * Theme colors are media-query-split for light/dark scheme support.
+
+## 9. QA & Performance Standards
+
+* **Error Boundaries:**
+    * A global `ErrorBoundary` component (`src/components/ErrorBoundary.tsx`) wraps the entire app in `main.tsx`.
+    * On render failure, it displays a Hebrew fallback UI with a "clear cache and reload" button.
+    * The boundary clears `localStorage` on reset to recover from corrupted persisted state.
+
+* **RTL Margin Convention:**
+    * **Rule:** Always use logical properties (`ms-2`, `me-2`, `ps-4`, `pe-4`) instead of physical ones (`ml-2`, `mr-2`, `pl-4`, `pr-4`) for margins and padding adjacent to text/icons.
+    * This ensures correct spacing in RTL layout without manual `rtl:` prefixes.
+
+* **Zustand Hydration Safeguards:**
+    * `onRehydrateStorage` is wrapped in error handling. If deserialization fails (corrupted `app-storage`), the corrupted data is cleared and `_hasHydrated` is still set to `true` to prevent permanent loading screens.
+    * `clearUserData()` uses `useAppStore.persist.clearStorage()` instead of raw `localStorage.removeItem()` to stay in sync with Zustand's persist middleware lifecycle.
+    * The fetch throttle guard uses an independent time check (`now - _lastFetchTime < 5000`) without requiring `isLoadingData` to also be true, preventing race conditions.
+
+* **Optimistic Update Rollback:**
+    * All Supabase write operations (`addMealLog`, `removeMealLog`, `saveMealAsFavorite`, `removeSavedMeal`) snapshot state before optimistic updates. If the DB write returns an `error`, state is rolled back and a Hebrew toast notifies the user.
+    * Background fetch merges server `savedMeals` with local optimistic entries (by ID) instead of wholesale overwriting.
+
+* **Vault-Only API Key Policy:**
+    * `getApiKey()` in `gemini.ts` does NOT fall back to `import.meta.env.VITE_GEMINI_API_KEY`. All API keys must go through Vault RPCs exclusively.
+    * No API key content (even partial) is logged to the console.
+
+* **Shadow Utility Standardization:**
+    * All `shadow-soft-*` classes (`soft-sm`, `soft-lg`, `soft-xl`, `soft-2xl`) are defined in `tailwind.config.js` under `theme.extend.boxShadow`. The duplicate CSS definitions in `index.css` have been removed.
+
+* **Modal Focus Trap:**
+    * The `ModalShell` focus trap query selector covers all input types: `input:not([disabled])` (universal), not just specific `input[type="text"]` variants. This ensures Tab-trapping works for `number`, `password`, `email`, `date`, and all future input types.

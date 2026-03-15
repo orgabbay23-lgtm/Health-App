@@ -184,7 +184,7 @@ export function MealLogModal({
           <TabsList className="grid w-full grid-cols-3 h-14">
             <TabsTrigger value="ai" className="gap-2">
               <WandSparkles size={16} />
-              AI
+              חכם
             </TabsTrigger>
             <TabsTrigger value="manual" className="gap-2">
               <Plus size={16} />
@@ -315,7 +315,7 @@ export function MealLogModal({
                   className="w-full h-12 rounded-xl border-dashed border-2 border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-white"
                   onClick={() => append({ foodName: "", quantity: 1, unit: "גרם" })}
                 >
-                  <Plus className="ml-2 h-4 w-4" />
+                  <Plus className="ms-2 h-4 w-4" />
                   הוסף מרכיב נוסף
                 </Button>
 

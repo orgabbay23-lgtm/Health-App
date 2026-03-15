@@ -23,7 +23,9 @@ export default {
       },
       boxShadow: {
         'soft-sm': '0 2px 8px rgba(0,0,0,0.04)',
-        'soft-xl': '0 12px 32px rgba(0,0,0,0.12)',
+        'soft-lg': '0 10px 24px rgba(0,0,0,0.06)',
+        'soft-xl': '0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02)',
+        'soft-2xl': '0 25px 50px -12px rgba(0,0,0,0.08)',
       },
       colors: {
         border: "hsl(var(--border))",

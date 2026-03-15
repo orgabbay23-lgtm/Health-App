@@ -1,7 +1,7 @@
 import {
   MICRONUTRIENT_KEYS,
-  MicronutrientTotals,
-  type MicronutrientKey
+  type MicronutrientKey,
+  type MicronutrientTotals,
 } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
 import { NutrientCard } from "./NutrientCard";
@@ -37,8 +37,8 @@ export function NutrientGrid({
         <NutrientCard
           key={nutrient}
           nutrient={nutrient}
-          current={current[nutrient as keyof MicronutrientTotals]}
-          target={target[nutrient as keyof MicronutrientTotals]}
+          current={current[nutrient]}
+          target={target[nutrient]}
           userProfile={userProfile}
           index={index}
         />

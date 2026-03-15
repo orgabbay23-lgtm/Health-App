@@ -3,6 +3,7 @@ import type {
   DashboardPeriod,
   PeriodDetails,
 } from "../../../utils/date-navigation";
+import { dayKeyToDate } from "../../../utils/date-navigation";
 import type {
   DailyAggregations,
   DailyLog,
@@ -70,7 +71,7 @@ export function HistoryScreen({
               {Math.round(periodTargets.protein)}ג חלבון
             </div>
             <div className="rounded-full bg-slate-900 px-4 py-2 font-bold text-white uppercase tracking-tighter ms-auto">
-              <span dir="ltr">{selectedDayKey}</span>
+              <span dir="ltr">{formatSelectedDate(selectedDayKey)}</span>
             </div>
           </div>
         </CardContent>
@@ -87,7 +88,7 @@ export function HistoryScreen({
           onSelect={onSelectDayKey}
         />
 
-        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-xl rounded-[2.5rem] overflow-hidden">
+        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-xl rounded-[2.5rem]">
           <CardContent className="space-y-6 p-6 md:p-8">
             <h3 className="text-xl font-black text-slate-900 tracking-tight">
               {periodMode === "daily" ? "ארוחות ביום שנבחר" : "פירוט התקופה"}
@@ -114,4 +115,13 @@ export function HistoryScreen({
       </div>
     </div>
   );
+}
+
+function formatSelectedDate(dayKey: string): string {
+  return new Intl.DateTimeFormat("he-IL", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(dayKeyToDate(dayKey));
 }

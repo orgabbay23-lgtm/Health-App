@@ -11,10 +11,12 @@ import {
   type ProfileFormValues,
 } from "../profile/profile-form-schema";
 import { UserAvatar } from "../users/UserAvatar";
+import { supabase } from "../../lib/supabase";
 
 export function OnboardingFlow() {
   const activeUser = useActiveUser();
   const setUserProfile = useAppStore((state) => state.setUserProfile);
+  const clearUserData = useAppStore((state) => state.clearUserData);
 
   const {
     register,
@@ -43,9 +45,14 @@ export function OnboardingFlow() {
     setUserProfile(data);
   };
 
+  const handleBack = async () => {
+    clearUserData();
+    await supabase.auth.signOut();
+  };
+
   return (
     <div
-      className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,247,237,0.92),_rgba(255,255,255,0.95)_42%,_rgba(239,246,255,0.96)_78%),linear-gradient(180deg,_#faf6ef_0%,_#f8fafc_56%,_#edf6ff_100%)] px-4 py-8 text-right"
+      className="bg-[radial-gradient(circle_at_top,_rgba(255,247,237,0.92),_rgba(255,255,255,0.95)_42%,_rgba(239,246,255,0.96)_78%),linear-gradient(180deg,_#faf6ef_0%,_#f8fafc_56%,_#edf6ff_100%)] px-4 py-8 text-right"
       dir="rtl"
     >
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center">
@@ -54,7 +61,7 @@ export function OnboardingFlow() {
             <CardContent className="space-y-8 p-8 md:p-10">
               <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-xs font-semibold tracking-[0.18em] text-slate-500 shadow-sm">
                 <Sparkles size={14} />
-                USER SETUP
+                הגדרת משתמש
               </div>
 
               <div className="flex items-center gap-4">
@@ -82,10 +89,10 @@ export function OnboardingFlow() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <FeaturePill label="Gemini 3.0 Flash" />
-                <FeaturePill label="Clinical formulas" />
-                <FeaturePill label="AI logging" />
-                <FeaturePill label="Cloud Sync" />
+                <FeaturePill label="Gemini 3 Flash" />
+                <FeaturePill label="נוסחאות קליניות" />
+                <FeaturePill label="תיעוד AI" />
+                <FeaturePill label="סנכרון ענן" />
               </div>
             </CardContent>
           </Card>
@@ -97,7 +104,7 @@ export function OnboardingFlow() {
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
                   <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-                    PROFILE DETAILS
+                    פרטי פרופיל
                   </p>
                   <h2 className="text-2xl font-semibold text-slate-950">
                     משלימים את ההגדרה הראשונית
@@ -108,10 +115,10 @@ export function OnboardingFlow() {
                   type="button"
                   variant="ghost"
                   className="rounded-full"
-                  onClick={() => {}}
+                  onClick={handleBack}
                 >
                   <ArrowRight size={16} className="ms-2" />
-                  חזרה לבחירת משתמש
+                  התנתקות
                 </Button>
               </div>
 

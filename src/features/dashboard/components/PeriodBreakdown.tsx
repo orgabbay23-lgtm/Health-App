@@ -50,7 +50,7 @@ function PeriodBreakdownItem({
   const [isOpen, setIsOpen] = useState(Boolean(day.log));
 
   return (
-    <Card className="overflow-hidden rounded-[24px] border-white/60 bg-white/88 shadow-[0_14px_32px_rgba(15,23,42,0.05)]">
+    <Card className="rounded-[24px] border-white/60 bg-white/88 shadow-[0_14px_32px_rgba(15,23,42,0.05)]">
       <button
         type="button"
         className="flex w-full items-center justify-between gap-4 px-5 py-4 text-right"

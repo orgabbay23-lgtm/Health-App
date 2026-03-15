@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
+import { Lightbulb, X } from "lucide-react";
 import { cn } from "../../utils/utils";
 
 interface TipPopoverProps {
@@ -35,10 +35,10 @@ export function TipPopover({
         aria-label={label}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-base shadow-sm transition-colors hover:border-amber-300 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-200 bg-amber-50 shadow-sm transition-colors hover:border-amber-300 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
         onClick={() => setIsOpen(true)}
       >
-        <span aria-hidden="true">💡</span>
+        <Lightbulb size={16} className="text-amber-500" />
       </motion.button>
 
       {createPortal(
@@ -61,7 +61,7 @@ export function TipPopover({
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ 
+                  transition={{
                     type: "spring",
                     stiffness: 400,
                     damping: 30,
@@ -84,10 +84,10 @@ export function TipPopover({
                   <p className="text-[15px] leading-relaxed text-slate-700 font-semibold mb-2">
                     {content}
                   </p>
-                  
-                  {/* Decorative Elements */}
+
+                  {/* Decorative Element */}
                   <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-                    <span className="text-6xl">💡</span>
+                    <Lightbulb size={48} />
                   </div>
                 </motion.div>
               </div>

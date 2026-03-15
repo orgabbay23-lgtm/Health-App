@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ModalShell } from "../../../components/ui/modal-shell";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -14,14 +14,7 @@ interface ByokModalProps {
 
 export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
   const [inputKey, setInputKey] = useState("");
-  const [isMounted, setIsMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) return null;
 
   const handleSave = async () => {
     const rawCleanKey = inputKey.replace(/\s+/g, '').trim();
@@ -30,8 +23,9 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
       try {
         const { error } = await supabase.rpc('set_user_api_key', { secret_key: rawCleanKey });
         if (error) throw error;
-        
+
         toast.success("מפתח ה-API נשמר בהצלחה בצורה מאובטחת!");
+        setInputKey("");
         onSuccess(rawCleanKey);
         onClose();
       } catch (error) {
@@ -77,4 +71,3 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
     </ModalShell>
   );
 }
-

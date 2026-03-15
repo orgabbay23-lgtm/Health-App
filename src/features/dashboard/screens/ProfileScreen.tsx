@@ -97,11 +97,11 @@ export function ProfileScreen({
 
           <div className="grid grid-cols-2 gap-3 min-w-[240px]">
             <ProfileStat
-              label="BMR"
+              label="חילוף חומרים בסיסי"
               value={`${formatNutritionValue(userProfile.targets.calculations.bmr)}`}
             />
             <ProfileStat
-              label="TDEE"
+              label="הוצאה יומית כוללת"
               value={`${formatNutritionValue(userProfile.targets.calculations.tdee)}`}
             />
           </div>
@@ -109,7 +109,7 @@ export function ProfileScreen({
       </Card>
 
       <div className="grid gap-6">
-        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-lg rounded-[2rem]">
+        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-xl rounded-[2rem]">
           <CardContent className="space-y-6 p-8">
             <h3 className="text-xl font-bold text-slate-900">נתונים אישיים</h3>
             <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
@@ -120,7 +120,7 @@ export function ProfileScreen({
           </CardContent>
         </Card>
 
-        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-lg rounded-[2rem]">
+        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-xl rounded-[2rem]">
           <CardContent className="space-y-6 p-8">
             <h3 className="text-xl font-bold text-slate-900">יעדים קליניים</h3>
             <div className="grid gap-4 grid-cols-2">

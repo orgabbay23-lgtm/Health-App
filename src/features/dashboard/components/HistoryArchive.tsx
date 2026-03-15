@@ -29,7 +29,7 @@ export function HistoryArchive({
       <CardContent className="space-y-4 p-6">
         <div className="space-y-1">
           <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-            ARCHIVE
+            ארכיון
           </p>
           <h3 className="text-xl font-semibold text-slate-900">יומן אחרון</h3>
           <p className="text-sm text-slate-500">

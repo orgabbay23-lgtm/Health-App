@@ -29,6 +29,12 @@ export function ModalShell({
       return undefined;
     }
 
+    // Lock background scroll when modal is open
+    const scrollCanvas = document.querySelector('.ios-scroll-canvas') as HTMLElement | null;
+    if (scrollCanvas) {
+      scrollCanvas.style.overflow = 'hidden';
+    }
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
@@ -36,7 +42,7 @@ export function ModalShell({
       if (event.key === "Tab") {
         if (!modalRef.current) return;
         const focusableElements = modalRef.current.querySelectorAll(
-          'a[href], button:not([disabled]), textarea:not([disabled]), input[type="text"]:not([disabled]), input[type="radio"]:not([disabled]), input[type="checkbox"]:not([disabled]), select:not([disabled])'
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
         );
         const firstElement = focusableElements[0] as HTMLElement;
         const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
@@ -64,7 +70,12 @@ export function ModalShell({
       }
     }, 100);
 
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      if (scrollCanvas) {
+        scrollCanvas.style.overflow = '';
+      }
+    };
   }, [isOpen, onClose]);
 
   return (

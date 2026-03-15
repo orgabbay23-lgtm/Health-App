@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -25,15 +26,15 @@ export function AuthScreen() {
         if (!name.trim()) {
            throw new Error("יש להזין שם מלא.");
         }
-        const { error } = await supabase.auth.signUp({ 
-          email, 
+        const { error } = await supabase.auth.signUp({
+          email,
           password,
           options: {
             data: { full_name: name }
           }
         });
         if (error) throw error;
-        alert("בדוק את המייל שלך לאימות החשבון!");
+        toast.success("בדוק את המייל שלך לאימות החשבון!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -47,7 +48,7 @@ export function AuthScreen() {
 
   const handleGoogleAuth = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ 
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`
@@ -60,13 +61,25 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4" dir="rtl">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
-        <h1 className="mb-6 text-center text-3xl font-bold text-slate-800">
+    <div
+      className="flex flex-col items-center justify-center p-4 relative overflow-hidden"
+      style={{ minHeight: "calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom))" }}
+      dir="rtl"
+    >
+      {/* Mesh gradient background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="blob-animate blob-1" />
+        <div className="blob-animate blob-2" />
+        <div className="blob-animate blob-3" />
+        <div className="blob-animate blob-4" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md rounded-[2.5rem] bg-white/60 backdrop-blur-xl p-8 shadow-soft-2xl border border-white/60">
+        <h1 className="mb-6 text-center text-3xl font-black text-slate-900 tracking-tight">
           {isSignUp ? "צור חשבון" : "התחברות"}
         </h1>
         {error && (
-          <div className="mb-4 rounded-lg bg-red-100 p-3 text-sm text-red-700">
+          <div className="mb-4 rounded-2xl bg-red-50 border border-red-100 p-3 text-sm text-red-700 font-medium">
             {error}
           </div>
         )}
@@ -108,7 +121,7 @@ export function AuthScreen() {
               dir="ltr"
             />
           </div>
-          
+
           {isSignUp && (
             <div className="flex items-start gap-2 pt-2">
               <input
@@ -119,11 +132,11 @@ export function AuthScreen() {
                 className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900"
               />
               <Label htmlFor="terms" className="text-xs leading-relaxed text-slate-600">
-                אני מסכים לתנאי השימוש ומאשר את שמירת מפתח ה-API שלי בצורה מוצפנת ומאובטחת בשרת
+                אני מסכים/ה לתנאי השימוש ומאשר/ת את שמירת מפתח ה-API שלי בצורה מוצפנת ומאובטחת בשרת
               </Label>
             </div>
           )}
-          
+
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "טוען..." : isSignUp ? "הרשם" : "התחבר"}
           </Button>
@@ -139,11 +152,11 @@ export function AuthScreen() {
           <Button
             variant="outline"
             onClick={handleGoogleAuth}
-            className="w-full bg-white hover:bg-slate-50"
+            className="w-full bg-white/50 hover:bg-white/80 backdrop-blur-sm"
           >
             התחבר עם Google
           </Button>
-          
+
           <p className="text-center text-xs text-slate-500">
             לא עובד? <span className="cursor-help underline decoration-dotted" title="אם לא נפתח חלון התחברות, ייתכן שחוסם פופ-אפים (Popup Blocker) מונע זאת. נסה לבטל אותו עבור אתר זה.">בדוק את חוסם הפופ-אפים שלך</span>
           </p>
