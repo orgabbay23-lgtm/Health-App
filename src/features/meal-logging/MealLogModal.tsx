@@ -120,9 +120,11 @@ export function MealLogModal({
       resetManual();
       onClose();
     } catch (error: any) {
-      if (error.message === "BYOK_REQUIRED" || error.message === "API_KEY_INVALID") {
+      if (error.message === "BYOK_REQUIRED" || error.message === "API_KEY_INVALID" || error.message === "MISSING_API_KEY") {
         if (error.message === "API_KEY_INVALID") {
           toast.error("מפתח ה-API שסופק אינו תקין או פג תוקף. אנא הזן מפתח חדש.");
+        } else if (error.message === "MISSING_API_KEY") {
+          toast.error("אנא הזינו מפתח API בהגדרות");
         }
         setPendingDescription(description);
         setIsByokOpen(true);

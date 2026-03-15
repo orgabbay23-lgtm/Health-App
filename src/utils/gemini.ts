@@ -129,85 +129,94 @@ export function clearCachedApiKey() {
   cachedApiKey = null;
 }
 
-const getApiKey = async (): Promise<string | null> => {
+const getApiKey = async (): Promise<string> => {
   if (cachedApiKey) return cachedApiKey;
 
-  try {
-    const { data: apiKey, error } = await supabase.rpc('get_user_api_key');
-    if (!error && apiKey) {
-      cachedApiKey = apiKey;
-      return apiKey;
-    }
-  } catch (err) {
-    console.error("Failed to fetch API key from Vault:", err);
+  const { data: apiKey, error: vaultError } = await supabase.rpc('get_user_api_key');
+  
+  if (vaultError) {
+    console.error("Vault retrieval error:", vaultError);
+    throw new Error("VAULT_ERROR");
   }
 
-  return import.meta.env.VITE_GEMINI_API_KEY || null;
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!envKey) {
+      throw new Error("MISSING_API_KEY");
+    }
+    return envKey;
+  }
+
+  cachedApiKey = apiKey;
+  return apiKey;
 };
 
 export async function parseMealDescription(
   description: string,
 ): Promise<ParsedMealDescription> {
-  const apiKey = await getApiKey();
-
-  if (!apiKey) {
-    throw new Error("BYOK_REQUIRED");
-  }
-
-  const performRequest = async (modelName: string) => {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: SYSTEM_INSTRUCTION,
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: mealResponseSchema,
-      },
-    });
-    const result = await model.generateContent(description.trim());
-    const responseText = result.response.text().trim();
-
-    if (!responseText) {
-      throw new Error("Gemini returned an empty response body.");
-    }
-
-    return mealResponseParser.parse(JSON.parse(responseText));
-  };
-
   try {
-    return await performRequest(PRIMARY_MODEL);
-  } catch (error: any) {
-    console.error(`Primary model (${PRIMARY_MODEL}) failed:`, error);
-    
-    // Check for 401 Unauthorized / Invalid API Key
-    const isAuthError = 
-      error?.status === 401 || 
-      error?.message?.includes("401") || 
-      error?.message?.toLowerCase().includes("unauthorized") || 
-      error?.message?.toLowerCase().includes("invalid api key") ||
-      error?.message?.toLowerCase().includes("api key not found");
+    const apiKey = await getApiKey();
 
-    if (isAuthError) {
-      clearCachedApiKey();
-      throw new Error("API_KEY_INVALID");
-    }
+    const performRequest = async (modelName: string) => {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: SYSTEM_INSTRUCTION,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: mealResponseSchema,
+        },
+      });
+      const result = await model.generateContent(description.trim());
+      const responseText = result.response.text().trim();
 
-    const isQuotaError =
-      error?.status === 429 ||
-      error?.message?.includes("429") ||
-      error?.message?.toLowerCase().includes("quota") ||
-      error?.message?.toLowerCase().includes("too many requests");
-
-    if (isQuotaError) {
-      console.warn(`Retrying with fallback model (${FALLBACK_MODEL})...`);
-      try {
-        return await performRequest(FALLBACK_MODEL);
-      } catch (fallbackError) {
-        console.error(`Fallback model (${FALLBACK_MODEL}) also failed:`, fallbackError);
-        throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
+      if (!responseText) {
+        throw new Error("Gemini returned an empty response body.");
       }
+
+      return mealResponseParser.parse(JSON.parse(responseText));
+    };
+
+    try {
+      return await performRequest(PRIMARY_MODEL);
+    } catch (apiError: any) {
+      console.error(`Primary model (${PRIMARY_MODEL}) failed:`, apiError);
+      
+      const isAuthError = 
+        apiError?.status === 401 || 
+        apiError?.message?.includes("401") || 
+        apiError?.message?.toLowerCase().includes("unauthorized") || 
+        apiError?.message?.toLowerCase().includes("invalid api key") ||
+        apiError?.message?.toLowerCase().includes("api key not found");
+
+      if (isAuthError) {
+        clearCachedApiKey();
+        throw new Error("API_KEY_INVALID");
+      }
+
+      const isQuotaError =
+        apiError?.status === 429 ||
+        apiError?.message?.includes("429") ||
+        apiError?.message?.toLowerCase().includes("quota") ||
+        apiError?.message?.toLowerCase().includes("too many requests");
+
+      if (isQuotaError) {
+        console.warn(`Retrying with fallback model (${FALLBACK_MODEL})...`);
+        try {
+          return await performRequest(FALLBACK_MODEL);
+        } catch (fallbackError) {
+          console.error(`Fallback model (${FALLBACK_MODEL}) also failed:`, fallbackError);
+          throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
+        }
+      }
+      
+      throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
     }
-    
+  } catch (error: any) {
+    console.error("Gemini API Error details:", error);
+    if (error.message === "MISSING_API_KEY" || error.message === "API_KEY_INVALID") {
+      throw error;
+    }
     throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
   }
 }
