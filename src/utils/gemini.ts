@@ -155,10 +155,15 @@ export async function parseMealDescription(
   description: string,
 ): Promise<ParsedMealDescription> {
   try {
-    const apiKey = await getApiKey();
+    const rawApiKey = await getApiKey();
+    const sanitizedKey = String(rawApiKey).replace(/\s+/g, '').trim();
+
+    if (!sanitizedKey) {
+      throw new Error("MISSING_API_KEY");
+    }
 
     const performRequest = async (modelName: string) => {
-      const genAI = new GoogleGenerativeAI(apiKey);
+      const genAI = new GoogleGenerativeAI(sanitizedKey);
       const model = genAI.getGenerativeModel({
         model: modelName,
         systemInstruction: SYSTEM_INSTRUCTION,
@@ -184,7 +189,9 @@ export async function parseMealDescription(
       
       const isAuthError = 
         apiError?.status === 401 || 
+        apiError?.status === 403 || 
         apiError?.message?.includes("401") || 
+        apiError?.message?.includes("403") || 
         apiError?.message?.toLowerCase().includes("unauthorized") || 
         apiError?.message?.toLowerCase().includes("invalid api key") ||
         apiError?.message?.toLowerCase().includes("api key not found");
