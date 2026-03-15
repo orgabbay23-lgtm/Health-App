@@ -32,6 +32,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     resolver: zodResolver(profileSchema),
     defaultValues: activeUser?.profile
       ? {
+          name: activeUser.name === "משתמש" ? "" : activeUser.name,
           age: activeUser.profile.age,
           gender: activeUser.profile.gender,
           height: activeUser.profile.height,
@@ -49,6 +50,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     }
 
     reset({
+      name: activeUser.name === "משתמש" ? "" : activeUser.name,
       age: activeUser.profile.age,
       gender: activeUser.profile.gender,
       height: activeUser.profile.height,

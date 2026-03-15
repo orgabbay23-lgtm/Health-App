@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 import {
   ActivityLevel,
@@ -118,6 +119,7 @@ function normalizeUserProfile(
 ): UserProfile | null {
   if (!profile) return null;
   return buildUserProfile({
+    name: profile.name || "משתמש",
     age: toFiniteNumber(profile.age, 30),
     gender: normalizeGender(profile.gender),
     height: toFiniteNumber(profile.height, 170),
@@ -253,6 +255,7 @@ function removeMealFromDailyLogs(
 }
 
 interface AppState {
+  name: string | null;
   profile: UserProfile | null;
   dailyLogs: Record<string, DailyLog>;
   savedMeals: SavedMeal[];
@@ -271,6 +274,7 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
+  name: null,
   profile: null,
   dailyLogs: {},
   savedMeals: [],
@@ -280,15 +284,22 @@ export const useAppStore = create<AppState>()((set, get) => ({
   fetchUserData: async (userId: string) => {
     set({ isLoadingData: true, userId });
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const [profileRes, logsRes, mealsRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', userId).single(),
         supabase.from('daily_logs').select('*').eq('user_id', userId),
         supabase.from('saved_meals').select('*').eq('user_id', userId),
       ]);
 
+      let name = user?.user_metadata?.full_name || "משתמש";
+      if (profileRes.data?.name) {
+         name = profileRes.data.name;
+      }
+
       let profile = null;
       if (profileRes.data) {
         profile = normalizeUserProfile({
+          name: name,
           age: profileRes.data.age,
           gender: profileRes.data.gender,
           height: profileRes.data.height,
@@ -322,7 +333,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         });
       }
 
-      set({ profile, dailyLogs, savedMeals });
+      set({ name, profile, dailyLogs, savedMeals });
     } catch (error) {
       console.error("Error fetching user data", error);
     } finally {
@@ -331,32 +342,47 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   clearUserData: () => {
-    set({ profile: null, dailyLogs: {}, savedMeals: [], userId: null });
+    set({ name: null, profile: null, dailyLogs: {}, savedMeals: [], userId: null });
   },
 
   setUserProfile: async (profileInput) => {
     const { userId } = get();
     if (!userId) return;
     const profile = buildUserProfile(profileInput);
-    set({ profile });
 
-    await supabase.from('profiles').upsert({
-      id: userId,
-      age: profile.age,
-      gender: profile.gender,
-      height: profile.height,
-      weight: profile.weight,
-      activity_level: profile.activityLevel,
-      goals: [{ deficit: profile.goalDeficit }],
-      medical_conditions: profile.isSmoker ? ['smoker'] : [],
-      updated_at: new Date().toISOString()
-    });
+    try {
+      const { error } = await supabase.from('profiles').upsert({
+        id: userId,
+        name: profileInput.name,
+        age: profile.age,
+        gender: profile.gender,
+        height: profile.height,
+        weight: profile.weight,
+        activity_level: profile.activityLevel,
+        goals: [{ deficit: profile.goalDeficit }],
+        medical_conditions: profile.isSmoker ? ['smoker'] : [],
+        updated_at: new Date().toISOString()
+      });
+
+      if (error) throw error;
+      
+      set({ profile, name: profileInput.name });
+      toast.success("הפרופיל נשמר בהצלחה");
+    } catch (error) {
+      console.error("Error saving profile", error);
+      toast.error("שגיאה בשמירת הנתונים");
+      throw error;
+    }
   },
 
   updateProfileDetails: async (details) => {
-    const { profile, setUserProfile } = get();
+    const { profile, setUserProfile, name } = get();
     if (!profile) return;
-    await setUserProfile({ ...profile, ...details });
+    try {
+      await setUserProfile({ name: name || "משתמש", ...profile, ...details });
+    } catch (error) {
+      // Error is already handled inside setUserProfile
+    }
   },
 
   addMealLog: async (dayKey, meal) => {
@@ -454,6 +480,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
 export function useActiveUser() {
   const userId = useAppStore(state => state.userId);
+  const name = useAppStore(state => state.name);
   const profile = useAppStore(state => state.profile);
   const dailyLogs = useAppStore(state => state.dailyLogs);
   const savedMeals = useAppStore(state => state.savedMeals);
@@ -461,7 +488,7 @@ export function useActiveUser() {
   if (!userId) return null;
   return {
     id: userId,
-    name: "משתמש",
+    name: name || "משתמש",
     accent: "sky" as const,
     profile,
     dailyLogs,

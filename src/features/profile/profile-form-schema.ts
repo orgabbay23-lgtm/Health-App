@@ -1,6 +1,7 @@
 import * as z from "zod";
 
 export const profileSchema = z.object({
+  name: z.string().min(2, "שם חייב להכיל לפחות 2 תווים"),
   age: z.number().min(15).max(120),
   gender: z.enum(["male", "female"]),
   height: z.number().min(100).max(250),

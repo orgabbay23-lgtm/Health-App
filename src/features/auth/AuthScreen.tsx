@@ -5,8 +5,10 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 
 export function AuthScreen() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +19,19 @@ export function AuthScreen() {
     setError(null);
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password });
+        if (!termsAccepted) {
+          throw new Error("עליך להסכים לתנאי השימוש כדי להירשם.");
+        }
+        if (!name.trim()) {
+           throw new Error("יש להזין שם מלא.");
+        }
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: { full_name: name }
+          }
+        });
         if (error) throw error;
         alert("בדוק את המייל שלך לאימות החשבון!");
       } else {
@@ -57,6 +71,19 @@ export function AuthScreen() {
           </div>
         )}
         <form onSubmit={handleAuth} className="space-y-4">
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="name">שם מלא</Label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full text-right"
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">אימייל</Label>
             <Input
@@ -81,6 +108,22 @@ export function AuthScreen() {
               dir="ltr"
             />
           </div>
+          
+          {isSignUp && (
+            <div className="flex items-start gap-2 pt-2">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900"
+              />
+              <Label htmlFor="terms" className="text-xs leading-relaxed text-slate-600">
+                אני מסכים לתנאי השימוש ומאשר את שמירת מפתח ה-API שלי בצורה מוצפנת ומאובטחת בשרת
+              </Label>
+            </div>
+          )}
+          
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "טוען..." : isSignUp ? "הרשם" : "התחבר"}
           </Button>

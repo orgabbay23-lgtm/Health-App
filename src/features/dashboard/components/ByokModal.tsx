@@ -3,6 +3,8 @@ import { ModalShell } from "../../../components/ui/modal-shell";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
+import { supabase } from "../../../lib/supabase";
+import { toast } from "sonner";
 
 interface ByokModalProps {
   isOpen: boolean;
@@ -10,36 +12,39 @@ interface ByokModalProps {
   onSuccess: (key: string) => void;
 }
 
-const STORAGE_KEY = 'gemini_personal_api_key';
-
 export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
   const [key, setKey] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Sync current key from localStorage when modal opens
-  useEffect(() => {
-    if (isOpen && isMounted) {
-      setKey(localStorage.getItem(STORAGE_KEY) || "");
-    }
-  }, [isOpen, isMounted]);
-
   if (!isMounted) return null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmedKey = key.trim();
     if (trimmedKey) {
-      localStorage.setItem(STORAGE_KEY, trimmedKey);
-      onSuccess(trimmedKey);
-      onClose();
+      setIsSaving(true);
+      try {
+        const { error } = await supabase.rpc('set_gemini_api_key', { api_key: trimmedKey });
+        if (error) throw error;
+        
+        toast.success("מפתח ה-API נשמר בהצלחה בצורה מאובטחת!");
+        onSuccess(trimmedKey);
+        onClose();
+      } catch (error) {
+        console.error("Error saving API key:", error);
+        toast.error("שגיאה בשמירת המפתח. נסה שוב.");
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
   const handleClear = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    // Note: Clearing from Vault might require another RPC if desired, but for now we just clear local state.
     setKey("");
   };
 
@@ -48,7 +53,7 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
       <div className="space-y-4 p-4" dir="rtl">
         <p className="text-sm text-slate-600">
           כדי להשתמש בתכונות הבינה המלאכותית (AI), עליך להזין מפתח API אישי של Gemini.
-          המפתח נשמר בדפדפן שלך בלבד (localStorage) ולא נשלח לשרתים שלנו.
+          המפתח נשמר באופן מוצפן ומאובטח בשרת (Supabase Vault) ואינו נגיש לאף אחד מלבד השרת.
         </p>
         <div className="space-y-2">
           <Label htmlFor="api-key">מפתח API</Label>
@@ -63,21 +68,13 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
           />
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleSave} className="flex-1">
-            שמור מפתח
+          <Button onClick={handleSave} className="flex-1" disabled={isSaving}>
+            {isSaving ? "שומר..." : "שמור מפתח"}
           </Button>
-          <Button variant="outline" onClick={onClose} className="flex-1">
+          <Button variant="outline" onClick={onClose} className="flex-1" disabled={isSaving}>
             ביטול
           </Button>
         </div>
-        {localStorage.getItem(STORAGE_KEY) && (
-          <button 
-            onClick={handleClear}
-            className="w-full text-xs text-red-400 hover:text-red-500 underline transition-colors"
-          >
-            מחק מפתח שמור
-          </button>
-        )}
         <p className="text-center text-xs text-slate-400">
           ניתן להשיג מפתח בחינם ב- <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">Google AI Studio</a>
         </p>
