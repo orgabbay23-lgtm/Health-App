@@ -17,26 +17,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearUserData = useAppStore(state => state.clearUserData);
 
   useEffect(() => {
+    let mounted = true;
+
+    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id);
+      if (!mounted) return;
+      
+      const sessionUser = session?.user ?? null;
+      setUser(sessionUser);
+      
+      if (sessionUser) {
+        fetchUserData(sessionUser.id, false);
       } else {
         clearUserData();
       }
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id);
-      } else {
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+
+      const sessionUser = session?.user ?? null;
+      setUser(sessionUser);
+
+      if (sessionUser) {
+        // Use silent fetch for TOKEN_REFRESHED to avoid disruptive re-renders on focus
+        // SIGNED_IN and INITIAL_SESSION (if caught here) should show the loader
+        const isSilent = event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED';
+        fetchUserData(sessionUser.id, isSilent);
+      } else if (event === 'SIGNED_OUT') {
         clearUserData();
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [fetchUserData, clearUserData]);
 
   return (

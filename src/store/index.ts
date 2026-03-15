@@ -262,7 +262,7 @@ interface AppState {
   isLoadingData: boolean;
   userId: string | null;
 
-  fetchUserData: (userId: string) => Promise<void>;
+  fetchUserData: (userId: string, isSilent?: boolean) => Promise<void>;
   clearUserData: () => void;
   setUserProfile: (profile: NutritionProfileInput) => Promise<void>;
   updateProfileDetails: (details: Partial<NutritionProfileInput>) => Promise<void>;
@@ -281,8 +281,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
   isLoadingData: false,
   userId: null,
 
-  fetchUserData: async (userId: string) => {
-    set({ isLoadingData: true, userId });
+  fetchUserData: async (userId: string, isSilent?: boolean) => {
+    const shouldBeSilent = isSilent ?? get().profile !== null;
+    if (!shouldBeSilent) {
+      set({ isLoadingData: true });
+    }
+    set({ userId });
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const [profileRes, logsRes, mealsRes] = await Promise.all([

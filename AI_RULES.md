@@ -24,7 +24,10 @@
     * NO greetings, names, avatars, or large Date Navigator cards on the Home screen.
     * The only persistent element at the top should be the Today/Week/Month toggle.
     * The "Date Navigator" and biometric details should be moved to a secondary "Profile" or "Diary" view or accessible via a small, subtle icon only.
-* **Content Visibility & Clipping (CRITICAL):** * Never use `overflow: hidden` on parent containers that house dynamic expanding content like "Smart Tips". 
+* * **Focus & Stability (CRITICAL):** * Never use window.focus or visibilitychange listeners to trigger global loading states or full-page refreshes.
+    * If data fetching is needed on focus (e.g., token refreshes), it MUST be silent (isSilent: true) to avoid unmounting the UI or resetting local component state.
+    * Maintain a 'still' UI; the app should feel like a single continuous session regardless of tab switching or backgrounding.
+* **Content Visibility & Clipping (CRITICAL):*** * Never use `overflow: hidden` on parent containers that house dynamic expanding content like "Smart Tips". 
     * Use `z-index` properly to ensure floating tips appear above all other dashboard elements.
     * Expanding elements must use `height: auto` and `transition: height` to ensure Hebrew text is never clipped or hidden behind other cards.
 * **Absolute Overlays (Portals):** * All floating UI elements like "Smart Tips", Popovers, or Modals MUST be rendered using a React Portal to the document body.
@@ -61,3 +64,11 @@
     * **Issue:** Unrelated system colors (status bar/browser chrome) were visible, and the bottom navigation overlapped the iOS home indicator.
     * **Fix:** Synced `theme-color`, added `black-translucent` status bar, applied `overscroll-behavior: none`, and integrated `pt-safe-top`/`pb-safe-bottom` in the layout.
     * **Standard:** Follow the "Native PWA & Mobile UX" rules for all future UI additions.
+
+* **2026-03-15: Focus-induced Refresh Fix**
+    * **Issue:** App triggered a full loading spinner/unmount when window focus changed (Visibility Change), especially on mobile.
+    * **Fix:** Refactored fetchUserData to support isSilent parameter. Updated AuthProvider to use silent fetching for TOKEN_REFRESHED events. Refined fetchUserData to be silent by default if profile data already exists.
+    * **Standard:** Never trigger global loading states for background sync or focus-based updates. Use "silent" data fetching to maintain UI stability and prevent component unmounting/state resets.
+
+
+
