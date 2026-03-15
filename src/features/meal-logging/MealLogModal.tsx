@@ -67,14 +67,15 @@ export function MealLogModal({
   const addSavedMealToDay = useAppStore((state) => state.addSavedMealToDay);
   const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
 
+  const aiFormMethods = useForm<AiFormValues>({
+    resolver: zodResolver(aiSchema),
+  });
+
   const {
-    register: registerAi,
     handleSubmit: handleAiSubmit,
     reset: resetAi,
     formState: { errors: aiErrors },
-  } = useForm<AiFormValues>({
-    resolver: zodResolver(aiSchema),
-  });
+  } = aiFormMethods;
 
   const manualFormMethods = useForm<ManualFormValues>({
     resolver: zodResolver(manualSchema),
@@ -204,52 +205,52 @@ export function MealLogModal({
 
           <AnimatePresence mode="wait">
             <TabsContent value="ai" className="mt-8">
-              <motion.form 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                onSubmit={handleAiSubmit(onAiSubmit)} 
-                className="space-y-6"
-              >
-                <div className={cn("space-y-3 transition-all duration-500", isSubmitting ? "opacity-50 blur-sm" : "")}>
-                  <Label htmlFor="description" className="text-[13px] font-black text-slate-500 uppercase tracking-widest px-1">ספר לי מה אכלת...</Label>
-                  <div className="relative group">
-                    <Input
-                      id="description"
-                      placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
-                      className="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-lg font-medium px-6"
-                      {...registerAi("description")}
-                      disabled={isSubmitting}
-                    />
-                    <div className="absolute inset-0 rounded-2xl border border-slate-900/5 pointer-events-none group-focus-within:border-slate-950/20 transition-colors" />
-                  </div>
-                  {aiErrors.description && (
-                    <p className="text-[13px] font-bold text-rose-500 px-1">
-                      {aiErrors.description.message}
-                    </p>
-                  )}
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  size="lg"
-                  className="w-full h-16 rounded-2xl text-lg" 
-                  disabled={isSubmitting}
+              <FormProvider {...aiFormMethods}>
+                <motion.form 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  onSubmit={handleAiSubmit(onAiSubmit)} 
+                  className="space-y-6"
                 >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-3">
-                      <motion.div 
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                  <div className={cn("space-y-3 transition-all duration-500", isSubmitting ? "opacity-50 blur-sm" : "")}>
+                    <Label htmlFor="description" className="text-[13px] font-black text-slate-500 uppercase tracking-widest px-1">ספר לי מה אכלת...</Label>
+                    <div className="relative group">
+                      <FoodTypeahead
+                        name="description"
+                        placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
+                        inputClassName="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-lg font-medium px-6"
                       />
-                      מנתח...
-                    </span>
-                  ) : (
-                    "הוסף ארוחה"
-                  )}
-                </Button>
-              </motion.form>
+                      <div className="absolute inset-0 rounded-2xl border border-slate-900/5 pointer-events-none group-focus-within:border-slate-950/20 transition-colors" />
+                    </div>
+                    {aiErrors.description && (
+                      <p className="text-[13px] font-bold text-rose-500 px-1">
+                        {aiErrors.description.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    size="lg"
+                    className="w-full h-16 rounded-2xl text-lg" 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-3">
+                        <motion.div 
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                        />
+                        מנתח...
+                      </span>
+                    ) : (
+                      "הוסף ארוחה"
+                    )}
+                  </Button>
+                </motion.form>
+              </FormProvider>
             </TabsContent>
 
             <TabsContent value="manual" className="mt-8">
@@ -272,7 +273,7 @@ export function MealLogModal({
                       >
                         <div className="flex-1 space-y-2">
                           <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">מאכל</Label>
-                          <FoodTypeahead index={index} />
+                          <FoodTypeahead name={`ingredients.${index}.foodName`} />
                         </div>
                         <div className="w-20 space-y-2">
                           <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">כמות</Label>
