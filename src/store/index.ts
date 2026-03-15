@@ -344,16 +344,14 @@ export const useAppStore = create<AppState>()(
             });
           }
 
-          const savedMeals: SavedMeal[] = logsRes.data ? [] : [...get().savedMeals];
+          let savedMeals = [...get().savedMeals];
           if (mealsRes.data) {
-            mealsRes.data.forEach(sm => {
-              savedMeals.push({
-                id: sm.id,
-                savedAt: sm.created_at,
-                signature: createMealSignature(sm.ingredients?.[0] || {}),
-                meal: normalizeMealItem(sm.ingredients?.[0] || {}),
-              });
-            });
+            savedMeals = mealsRes.data.map(sm => ({
+              id: sm.id,
+              savedAt: sm.created_at,
+              signature: createMealSignature(sm.ingredients?.[0] || {}),
+              meal: normalizeMealItem(sm.ingredients?.[0] || {}),
+            }));
           }
 
           set({ name, profile, dailyLogs, savedMeals });

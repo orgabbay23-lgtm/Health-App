@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Dashboard } from "./features/dashboard/Dashboard";
 import { OnboardingFlow } from "./features/onboarding/OnboardingFlow";
@@ -12,6 +13,20 @@ function App() {
   const profile = useAppStore(state => state.profile);
   const isLoadingData = useAppStore(state => state.isLoadingData);
   const isCallback = window.location.pathname === "/auth/callback";
+  
+  // Persistent Initialization Lock: Once the app is ready, it stays ready.
+  const [appInitialized, setAppInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        setAppInitialized(true);
+      } else if (profile || !isLoadingData) {
+        // If we have a user, wait for the profile to load or for the initial fetch to complete
+        setAppInitialized(true);
+      }
+    }
+  }, [authLoading, user, profile, isLoadingData]);
 
   // Get time of day for subtle tint
   const hour = new Date().getHours();
@@ -39,9 +54,8 @@ function App() {
     }
   }
 
-  // Final Gate: Only show loader if we ARE loading and we DON'T have a profile yet (initial load)
-  // or if we are still checking the initial auth session.
-  if (authLoading || (user && isLoadingData && !profile)) {
+  // Final Gate: Only show loader during the initial boot phase.
+  if (!appInitialized) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 relative overflow-hidden" dir="rtl">
         {/* Animated Mesh Background for Loading */}

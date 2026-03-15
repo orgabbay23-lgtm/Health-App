@@ -43,10 +43,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(sessionUser);
 
       if (sessionUser) {
-        // We let fetchUserData handle the "isSilent" logic.
-        // It will be silent if profile already exists.
-        // event-based overrides can be added here if needed, but usually redundant now.
-        fetchUserData(sessionUser.id);
+        // Explicitly silent if we already have a profile or if it's just a token refresh
+        const existingProfile = useAppStore.getState().profile;
+        const isSilent = !!existingProfile || event === 'TOKEN_REFRESHED';
+        
+        fetchUserData(sessionUser.id, isSilent);
       } else if (event === 'SIGNED_OUT') {
         clearUserData();
       }

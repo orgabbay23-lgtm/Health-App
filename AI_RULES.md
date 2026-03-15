@@ -84,9 +84,19 @@
     * **Standard:** Use Zustand persistence for all core user data. All data syncing must be silent if local state is already hydrated. Prevent concurrent fetch race conditions at the store level.
 
 * **2026-03-15: Final Focus & Refresh Resolution (Root Cause: State Destruction)**
-    * **Issue:** App flickered or refreshed on focus because etchUserData was re-initializing state (setting objects to empty/null) during background refreshes.
-    * **Fix:** 
-        1. Refined etchUserData to **preserve** existing profile, dailyLogs, and savedMeals during updates. New data is merged/overwritten only when successfully fetched.
+    * **Issue:** App flickered or refreshed on focus because fetchUserData was re-initializing state (setting objects to empty/null) during background refreshes.       
+    * **Fix:**
+        1. Refined fetchUserData to **preserve** existing profile, dailyLogs, and savedMeals during updates. New data is merged/overwritten only when successfully fetched.
         2. Increased concurrency throttle to 5 seconds to better handle rapid focus/blur events on mobile.
         3. Ensured App.tsx logic only shows the Loading Spinner if the profile is physically missing (!profile), allowing silent background updates to happen without UI interruption.
     * **Standard:** Background data synchronization MUST be non-destructive to existing state. Never reset state to 'empty' while waiting for a network response if valid data is already present.
+
+* **2026-03-15: Architectural Stability & Mount-Once LoadingGate**
+    * **Issue:** Aggressive Supabase session refreshes on window focus were causing the app to re-trigger the loading gate, leading to UI "flickers" and state resets.
+    * **Fix:** 
+        1.  **Mount-Once Lock:** Implemented `appInitialized` state in `App.tsx`. Once the initial boot sequence (Auth check + Profile fetch) completes, the app enters a "Ready" state that NEVER reverts to "Loading".
+        2.  **Stable Supabase Auth:** Configured Supabase client with explicit `flowType: 'pkce'` and persistent session options.
+        3.  **Explicit Silent Refresh:** Updated `AuthProvider` to force `isSilent: true` for `TOKEN_REFRESHED` events.
+        4.  **State Preservation:** Fixed a bug in `fetchUserData` where `savedMeals` were being cleared during background syncs.
+    * **Standard:** The UI must remain "locked-in" once initial boot completes. All background synchronization (focus-based or timer-based) must be silent and non-destructive. Use a persistent initialization flag to prevent loading spinners from appearing after the first successful render.
+
