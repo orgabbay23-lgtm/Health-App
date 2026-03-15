@@ -132,7 +132,7 @@ function normalizeMealItem(meal: Partial<MealItem>): MealItem {
   return {
     id: String(meal.id ?? crypto.randomUUID()),
     timestamp: typeof meal.timestamp === "string" ? meal.timestamp : new Date().toISOString(),
-    meal_name: typeof meal.meal_name === "string" ? meal.meal_name : "Meal",
+    meal_name: typeof meal.meal_name === "string" ? meal.meal_name : "ארוחה",
     calories: toFiniteNumber(meal.calories, 0),
     macronutrients: {
       protein: toFiniteNumber(meal.macronutrients?.protein, 0),
@@ -488,7 +488,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
       timestamp: new Date().toISOString(),
     });
   }
-}));
 }));
 
 export function useActiveUser() {
