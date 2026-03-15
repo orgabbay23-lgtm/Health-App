@@ -24,15 +24,15 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
   if (!isMounted) return null;
 
   const handleSave = async () => {
-    const cleanKeyForVault = key.replace(/\s+/g, '').trim();
-    if (cleanKeyForVault) {
+    const rawCleanKey = key.replace(/\s+/g, '').trim();
+    if (rawCleanKey) {
       setIsSaving(true);
       try {
-        const { error } = await supabase.rpc('set_user_api_key', { secret_key: cleanKeyForVault });
+        const { error } = await supabase.rpc('set_user_api_key', { secret_key: rawCleanKey });
         if (error) throw error;
         
         toast.success("מפתח ה-API נשמר בהצלחה בצורה מאובטחת!");
-        onSuccess(cleanKeyForVault);
+        onSuccess(rawCleanKey);
         onClose();
       } catch (error) {
         console.error("Error saving API key:", error);
