@@ -220,6 +220,7 @@ export function MealLogModal({
                         name="description"
                         placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
                         inputClassName="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-lg font-medium px-6"
+                        multiSelect={true}
                       />
                       <div className="absolute inset-0 rounded-2xl border border-slate-900/5 pointer-events-none group-focus-within:border-slate-950/20 transition-colors" />
                     </div>
