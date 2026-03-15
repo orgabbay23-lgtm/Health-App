@@ -134,7 +134,7 @@ export function HomeScreen({
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <Card className="border border-white/60 bg-white/30 backdrop-blur-xl shadow-soft-2xl rounded-[3rem] overflow-hidden">
+        <Card className="border border-white/60 bg-white/30 backdrop-blur-xl shadow-soft-2xl rounded-[3rem]">
           <CardContent className="space-y-8 p-8 md:p-10">
             <div className="flex items-center justify-between">
               <h3 className="text-2xl font-black tracking-tight text-slate-950">

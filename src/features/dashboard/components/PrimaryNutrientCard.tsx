@@ -10,7 +10,6 @@ import {
 import { formatNutritionValue } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
 import { getProgressAppearance } from "./progress-tone";
-import { cn } from "../../../utils/utils";
 
 interface PrimaryNutrientCardProps {
   nutrient: Extract<TrackedNutrientKey, "calories">;
@@ -57,7 +56,7 @@ export function PrimaryNutrientCard({
         </div>
       )}
 
-      <Card className="border-none bg-white/40 backdrop-blur-xl shadow-soft-2xl rounded-[3rem] overflow-hidden border border-white/60">
+      <Card className="border-none bg-white/40 backdrop-blur-xl shadow-soft-2xl rounded-[3rem] border border-white/60">
         <CardContent className="flex flex-col items-center gap-8 p-10">
           <div className="relative flex h-56 w-56 items-center justify-center">
             <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">

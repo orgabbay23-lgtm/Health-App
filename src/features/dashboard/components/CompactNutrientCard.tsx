@@ -57,7 +57,7 @@ export function CompactNutrientCard({
         </div>
       )}
 
-      <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-xl rounded-[2rem] overflow-hidden border border-white/60">
+      <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-xl rounded-[2rem] border border-white/60">
         <CardContent className="flex flex-col gap-4 p-5">
           <div className="flex items-start justify-between">
             <div className="space-y-1">

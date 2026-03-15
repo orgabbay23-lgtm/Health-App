@@ -36,7 +36,7 @@ export function NutrientCard({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.02, duration: 0.3 }}
     >
-      <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-sm rounded-[1.5rem] overflow-hidden border border-white/40">
+      <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-sm rounded-[1.5rem] border border-white/40">
         <CardContent className="flex flex-col gap-3 p-4">
           <div className="flex items-start justify-between">
             <div className="space-y-0.5">

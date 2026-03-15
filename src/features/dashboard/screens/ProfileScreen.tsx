@@ -62,7 +62,7 @@ export function ProfileScreen({
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-none bg-white/40 backdrop-blur-md shadow-soft-xl rounded-[2.5rem]">
+      <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-xl rounded-[2.5rem]">
         <CardContent className="grid gap-8 p-8 lg:grid-cols-[1fr_auto]">
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-5">
