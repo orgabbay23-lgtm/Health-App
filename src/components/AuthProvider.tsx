@@ -43,11 +43,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(sessionUser);
 
       if (sessionUser) {
-        // Explicitly silent if we already have a profile or if it's just a token refresh
         const existingProfile = useAppStore.getState().profile;
-        const isSilent = !!existingProfile || event === 'TOKEN_REFRESHED';
         
-        fetchUserData(sessionUser.id, isSilent);
+        // AGGRESSIVE FILTERING for iOS:
+        // If we already have a profile, we don't need to re-fetch on token refresh or background user updates.
+        // This prevents the loading gate from flickering or resetting.
+        const isBackgroundEvent = event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED';
+        const shouldSkipFetch = !!existingProfile && isBackgroundEvent;
+        
+        if (!shouldSkipFetch) {
+          // If it's a fresh sign in or we're missing data, fetch everything
+          fetchUserData(sessionUser.id, !!existingProfile);
+        }
       } else if (event === 'SIGNED_OUT') {
         clearUserData();
       }

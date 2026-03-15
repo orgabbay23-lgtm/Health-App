@@ -93,10 +93,16 @@
 
 * **2026-03-15: Architectural Stability & Mount-Once LoadingGate**
     * **Issue:** Aggressive Supabase session refreshes on window focus were causing the app to re-trigger the loading gate, leading to UI "flickers" and state resets.
-    * **Fix:** 
+    * **Fix:**
         1.  **Mount-Once Lock:** Implemented `appInitialized` state in `App.tsx`. Once the initial boot sequence (Auth check + Profile fetch) completes, the app enters a "Ready" state that NEVER reverts to "Loading".
         2.  **Stable Supabase Auth:** Configured Supabase client with explicit `flowType: 'pkce'` and persistent session options.
         3.  **Explicit Silent Refresh:** Updated `AuthProvider` to force `isSilent: true` for `TOKEN_REFRESHED` events.
         4.  **State Preservation:** Fixed a bug in `fetchUserData` where `savedMeals` were being cleared during background syncs.
     * **Standard:** The UI must remain "locked-in" once initial boot completes. All background synchronization (focus-based or timer-based) must be silent and non-destructive. Use a persistent initialization flag to prevent loading spinners from appearing after the first successful render.
 
+* **2026-03-15: iOS Focus-Refresh & One-Way Latch Fix**
+    * **Issue:** iOS Safari/Web Clip aggressively freezes background tabs. On foregrounding, Supabase triggers `TOKEN_REFRESHED` which was causing a full UI remount and Loading Gate reset.
+    * **Fix:**
+        1.  **Strict One-Way Latch:** Moved `isAppReady` to the Zustand store. Once set to `true`, it is IMMUTABLE and cannot be reset except by an explicit `SIGNED_OUT` event.
+        2.  **Aggressive Auth Filtering:** Updated `onAuthStateChange` to silently handle `TOKEN_REFRESHED` and `USER_UPDATED`. If a profile already exists in the store, background syncs are strictly non-blocking and skip all loading state toggles.
+    * **Standard:** **iOS Background Visibility/Token Refresh Rule:** Auth listeners must silently ignore `TOKEN_REFRESHED` for UI blocking/state resets to prevent Safari remounts. Initialization states must be implemented as one-way latches in persistent storage.

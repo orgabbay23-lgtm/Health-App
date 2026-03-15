@@ -261,10 +261,12 @@ interface AppState {
   dailyLogs: Record<string, DailyLog>;
   savedMeals: SavedMeal[];
   isLoadingData: boolean;
+  isAppReady: boolean;
   userId: string | null;
   _lastFetchTime: number;
 
   fetchUserData: (userId: string, isSilent?: boolean) => Promise<void>;
+  setAppReady: (ready: boolean) => void;
   clearUserData: () => void;
   setUserProfile: (profile: NutritionProfileInput) => Promise<void>;
   updateProfileDetails: (details: Partial<NutritionProfileInput>) => Promise<void>;
@@ -283,6 +285,7 @@ export const useAppStore = create<AppState>()(
       dailyLogs: {},
       savedMeals: [],
       isLoadingData: false,
+      isAppReady: false,
       userId: null,
       _lastFetchTime: 0,
 
@@ -362,8 +365,15 @@ export const useAppStore = create<AppState>()(
         }
       },
 
+      setAppReady: (ready: boolean) => {
+        // One-way latch: once ready, only SIGNED_OUT can reset it
+        if (ready) {
+          set({ isAppReady: true });
+        }
+      },
+
       clearUserData: () => {
-        set({ name: null, profile: null, dailyLogs: {}, savedMeals: [], userId: null, _lastFetchTime: 0 });
+        set({ name: null, profile: null, dailyLogs: {}, savedMeals: [], userId: null, _lastFetchTime: 0, isAppReady: false });
         localStorage.removeItem('app-storage'); // Force clear persistence
       },
 
