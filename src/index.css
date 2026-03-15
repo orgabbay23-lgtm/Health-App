@@ -93,6 +93,46 @@
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
+
+  /* Animated Mesh Background Blobs */
+  .blob-animate {
+    @apply absolute blur-[120px] rounded-full opacity-30 mix-blend-multiply;
+    animation: blob-float 25s infinite alternate ease-in-out;
+  }
+
+  @keyframes blob-float {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
+  .blob-1 { @apply bg-sky-300 w-[500px] h-[500px] -top-20 -left-20; }
+  .blob-2 { @apply bg-violet-300 w-[600px] h-[600px] top-1/2 -right-20; animation-delay: -5s; }
+  .blob-3 { @apply bg-emerald-200 w-[400px] h-[400px] -bottom-20 left-1/2; animation-delay: -10s; }
+  .blob-4 { @apply bg-amber-200 w-[450px] h-[450px] top-1/4 left-1/4; animation-delay: -15s; }
+
+  /* Nutrient Gradients */
+  .gradient-calories { @apply bg-gradient-to-br from-sky-400 to-teal-400; }
+  .gradient-protein { @apply bg-gradient-to-br from-orange-400 to-rose-400; }
+  .gradient-carbs { @apply bg-gradient-to-br from-emerald-400 to-teal-500; }
+  .gradient-fats { @apply bg-gradient-to-br from-amber-400 to-yellow-500; }
+  
+  /* Status Glows */
+  .glow-calories { @apply shadow-[0_0_20px_rgba(56,189,248,0.4)]; }
+  .glow-protein { @apply shadow-[0_0_20px_rgba(251,146,60,0.4)]; }
+  .glow-carbs { @apply shadow-[0_0_20px_rgba(52,211,153,0.4)]; }
+  .glow-fats { @apply shadow-[0_0_20px_rgba(251,191,36,0.4)]; }
+  .glow-celebration { @apply shadow-[0_0_30px_rgba(255,255,255,0.8)]; }
+
+  /* Sparkle Effect */
+  @keyframes sparkle {
+    0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+    50% { transform: scale(1) rotate(180deg); opacity: 1; }
+  }
+  .animate-sparkle {
+    animation: sparkle 0.8s ease-in-out forwards;
+  }
 }
 
 .shadow-soft-xl {

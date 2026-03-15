@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { TipPopover } from "../../../components/ui/tip-popover";
 import {
@@ -9,6 +10,7 @@ import {
 import { formatNutritionValue } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
 import { getProgressAppearance } from "./progress-tone";
+import { cn } from "../../../utils/utils";
 
 interface PrimaryNutrientCardProps {
   nutrient: Extract<TrackedNutrientKey, "calories">;
@@ -24,14 +26,12 @@ export function PrimaryNutrientCard({
   userProfile,
 }: PrimaryNutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
-  const appearance = getProgressAppearance(current, target);
+  const appearance = getProgressAppearance(current, target, "calories");
   
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const safePercentage = Math.min(Math.max(appearance.percentage, 0), 100);
   const strokeDashoffset = circumference - (safePercentage / 100) * circumference;
-
-  const ringColorClass = appearance.barClass.replace('bg-', 'text-');
 
   return (
     <motion.div
@@ -44,12 +44,35 @@ export function PrimaryNutrientCard({
         delay: 0.1 
       }}
       whileHover={{ scale: 1.01 }}
-      className="w-full"
+      className="w-full relative"
     >
+      {appearance.isNearGoal && (
+        <div className="absolute -top-4 -right-4 pointer-events-none">
+          <motion.div
+            animate={{ scale: [0, 1.2, 0], rotate: [0, 180, 360] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Sparkles className="text-yellow-400 w-8 h-8 drop-shadow-lg" />
+          </motion.div>
+        </div>
+      )}
+
       <Card className="border-none bg-white/40 backdrop-blur-xl shadow-soft-2xl rounded-[3rem] overflow-hidden border border-white/60">
         <CardContent className="flex flex-col items-center gap-8 p-10">
           <div className="relative flex h-56 w-56 items-center justify-center">
             <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="caloriesGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#38bdf8" />
+                  <stop offset="100%" stopColor="#2dd4bf" />
+                </linearGradient>
+                {appearance.isOverLimit && (
+                  <linearGradient id="warningGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#e11d48" />
+                    <stop offset="100%" stopColor="#be123c" />
+                  </linearGradient>
+                )}
+              </defs>
               <circle
                 cx="50"
                 cy="50"
@@ -63,7 +86,7 @@ export function PrimaryNutrientCard({
                 cx="50"
                 cy="50"
                 r={radius}
-                stroke="currentColor"
+                stroke={appearance.isOverLimit ? "url(#warningGradient)" : "url(#caloriesGradient)"}
                 strokeWidth="7"
                 fill="transparent"
                 strokeDasharray={circumference}
@@ -76,7 +99,7 @@ export function PrimaryNutrientCard({
                   duration: 1.5 
                 }}
                 strokeLinecap="round"
-                className={`${ringColorClass} drop-shadow-[0_0_8px_rgba(var(--primary),0.3)]`}
+                className={appearance.glowClass}
               />
             </svg>
             <div className="absolute flex flex-col items-center justify-center text-center">

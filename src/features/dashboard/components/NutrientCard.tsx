@@ -9,6 +9,7 @@ import type { MicronutrientKey } from "../../../utils/nutrition-utils";
 import { formatNutritionValue } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
 import { getProgressAppearance } from "./progress-tone";
+import { cn } from "../../../utils/utils";
 
 interface NutrientCardProps {
   nutrient: MicronutrientKey;
@@ -26,7 +27,7 @@ export function NutrientCard({
   index = 0,
 }: NutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
-  const appearance = getProgressAppearance(current, target);
+  const appearance = getProgressAppearance(current, target, "micronutrient");
   const percentage = Math.min(Math.max(appearance.percentage, 0), 100);
 
   return (
@@ -35,7 +36,7 @@ export function NutrientCard({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.02, duration: 0.3 }}
     >
-      <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-sm rounded-[1.5rem] overflow-hidden">
+      <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-sm rounded-[1.5rem] overflow-hidden border border-white/40">
         <CardContent className="flex flex-col gap-3 p-4">
           <div className="flex items-start justify-between">
             <div className="space-y-0.5">
@@ -59,7 +60,10 @@ export function NutrientCard({
               </div>
             </div>
 
-            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${appearance.badgeClass}`}>
+            <span className={cn(
+              "text-[10px] font-black px-2 py-0.5 rounded-full",
+              appearance.badgeClass
+            )}>
               {appearance.percentage}%
             </span>
           </div>
@@ -69,7 +73,11 @@ export function NutrientCard({
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
               transition={{ duration: 1, ease: "easeOut", delay: 0.1 + (index * 0.05) }}
-              className={`h-full rounded-full ${appearance.barClass}`}
+              className={cn(
+                "h-full rounded-full transition-all duration-500",
+                appearance.barClass,
+                appearance.glowClass
+              )}
             />
           </div>
         </CardContent>

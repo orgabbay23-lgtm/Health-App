@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { TipPopover } from "../../../components/ui/tip-popover";
 import {
@@ -9,6 +10,7 @@ import {
 import { formatNutritionValue } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
 import { getProgressAppearance } from "./progress-tone";
+import { cn } from "../../../utils/utils";
 
 interface CompactNutrientCardProps {
   nutrient: Extract<TrackedNutrientKey, "protein" | "carbs" | "fat">;
@@ -26,7 +28,7 @@ export function CompactNutrientCard({
   index = 0,
 }: CompactNutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
-  const appearance = getProgressAppearance(current, target);
+  const appearance = getProgressAppearance(current, target, nutrient);
   const percentage = Math.min(Math.max(appearance.percentage, 0), 100);
 
   return (
@@ -42,8 +44,19 @@ export function CompactNutrientCard({
         stiffness: 260,
         damping: 20
       }}
-      className="flex-1"
+      className="flex-1 relative"
     >
+      {appearance.isNearGoal && (
+        <div className="absolute -top-2 -right-2 pointer-events-none z-10">
+          <motion.div
+            animate={{ scale: [0, 1, 0], opacity: [0, 1, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, delay: index * 0.2 }}
+          >
+            <Sparkles className="text-yellow-400 w-5 h-5 drop-shadow-sm" />
+          </motion.div>
+        </div>
+      )}
+
       <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-xl rounded-[2rem] overflow-hidden border border-white/60">
         <CardContent className="flex flex-col gap-4 p-5">
           <div className="flex items-start justify-between">
@@ -78,7 +91,11 @@ export function CompactNutrientCard({
                 damping: 15,
                 delay: 0.3 + (index * 0.1) 
               }}
-              className={`h-full rounded-full ${appearance.barClass} shadow-[0_0_10px_rgba(var(--primary),0.2)]`}
+              className={cn(
+                "h-full rounded-full transition-all duration-500", 
+                appearance.barClass,
+                appearance.glowClass
+              )}
             />
           </div>
         </CardContent>

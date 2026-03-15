@@ -188,31 +188,22 @@ export function Dashboard() {
 
   return (
     <div
-      className="min-h-screen bg-slate-50 relative overflow-x-hidden"
+      className="min-h-screen relative overflow-x-hidden"
       dir="rtl"
     >
-      {/* Sophisticated background for desktop */}
-      <div className="fixed inset-0 pointer-events-none opacity-40 overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-200/30 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-200/30 blur-[120px]" />
-        <div className="absolute top-[20%] right-[-5%] w-[30%] h-[30%] rounded-full bg-teal-100/20 blur-[100px]" />
-      </div>
-
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="relative mx-auto max-w-2xl min-h-screen bg-white/30 backdrop-blur-[2px] border-x border-white/20 shadow-2xl"
+        className="relative mx-auto max-w-2xl min-h-screen bg-white/20 backdrop-blur-[2px] border-x border-white/10 shadow-2xl"
       >
-        <div className="space-y-8 px-4 py-8 pb-32 md:pb-12">
+        <div className="space-y-8 px-4 py-6 pb-32 md:pb-12">
           <DashboardTopBar
-            activeUser={activeUser}
-            selectedDayKey={selectedDayKey}
-            onOpenMealModal={() => setIsMealModalOpen(true)}
-            onOpenProfileModal={() => setIsProfileModalOpen(true)}
+            periodMode={periodMode}
+            onPeriodChange={setPeriodMode}
           />
 
-          <div className="hidden md:flex md:flex-wrap md:gap-3">
+          <div className="hidden md:flex md:flex-wrap md:gap-3 justify-center">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const active = activeScreen === item.key;
@@ -265,8 +256,6 @@ export function Dashboard() {
                 safetyAlerts={safetyAlerts}
                 userProfile={userProfile}
                 savedSignatures={savedSignatures}
-                onPeriodChange={setPeriodMode}
-                onDateChange={setReferenceDate}
                 onDeleteMeal={removeMealLog}
                 onSaveFavorite={onSaveFavorite}
               />
@@ -283,7 +272,6 @@ export function Dashboard() {
                 safetyAlerts={safetyAlerts}
                 selectedDayKey={selectedDayKey}
                 savedSignatures={savedSignatures}
-                onPeriodChange={setPeriodMode}
                 onDateChange={setReferenceDate}
                 onSelectDayKey={onSelectArchiveDay}
                 onDeleteMeal={removeMealLog}

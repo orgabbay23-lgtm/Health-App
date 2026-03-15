@@ -5,12 +5,21 @@ import { AuthScreen } from "./features/auth/AuthScreen";
 import { AuthCallback } from "./features/auth/AuthCallback";
 import { useAuth } from "./components/AuthProvider";
 import { useAppStore } from "./store";
+import { cn } from "./utils/utils";
 
 function App() {
   const { user, loading: authLoading } = useAuth();
   const profile = useAppStore(state => state.profile);
   const isLoadingData = useAppStore(state => state.isLoadingData);
   const isCallback = window.location.pathname === "/auth/callback";
+
+  // Get time of day for subtle tint
+  const hour = new Date().getHours();
+  const getTimeTint = () => {
+    if (hour >= 5 && hour < 12) return "bg-orange-50/20"; // Morning
+    if (hour >= 12 && hour < 18) return "bg-sky-50/20"; // Afternoon
+    return "bg-indigo-950/5"; // Evening
+  };
 
   if (isCallback) {
     return <AuthCallback />;
@@ -19,27 +28,15 @@ function App() {
   if (authLoading || (user && isLoadingData)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 relative overflow-hidden" dir="rtl">
-        {/* Sophisticated background for loading */}
-        <div className="absolute inset-0 pointer-events-none opacity-40">
-          <motion.div 
-            animate={{ 
-              scale: [1, 1.2, 1],
-              opacity: [0.3, 0.5, 0.3]
-            }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-200/30 blur-[120px]" 
-          />
-          <motion.div 
-            animate={{ 
-              scale: [1.2, 1, 1.2],
-              opacity: [0.5, 0.3, 0.5]
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-200/30 blur-[120px]" 
-          />
+        {/* Animated Mesh Background for Loading */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="blob-animate blob-1" />
+          <div className="blob-animate blob-2" />
+          <div className="blob-animate blob-3" />
+          <div className="blob-animate blob-4" />
         </div>
 
-        <div className="relative flex flex-col items-center gap-12">
+        <div className="relative flex flex-col items-center gap-12 z-10">
           <div className="relative">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
@@ -112,7 +109,15 @@ function App() {
   }
 
   return (
-    <div className="font-sans text-foreground" dir="rtl">
+    <div className={cn("min-h-screen font-sans text-foreground relative overflow-hidden", getTimeTint())} dir="rtl">
+      {/* Animated Mesh Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="blob-animate blob-1" />
+        <div className="blob-animate blob-2" />
+        <div className="blob-animate blob-3" />
+        <div className="blob-animate blob-4" />
+      </div>
+
       <AnimatePresence mode="wait">
         <motion.div
           key={key}
@@ -120,6 +125,7 @@ function App() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.26, ease: "easeOut" }}
+          className="relative z-10"
         >
           {screen}
         </motion.div>

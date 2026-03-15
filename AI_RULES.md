@@ -1,111 +1,37 @@
 # 🧠 AI Agent Project Context & Constraints
 
-
-
 **Target Audience:** Any AI Assistant/Agent working on this codebase.
-
-**CRITICAL INSTRUCTION:** Read this entire document BEFORE executing any code changes. You must NEVER violate the core principles and fixed bugs listed below.
-
-
+**CRITICAL INSTRUCTION:** Read this entire document BEFORE executing any code changes.
 
 ## 1. Project Overview & Stack
+* **Purpose:** A minimalist, premium SaaS-like clinical nutrition tracker.
+* **Tech Stack:** React, TypeScript, Vite, Zustand, Tailwind CSS, shadcn/ui, Lucide-React, Framer Motion.
+* **Backend:** Supabase (Auth, RLS, Vault for API Keys).
+* **Language:** STRICTLY Hebrew, RTL (`dir="rtl"`, `text-right`).
 
-* **Purpose:** A highly minimalist, premium SaaS-like clinical nutrition and calorie/protein tracker.
+## 2. Core Clinical & Business Logic (FIXED - DO NOT ALTER)
+* **3 AM Rollover:** Daily logs reset at 03:00 AM local time.
+* **Nutritional Math:** Clinical formulas (MSJ for BMR, specific UL targets) are immutable.
+* **AI Fallback:** Primary: `gemini-3-flash-preview`, Fallback: `gemini-2.5-flash` on 429 errors.
 
-* **Tech Stack:** React, TypeScript, Vite, Zustand (State Management), Tailwind CSS, shadcn/ui, Lucide-React, Framer Motion.
+## 3. UI/UX Architecture ($1B Startup Aesthetic)
+* **Visual Identity:** Glassmorphism (backdrop-blur), soft layered shadows, and mesh gradients.
+* **Hierarchy:** 1. Calories (Massive Ring) -> 2. Macros (Clean Grid) -> 3. Micros (Expandable).
+* **Navigation:** Floating Bottom Navigation Bar with "Safe Area" support for mobile.
+* **Motion:** Staggered entry animations and haptic-like scale effects (`whileTap`) on all buttons.
+* **Desktop:** Strictly constrained to `max-w-2xl` and centered.
+* **Ultra-Minimalist Header (Home Screen):** * The Dashboard header must be extremely slim. 
+    * NO greetings, names, avatars, or large Date Navigator cards on the Home screen.
+    * The only persistent element at the top should be the Today/Week/Month toggle.
+    * The "Date Navigator" and biometric details should be moved to a secondary "Profile" or "Diary" view or accessible via a small, subtle icon only.
 
-* **Backend & DB:** Supabase (PostgreSQL, Auth, RLS, Vault).
-
-* **Deployment:** Vercel.
-
-* **Language & UI:** STRICTLY Hebrew, RTL (`dir="rtl"`, `text-right`).
-
-
-
-## 2. Core Clinical & Business Logic (DO NOT BREAK)
-
-* **Timezone & Rollover:** The daily log resets strictly at **3:00 AM**, NOT midnight. This logic must remain intact.
-
-* **Nutrition Formulas:** Uses specific clinical algorithms (e.g., MSJ for BMR, specific UL targets for vitamins/minerals). Do not alter the mathematical formulas. If UL limits are exceeded, a localized Hebrew warning must trigger.
-
-* **AI Integration:** * Primary Model: `gemini-3-flash-preview`
-
-* Fallback Model: `gemini-2.5-flash`
-
-* *Fallback Logic:* Must automatically gracefully degrade on `429 Too Many Requests` or quota limits.
-
-
-
-## 3. Architecture & Data Flow (Supabase + Zustand)
-
-* **Single Source of Truth:** Supabase is the backend truth. Zustand is the local state.
-
-* **Data Structure (CRITICAL):** The `dailyLogs` must remain a dictionary indexed by `"YYYY-MM-DD"` (calculated after the 3 AM offset) to support daily/weekly/monthly history views. Do not alter this schema. Maintain the `savedMeals` (Favorites) functionality.
-
-* **The iOS Race Condition Bug (SOLVED):** * **Rule:** NEVER write to Supabase during app initialization.
-
-* **Rule:** The app MUST use a `LoadingGate` (e.g., `appReady` state). Do NOT render the router or allow any DB writes until `supabase.auth.getSession()` and `fetchUserProfile()` have definitively resolved.
-
-* **Form Inputs (Edit Profile):** Always use local React state (`useState`) to handle draft values for inputs to prevent UI freezing. Only sync to Zustand/Supabase upon explicit "Save" action.
-
-
-
-## 4. Authentication & Security (Supabase Vault & BYOK)
-
-* **API Key Management (Bring Your Own Key):** Keys are securely stored in Supabase Vault.
-
-* **Supabase Vault Rules (CRITICAL):**
-
-* NEVER use direct `INSERT` or `UPDATE` on `vault.secrets`. It will bypass or break `pgsodium` encryption triggers.
-
-* Always use `vault.create_secret()` and `vault.update_secret()` for writes in the RPC.
-
-* Always `SELECT` from the `vault.decrypted_secrets` view to read the raw string. Do NOT read from `vault.secrets` directly.
-
-* **Frontend Security Rules:**
-
-* The frontend MUST send the raw API key (unencrypted) to the backend RPC. Do not use client-side encryption.
-
-* **Sanitization:** Before saving OR using the Gemini API Key, aggressively sanitize it: `String(key).replace(/^["']|["']$/g, '').replace(/\s+/g, '').trim();`
-
-
-
-## 5. UI/UX Principles (Premium, Mobile-First, Hyper-Minimalism)
-
-* **Zero Clutter (Show, Don't Tell):** Absolutely NO verbose explanatory text, "how it works" paragraphs, or developer logic explanations. Clean, intuitive UI only.
-
-* **Premium Mobile-First Feel:** Must feel like a top-tier native iOS/Android app. Smooth animations (`framer-motion`), fast, zero glitches. Use a fixed Bottom Navigation Bar.
-
-* **Modal & Bottom Sheet Safety (BUG PREVENTION):** Never use fixed heights (`h-[...]`) or `overflow: hidden` on text-heavy containers (like the Nutritional Tips). Always use `h-auto`, `max-h-[85vh]`, `overflow-y-auto`, and `pb-safe` to prevent Hebrew text clipping.
-
-* **Strict Visual Hierarchy:** 1. **Primary (Hero):** Total Calories. Must be the largest, most prominent visual element on the Home screen.
-
-2. **Secondary:** Macronutrients (Proteins, Fats, Carbs) directly below calories.
-
-3. **Tertiary:** Micronutrients (Vitamins/Minerals) hidden in elegant expandable sections or horizontal scrolls.
-
-* **Platform Divergence:**
-
-* **Mobile:** Home screen is a Glanceable Dashboard (No long scrolls). Full meal timeline lives exclusively in the "Diary" tab.
-
-* **Desktop:** MUST be constrained (e.g., `max-w-md` or `max-w-2xl`). Center the main containers. Do not stretch to fill desktop screens.
-
-* **Personalization:** Address the user by their actual name (`user_metadata.full_name` or profile name), never a generic "משתמש".
-
-
-
-## 6. Build & Deployment Standards (Vercel)
-
-* **Zero TypeScript Errors:** Vercel strictly enforces build checks. Do NOT leave unused imports, variables, or hanging syntax issues.
-
-* **Env Variables:** Do NOT rely on `.env` variables for the Gemini API key. Use the Vault BYOK logic.
-
-
+## 4. Security (Supabase Vault)
+* **BYOK Logic:** Gemini API keys are stored in Supabase Vault.
+* **Rules:** NEVER use direct `INSERT/UPDATE` on `vault.secrets`. Always use the `set_user_api_key` and `get_user_api_key` RPCs.
+* **Sanitization:** All keys are sanitized (trimmed, quotes removed) before storage or use.
 
 ---
-
-**Current Phase / Next Steps (Last Updated: Pre-UI/UX Overhaul)**
-
-- ✅ UI Race Conditions, Profile Edit bugs, and Vault Encryption fully operational.
-
-- 🔄 **CURRENT PHASE:** Executing a massive end-to-end UI/UX overhaul. Focusing on a premium mobile-first native feel, strict visual hierarchy (Calories -> Macros -> Micros), smooth animations, and ruthless decluttering of text.
+**Current Phase / Next Steps (Last Updated: March 2026)**
+- ✅ UI/UX Overhaul: Premium Glassmorphism & Native feel established.
+- ✅ Supabase Vault & BYOK: Fully operational and secure.
+- 🔄 **CURRENT PHASE:** Infusing vibrant, purposeful color into the UI to make it "alive" while maintaining a premium feel. Focusing on nutrient color-coding and dynamic visual feedback.

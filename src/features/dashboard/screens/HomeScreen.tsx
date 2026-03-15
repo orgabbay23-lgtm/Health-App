@@ -13,41 +13,35 @@ import type {
 import type { NutritionSafetyAlert } from "../../../utils/nutrition-utils";
 import { Card, CardContent } from "../../../components/ui/card";
 import { CompactNutrientCard } from "../components/CompactNutrientCard";
-import { DateNavigator } from "../components/DateNavigator";
 import { FullNutritionAccordion } from "../components/FullNutritionAccordion";
 import { GuidanceCard } from "../components/GuidanceCard";
 import { MealTimeline } from "../components/MealTimeline";
 import { PeriodBreakdown } from "../components/PeriodBreakdown";
-import { PeriodTabs } from "../components/PeriodTabs";
 import { PrimaryNutrientCard } from "../components/PrimaryNutrientCard";
 import { SafetyAlertsCard } from "../components/SafetyAlertsCard";
 
 interface HomeScreenProps {
   periodMode: DashboardPeriod;
-  periodDetails: PeriodDetails;
   periodData: AggregatedPeriodData;
   periodTargets: DailyAggregations;
   selectedDailyLog: DailyLog | null;
   safetyAlerts: NutritionSafetyAlert[];
   userProfile: UserProfile;
   savedSignatures: Set<string>;
-  onPeriodChange: (nextMode: DashboardPeriod) => void;
-  onDateChange: (nextDate: Date) => void;
+  periodDetails: PeriodDetails;
   onDeleteMeal: (dayKey: string, mealId: string) => void;
   onSaveFavorite: (meal: MealItem) => void;
 }
 
 export function HomeScreen({
   periodMode,
-  periodDetails,
   periodData,
   periodTargets,
   selectedDailyLog,
   safetyAlerts,
   userProfile,
   savedSignatures,
-  onPeriodChange,
-  onDateChange,
+  periodDetails,
   onDeleteMeal,
   onSaveFavorite,
 }: HomeScreenProps) {
@@ -83,17 +77,8 @@ export function HomeScreen({
       animate="visible"
       className="space-y-10"
     >
-      <motion.div variants={itemVariants} className="space-y-6">
-        <PeriodTabs value={periodMode} onChange={onPeriodChange} />
-        <DateNavigator
-          periodMode={periodMode}
-          periodDetails={periodDetails}
-          onDateChange={onDateChange}
-        />
-      </motion.div>
-
       {/* Level 1: Hero Section (Calories) */}
-      <motion.section variants={itemVariants} className="flex flex-col items-center">
+      <motion.section variants={itemVariants} className="flex flex-col items-center pt-2">
         <PrimaryNutrientCard
           nutrient="calories"
           current={periodData.aggregations.calories}

@@ -20,7 +20,7 @@ const items: Array<{
 
 export function PeriodTabs({ value, onChange }: PeriodTabsProps) {
   return (
-    <div className="inline-flex rounded-full border border-white/70 bg-white/88 p-1 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+    <div className="inline-flex items-center gap-1">
       {items.map((item) => {
         const Icon = item.icon;
         const active = item.value === value;
@@ -30,14 +30,14 @@ export function PeriodTabs({ value, onChange }: PeriodTabsProps) {
             key={item.value}
             type="button"
             className={cn(
-              "inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition",
+              "inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all duration-300",
               active
-                ? "bg-slate-950 text-white shadow-[0_14px_30px_rgba(15,23,42,0.16)]"
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                ? "bg-slate-950 text-white shadow-lg scale-105"
+                : "text-slate-500 hover:bg-white/50 hover:text-slate-900",
             )}
             onClick={() => onChange(item.value)}
           >
-            <Icon size={16} />
+            <Icon size={14} />
             {item.label}
           </button>
         );

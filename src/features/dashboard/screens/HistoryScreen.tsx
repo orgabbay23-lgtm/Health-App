@@ -14,7 +14,6 @@ import { DateNavigator } from "../components/DateNavigator";
 import { HistoryArchive } from "../components/HistoryArchive";
 import { MealTimeline } from "../components/MealTimeline";
 import { PeriodBreakdown } from "../components/PeriodBreakdown";
-import { PeriodTabs } from "../components/PeriodTabs";
 import { SafetyAlertsCard } from "../components/SafetyAlertsCard";
 
 interface HistoryScreenProps {
@@ -27,7 +26,6 @@ interface HistoryScreenProps {
   safetyAlerts: NutritionSafetyAlert[];
   selectedDayKey: string;
   savedSignatures: Set<string>;
-  onPeriodChange: (nextMode: DashboardPeriod) => void;
   onDateChange: (nextDate: Date) => void;
   onSelectDayKey: (dayKey: string) => void;
   onDeleteMeal: (dayKey: string, mealId: string) => void;
@@ -44,7 +42,6 @@ export function HistoryScreen({
   safetyAlerts,
   selectedDayKey,
   savedSignatures,
-  onPeriodChange,
   onDateChange,
   onSelectDayKey,
   onDeleteMeal,
@@ -52,8 +49,7 @@ export function HistoryScreen({
 }: HistoryScreenProps) {
   return (
     <div className="space-y-8">
-      <div className="space-y-6">
-        <PeriodTabs value={periodMode} onChange={onPeriodChange} />
+      <div className="pt-2">
         <DateNavigator
           periodMode={periodMode}
           periodDetails={periodDetails}

@@ -93,6 +93,16 @@ function MealTimelineItem({
   const [isExpanded, setIsExpanded] = useState(false);
   const Icon = getMealIcon(meal.meal_name, meal.sourceType);
 
+  const getIconStyles = () => {
+    const name = meal.meal_name.toLowerCase();
+    if (meal.sourceType === "supplement") return "bg-violet-50 text-violet-500 shadow-violet-100";
+    if (name.includes("בוקר") || name.includes("breakfast")) return "bg-orange-50 text-orange-500 shadow-orange-100";
+    if (name.includes("צהריים") || name.includes("lunch")) return "bg-emerald-50 text-emerald-500 shadow-emerald-100";
+    if (name.includes("ערב") || name.includes("dinner")) return "bg-indigo-50 text-indigo-500 shadow-indigo-100";
+    if (name.includes("ביניים") || name.includes("snack")) return "bg-rose-50 text-rose-500 shadow-rose-100";
+    return "bg-slate-50 text-slate-500 shadow-slate-100";
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -15 }}
@@ -113,10 +123,11 @@ function MealTimelineItem({
             <div className="flex items-start justify-between gap-4">
               <div className="flex gap-4">
                 <div className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm border border-white shrink-0",
-                  meal.sourceType === "supplement" ? "bg-violet-50 text-violet-500" : "bg-slate-50 text-slate-400"
+                  "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg border border-white shrink-0 relative overflow-hidden",
+                  getIconStyles()
                 )}>
-                  <Icon size={22} />
+                  <div className="absolute inset-0 opacity-20 bg-gradient-to-br from-white to-transparent" />
+                  <Icon size={22} className="relative z-10" />
                 </div>
                 
                 <div className="space-y-1">
@@ -188,11 +199,15 @@ function MealTimelineItem({
 
             <div className="mt-4 flex flex-wrap gap-2">
               {[
-                { label: "חלבון", value: meal.macronutrients.protein, color: "bg-blue-50 text-blue-600" },
-                { label: "פחמימות", value: meal.macronutrients.carbs, color: "bg-emerald-50 text-emerald-600" },
-                { label: "שומן", value: meal.macronutrients.fat, color: "bg-amber-50 text-amber-600" }
+                { label: "חלבון", value: meal.macronutrients.protein, color: "gradient-protein text-white", shadow: "shadow-orange-200/50" },
+                { label: "פחמימות", value: meal.macronutrients.carbs, color: "gradient-carbs text-white", shadow: "shadow-emerald-200/50" },
+                { label: "שומן", value: meal.macronutrients.fat, color: "gradient-fats text-white", shadow: "shadow-amber-200/50" }
               ].map((macro) => (
-                <div key={macro.label} className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter", macro.color)}>
+                <div key={macro.label} className={cn(
+                  "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-md", 
+                  macro.color,
+                  macro.shadow
+                )}>
                   {macro.label}: {formatNutritionValue(macro.value)} ג'
                 </div>
               ))}
