@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
 import { z } from "zod";
+import { supabase } from "../lib/supabase";
 
 const PRIMARY_MODEL = "gemini-3-flash-preview";
 const FALLBACK_MODEL = "gemini-2.5-flash";
@@ -122,12 +123,32 @@ const SYSTEM_INSTRUCTION =
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
-const getApiKey = () => localStorage.getItem('gemini_personal_api_key') || import.meta.env.VITE_GEMINI_API_KEY;
+let cachedApiKey: string | null = null;
+
+export function clearCachedApiKey() {
+  cachedApiKey = null;
+}
+
+const getApiKey = async (): Promise<string | null> => {
+  if (cachedApiKey) return cachedApiKey;
+
+  try {
+    const { data: apiKey, error } = await supabase.rpc('get_user_api_key');
+    if (!error && apiKey) {
+      cachedApiKey = apiKey;
+      return apiKey;
+    }
+  } catch (err) {
+    console.error("Failed to fetch API key from Vault:", err);
+  }
+
+  return import.meta.env.VITE_GEMINI_API_KEY || null;
+};
 
 export async function parseMealDescription(
   description: string,
 ): Promise<ParsedMealDescription> {
-  const apiKey = getApiKey() || "";
+  const apiKey = await getApiKey();
 
   if (!apiKey) {
     throw new Error("BYOK_REQUIRED");
@@ -167,7 +188,7 @@ export async function parseMealDescription(
       error?.message?.toLowerCase().includes("api key not found");
 
     if (isAuthError) {
-      localStorage.removeItem('gemini_personal_api_key');
+      clearCachedApiKey();
       throw new Error("API_KEY_INVALID");
     }
 

@@ -4,6 +4,7 @@ import { Card, CardContent } from "../../../components/ui/card";
 import { supabase } from "../../../lib/supabase";
 import { UserAvatar } from "../../users/UserAvatar";
 import type { UserAccentToken } from "../../../store";
+import { clearCachedApiKey } from "../../../utils/gemini";
 
 interface DashboardTopBarProps {
   activeUser: {
@@ -22,6 +23,7 @@ export function DashboardTopBar({
   onOpenProfileModal,
 }: DashboardTopBarProps) {
   const handleLogout = async () => {
+    clearCachedApiKey();
     await supabase.auth.signOut();
   };
 

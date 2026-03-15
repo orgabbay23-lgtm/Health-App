@@ -28,7 +28,7 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
     if (trimmedKey) {
       setIsSaving(true);
       try {
-        const { error } = await supabase.rpc('set_gemini_api_key', { api_key: trimmedKey });
+        const { error } = await supabase.rpc('set_user_api_key', { secret_key: trimmedKey });
         if (error) throw error;
         
         toast.success("מפתח ה-API נשמר בהצלחה בצורה מאובטחת!");
