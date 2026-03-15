@@ -21,7 +21,6 @@ interface EditProfileModalProps {
 export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const activeUser = useActiveUser();
   const updateProfileDetails = useAppStore((state) => state.updateProfileDetails);
-  const updateProfileName = useAppStore((state) => state.updateProfileName);
 
   const {
     register,
@@ -31,45 +30,41 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     formState: { errors },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: activeUser
+    defaultValues: activeUser?.profile
       ? {
-          name: activeUser.name,
-          age: activeUser.profile?.age ?? 30,
-          gender: activeUser.profile?.gender ?? "male",
-          height: activeUser.profile?.height ?? 170,
-          weight: activeUser.profile?.weight ?? 70,
-          activityLevel: activeUser.profile?.activityLevel ?? "sedentary",
-          goalDeficit: activeUser.profile?.goalDeficit ?? 500,
-          isSmoker: activeUser.profile?.isSmoker ?? false,
+          age: activeUser.profile.age,
+          gender: activeUser.profile.gender,
+          height: activeUser.profile.height,
+          weight: activeUser.profile.weight,
+          activityLevel: activeUser.profile.activityLevel,
+          goalDeficit: activeUser.profile.goalDeficit,
+          isSmoker: activeUser.profile.isSmoker,
         }
       : undefined,
   });
 
   useEffect(() => {
-    if (!activeUser || !isOpen) {
+    if (!activeUser || !isOpen || !activeUser.profile) {
       return;
     }
 
     reset({
-      name: activeUser.name,
-      age: activeUser.profile?.age ?? 30,
-      gender: activeUser.profile?.gender ?? "male",
-      height: activeUser.profile?.height ?? 170,
-      weight: activeUser.profile?.weight ?? 70,
-      activityLevel: activeUser.profile?.activityLevel ?? "sedentary",
-      goalDeficit: activeUser.profile?.goalDeficit ?? 500,
-      isSmoker: activeUser.profile?.isSmoker ?? false,
+      age: activeUser.profile.age,
+      gender: activeUser.profile.gender,
+      height: activeUser.profile.height,
+      weight: activeUser.profile.weight,
+      activityLevel: activeUser.profile.activityLevel,
+      goalDeficit: activeUser.profile.goalDeficit,
+      isSmoker: activeUser.profile.isSmoker,
     });
   }, [activeUser, isOpen, reset]);
 
-  if (!activeUser) {
+  if (!activeUser?.profile) {
     return null;
   }
 
-  const onSubmit = async (data: ProfileFormValues) => {
-    const { name, ...details } = data;
-    await updateProfileName(name);
-    await updateProfileDetails(details);
+  const onSubmit = (data: ProfileFormValues) => {
+    updateProfileDetails(data);
     onClose();
   };
 

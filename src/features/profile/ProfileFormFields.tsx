@@ -41,15 +41,6 @@ export function ProfileFormFields({
 }: ProfileFormFieldsProps) {
   return (
     <div className="space-y-5">
-      <FieldShell label="שם מלא" error={errors.name?.message} tone={tone}>
-        <Input
-          id="name"
-          type="text"
-          {...register("name")}
-          placeholder="ישראל ישראלי"
-        />
-      </FieldShell>
-
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <FieldShell label="גיל" error={errors.age?.message} tone={tone}>
           <Input

@@ -254,7 +254,6 @@ function removeMealFromDailyLogs(
 
 interface AppState {
   profile: UserProfile | null;
-  name: string;
   dailyLogs: Record<string, DailyLog>;
   savedMeals: SavedMeal[];
   isLoadingData: boolean;
@@ -264,7 +263,6 @@ interface AppState {
   clearUserData: () => void;
   setUserProfile: (profile: NutritionProfileInput) => Promise<void>;
   updateProfileDetails: (details: Partial<NutritionProfileInput>) => Promise<void>;
-  updateProfileName: (name: string) => Promise<void>;
   addMealLog: (dayKey: string, meal: MealItem) => Promise<NutritionSafetyAlert[]>;
   removeMealLog: (dayKey: string, mealId: string) => Promise<void>;
   saveMealAsFavorite: (meal: MealItem) => Promise<boolean>;
@@ -274,7 +272,6 @@ interface AppState {
 
 export const useAppStore = create<AppState>()((set, get) => ({
   profile: null,
-  name: "משתמש",
   dailyLogs: {},
   savedMeals: [],
   isLoadingData: false,
@@ -283,7 +280,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
   fetchUserData: async (userId: string) => {
     set({ isLoadingData: true, userId });
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       const [profileRes, logsRes, mealsRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', userId).single(),
         supabase.from('daily_logs').select('*').eq('user_id', userId),
@@ -291,10 +287,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       ]);
 
       let profile = null;
-      let name = "משתמש";
-
       if (profileRes.data) {
-        name = profileRes.data.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || "משתמש";
         profile = normalizeUserProfile({
           age: profileRes.data.age,
           gender: profileRes.data.gender,
@@ -304,9 +297,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
           goalDeficit: profileRes.data.goals?.[0]?.deficit ?? 500,
           isSmoker: profileRes.data.medical_conditions?.includes('smoker') ?? false,
         });
-      } else {
-        // Fallback for user without profile yet
-        name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "משתמש";
       }
 
       const dailyLogs: Record<string, DailyLog> = {};
@@ -332,7 +322,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         });
       }
 
-      set({ profile, name, dailyLogs, savedMeals });
+      set({ profile, dailyLogs, savedMeals });
     } catch (error) {
       console.error("Error fetching user data", error);
     } finally {
@@ -341,18 +331,17 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   clearUserData: () => {
-    set({ profile: null, name: "משתמש", dailyLogs: {}, savedMeals: [], userId: null });
+    set({ profile: null, dailyLogs: {}, savedMeals: [], userId: null });
   },
 
   setUserProfile: async (profileInput) => {
-    const { userId, name } = get();
+    const { userId } = get();
     if (!userId) return;
     const profile = buildUserProfile(profileInput);
     set({ profile });
 
     await supabase.from('profiles').upsert({
       id: userId,
-      name,
       age: profile.age,
       gender: profile.gender,
       height: profile.height,
@@ -368,21 +357,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const { profile, setUserProfile } = get();
     if (!profile) return;
     await setUserProfile({ ...profile, ...details });
-  },
-
-  updateProfileName: async (name: string) => {
-    const { userId, profile } = get();
-    if (!userId) return;
-    
-    set({ name });
-    
-    await supabase.from('profiles').upsert({
-      id: userId,
-      name,
-      updated_at: new Date().toISOString()
-    });
-
-    // If profile exists, ensure name is kept in sync during next profile update
   },
 
   addMealLog: async (dayKey, meal) => {
@@ -480,7 +454,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
 export function useActiveUser() {
   const userId = useAppStore(state => state.userId);
-  const name = useAppStore(state => state.name);
   const profile = useAppStore(state => state.profile);
   const dailyLogs = useAppStore(state => state.dailyLogs);
   const savedMeals = useAppStore(state => state.savedMeals);
@@ -488,7 +461,7 @@ export function useActiveUser() {
   if (!userId) return null;
   return {
     id: userId,
-    name: name,
+    name: "משתמש",
     accent: "sky" as const,
     profile,
     dailyLogs,
