@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 import {
@@ -261,6 +262,7 @@ interface AppState {
   savedMeals: SavedMeal[];
   isLoadingData: boolean;
   userId: string | null;
+  _lastFetchTime: number;
 
   fetchUserData: (userId: string, isSilent?: boolean) => Promise<void>;
   clearUserData: () => void;
@@ -273,81 +275,94 @@ interface AppState {
   addSavedMealToDay: (dayKey: string, savedMealId: string) => Promise<NutritionSafetyAlert[]>;
 }
 
-export const useAppStore = create<AppState>()((set, get) => ({
-  name: null,
-  profile: null,
-  dailyLogs: {},
-  savedMeals: [],
-  isLoadingData: false,
-  userId: null,
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      name: null,
+      profile: null,
+      dailyLogs: {},
+      savedMeals: [],
+      isLoadingData: false,
+      userId: null,
+      _lastFetchTime: 0,
 
-  fetchUserData: async (userId: string, isSilent?: boolean) => {
-    const shouldBeSilent = isSilent ?? get().profile !== null;
-    if (!shouldBeSilent) {
-      set({ isLoadingData: true });
-    }
-    set({ userId });
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const [profileRes, logsRes, mealsRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', userId).single(),
-        supabase.from('daily_logs').select('*').eq('user_id', userId),
-        supabase.from('saved_meals').select('*').eq('user_id', userId),
-      ]);
+      fetchUserData: async (userId: string, isSilent?: boolean) => {
+        // Prevent redundant fetches within 2 seconds unless explicit
+        const now = Date.now();
+        if (get().userId === userId && get().isLoadingData && (now - get()._lastFetchTime < 2000)) {
+          return;
+        }
 
-      let name = user?.user_metadata?.full_name || "משתמש";
-      if (profileRes.data?.name) {
-         name = profileRes.data.name;
-      }
+        const shouldBeSilent = isSilent ?? get().profile !== null;
+        if (!shouldBeSilent) {
+          set({ isLoadingData: true });
+        }
+        
+        set({ userId, _lastFetchTime: now });
+        
+        try {
+          const [profileRes, logsRes, mealsRes] = await Promise.all([
+            supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+            supabase.from('daily_logs').select('*').eq('user_id', userId),
+            supabase.from('saved_meals').select('*').eq('user_id', userId),
+          ]);
 
-      let profile = null;
-      if (profileRes.data) {
-        profile = normalizeUserProfile({
-          name: name,
-          age: profileRes.data.age,
-          gender: profileRes.data.gender,
-          height: profileRes.data.height,
-          weight: profileRes.data.weight,
-          activityLevel: profileRes.data.activity_level,
-          goalDeficit: profileRes.data.goals?.[0]?.deficit ?? 500,
-          isSmoker: profileRes.data.medical_conditions?.includes('smoker') ?? false,
-        });
-      }
+          if (profileRes.error && profileRes.status !== 406) throw profileRes.error;
 
-      const dailyLogs: Record<string, DailyLog> = {};
-      if (logsRes.data) {
-        logsRes.data.forEach(log => {
-          const meals = (log.meals || []).map(normalizeMealItem);
-          dailyLogs[log.date] = {
-            meals,
-            aggregations: aggregateMeals(meals),
-          };
-        });
-      }
+          let name = get().name || "משתמש";
+          if (profileRes.data?.name) {
+             name = profileRes.data.name;
+          }
 
-      const savedMeals: SavedMeal[] = [];
-      if (mealsRes.data) {
-        mealsRes.data.forEach(sm => {
-          savedMeals.push({
-            id: sm.id,
-            savedAt: sm.created_at,
-            signature: createMealSignature(sm.ingredients?.[0] || {}),
-            meal: normalizeMealItem(sm.ingredients?.[0] || {}),
-          });
-        });
-      }
+          let profile = null;
+          if (profileRes.data) {
+            profile = normalizeUserProfile({
+              name: name,
+              age: profileRes.data.age,
+              gender: profileRes.data.gender,
+              height: profileRes.data.height,
+              weight: profileRes.data.weight,
+              activityLevel: profileRes.data.activity_level,
+              goalDeficit: profileRes.data.goals?.[0]?.deficit ?? 500,
+              isSmoker: profileRes.data.medical_conditions?.includes('smoker') ?? false,
+            });
+          }
 
-      set({ name, profile, dailyLogs, savedMeals });
-    } catch (error) {
-      console.error("Error fetching user data", error);
-    } finally {
-      set({ isLoadingData: false });
-    }
-  },
+          const dailyLogs: Record<string, DailyLog> = {};
+          if (logsRes.data) {
+            logsRes.data.forEach(log => {
+              const meals = (log.meals || []).map(normalizeMealItem);
+              dailyLogs[log.date] = {
+                meals,
+                aggregations: aggregateMeals(meals),
+              };
+            });
+          }
 
-  clearUserData: () => {
-    set({ name: null, profile: null, dailyLogs: {}, savedMeals: [], userId: null });
-  },
+          const savedMeals: SavedMeal[] = [];
+          if (mealsRes.data) {
+            mealsRes.data.forEach(sm => {
+              savedMeals.push({
+                id: sm.id,
+                savedAt: sm.created_at,
+                signature: createMealSignature(sm.ingredients?.[0] || {}),
+                meal: normalizeMealItem(sm.ingredients?.[0] || {}),
+              });
+            });
+          }
+
+          set({ name, profile, dailyLogs, savedMeals });
+        } catch (error) {
+          console.error("Error fetching user data", error);
+        } finally {
+          set({ isLoadingData: false });
+        }
+      },
+
+      clearUserData: () => {
+        set({ name: null, profile: null, dailyLogs: {}, savedMeals: [], userId: null, _lastFetchTime: 0 });
+        localStorage.removeItem('app-storage'); // Force clear persistence
+      },
 
   setUserProfile: async (profileInput) => {
     const { userId } = get();
@@ -480,7 +495,20 @@ export const useAppStore = create<AppState>()((set, get) => ({
       timestamp: new Date().toISOString(),
     });
   }
-}));
+}),
+{
+  name: "app-storage",
+  storage: createJSONStorage(() => localStorage),
+  partialize: (state) => ({
+    name: state.name,
+    profile: state.profile,
+    dailyLogs: state.dailyLogs,
+    savedMeals: state.savedMeals,
+    userId: state.userId,
+  }),
+}
+)
+);
 
 export function useActiveUser() {
   const userId = useAppStore(state => state.userId);

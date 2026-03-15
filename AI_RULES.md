@@ -72,3 +72,13 @@
 
 
 
+
+* **2026-03-15: Permanent Flicker & Refresh Resolution (Zustand Persistence)**
+    * **Issue:** Intermittent UI refreshes/flickers despite previous focus fix. Caused by race conditions between getSession and onAuthStateChange, lack of store persistence, and non-silent data fetching logic.
+    * **Fix:** 
+        1. Implemented **Zustand Persistence** (persist middleware) to maintain profile and dailyLogs across reloads/unmounts.
+        2. Added **Concurrency Throttling** (_lastFetchTime) in the store to block redundant fetches within 2 seconds.
+        3. Refined **Silent Fetching**: Data fetch is now silent by default if profile already exists in the store.
+        4. Optimized **Loading Gate**: Updated App.tsx to only show the spinner if data is missing (!profile).
+        5. Fixed useActiveSavedMeals bug where it was returning profile instead of savedMeals.
+    * **Standard:** Use Zustand persistence for all core user data. All data syncing must be silent if local state is already hydrated. Prevent concurrent fetch race conditions at the store level.

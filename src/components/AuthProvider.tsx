@@ -27,7 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(sessionUser);
       
       if (sessionUser) {
-        fetchUserData(sessionUser.id, false);
+        // Store will decide if it needs to show loader based on profile presence
+        fetchUserData(sessionUser.id);
       } else {
         clearUserData();
       }
@@ -42,10 +43,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(sessionUser);
 
       if (sessionUser) {
-        // Use silent fetch for TOKEN_REFRESHED to avoid disruptive re-renders on focus
-        // SIGNED_IN and INITIAL_SESSION (if caught here) should show the loader
-        const isSilent = event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED';
-        fetchUserData(sessionUser.id, isSilent);
+        // We let fetchUserData handle the "isSilent" logic.
+        // It will be silent if profile already exists.
+        // event-based overrides can be added here if needed, but usually redundant now.
+        fetchUserData(sessionUser.id);
       } else if (event === 'SIGNED_OUT') {
         clearUserData();
       }

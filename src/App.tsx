@@ -25,7 +25,7 @@ function App() {
     return <AuthCallback />;
   }
 
-  if (authLoading || (user && isLoadingData)) {
+  if (authLoading || (user && isLoadingData && !profile)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 relative overflow-hidden" dir="rtl">
         {/* Animated Mesh Background for Loading */}
