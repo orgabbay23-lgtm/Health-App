@@ -6,6 +6,7 @@ import { Label } from "../../components/ui/label";
 
 export function AuthScreen() {
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -17,7 +18,15 @@ export function AuthScreen() {
     setError(null);
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+            }
+          }
+        });
         if (error) throw error;
         alert("בדוק את המייל שלך לאימות החשבון!");
       } else {
@@ -57,6 +66,20 @@ export function AuthScreen() {
           </div>
         )}
         <form onSubmit={handleAuth} className="space-y-4">
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="fullName">שם מלא</Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                className="w-full"
+                placeholder="ישראל ישראלי"
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">אימייל</Label>
             <Input

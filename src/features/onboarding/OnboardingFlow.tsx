@@ -15,6 +15,7 @@ import { UserAvatar } from "../users/UserAvatar";
 export function OnboardingFlow() {
   const activeUser = useActiveUser();
   const setUserProfile = useAppStore((state) => state.setUserProfile);
+  const updateProfileName = useAppStore((state) => state.updateProfileName);
 
   const {
     register,
@@ -24,6 +25,7 @@ export function OnboardingFlow() {
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      name: activeUser?.name || "",
       age: 30,
       gender: "male",
       height: 170,
@@ -38,8 +40,10 @@ export function OnboardingFlow() {
     return null;
   }
 
-  const onSubmit = (data: ProfileFormValues) => {
-    setUserProfile(data);
+  const onSubmit = async (data: ProfileFormValues) => {
+    const { name, ...details } = data;
+    await updateProfileName(name);
+    await setUserProfile(details);
   };
 
   return (
