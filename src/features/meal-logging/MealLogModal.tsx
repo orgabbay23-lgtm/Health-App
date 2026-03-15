@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Heart, Plus, Trash2, WandSparkles } from "lucide-react";
+import { Trash2, Plus, Heart, WandSparkles } from "lucide-react";
+import { cn } from "../../utils/utils";
 import { toast } from "sonner";
 import { useActiveSavedMeals, useAppStore } from "../../store";
 import { getLogicalDayKey } from "../../utils/nutrition-utils";
@@ -195,13 +196,14 @@ export function MealLogModal({
           </TabsList>
 
           <TabsContent value="ai" className="mt-4 space-y-4">
-            <form onSubmit={handleAiSubmit(onAiSubmit)} className="space-y-4">
-              <div className="space-y-2">
+            <form onSubmit={handleAiSubmit(onAiSubmit)} className="space-y-4 relative">
+              <div className={cn("space-y-2 transition-all duration-500", isSubmitting ? "opacity-50 blur-[2px]" : "")}>
                 <Label htmlFor="description">מה אכלת?</Label>
                 <Input
                   id="description"
                   placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
                   {...registerAi("description")}
+                  disabled={isSubmitting}
                 />
                 {aiErrors.description && (
                   <p className="text-sm text-red-500">
@@ -209,8 +211,18 @@ export function MealLogModal({
                   </p>
                 )}
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "מנתח..." : "הוסף ארוחה"}
+              <Button type="submit" className={cn("w-full transition-all duration-500", isSubmitting ? "bg-slate-800" : "")} disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+                    </span>
+                    מנתח עם בינה מלאכותית...
+                  </span>
+                ) : (
+                  "הוסף ארוחה"
+                )}
               </Button>
             </form>
           </TabsContent>

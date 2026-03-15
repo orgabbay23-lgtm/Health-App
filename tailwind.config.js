@@ -17,6 +17,14 @@ export default {
       },
     },
     extend: {
+      padding: {
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-top': 'env(safe-area-inset-top)',
+      },
+      boxShadow: {
+        'soft-sm': '0 2px 8px rgba(0,0,0,0.04)',
+        'soft-xl': '0 12px 32px rgba(0,0,0,0.12)',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -53,6 +61,10 @@ export default {
         },
       },
       borderRadius: {
+        badge: "4px",
+        button: "12px",
+        card: "20px",
+        sheet: "32px",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",

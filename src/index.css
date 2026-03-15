@@ -35,6 +35,9 @@
   html {
     direction: rtl;
     scroll-behavior: smooth;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
   }
 
   body {
@@ -44,6 +47,11 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-y: none;
+  }
+
+  input, textarea, p, h1, h2, h3, h4, h5, h6, span {
+    user-select: text;
   }
 
   #root {

@@ -63,7 +63,7 @@ export function HomeScreen({
         />
       </div>
 
-      <Card className="border-white/70 bg-[linear-gradient(135deg,_rgba(255,255,255,0.96),_rgba(249,250,251,0.92))] shadow-[0_24px_64px_rgba(15,23,42,0.06)]">
+      <Card className="border-white/70 bg-[linear-gradient(135deg,_rgba(255,255,255,0.96),_rgba(249,250,251,0.92))] shadow-soft-sm rounded-card">
         <CardContent className="space-y-4 p-5">
           <div className="space-y-1">
             <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
@@ -135,8 +135,8 @@ export function HomeScreen({
         userProfile={userProfile}
       />
 
-      <Card className="border-white/70 bg-white/90 shadow-[0_22px_56px_rgba(15,23,42,0.06)]">
-        <CardContent className="space-y-5 p-5">
+      <Card className="border-white/70 bg-white/90 shadow-soft-sm rounded-card">
+        <CardContent className="space-y-5 p-5 leading-relaxed">
           <div className="space-y-1">
             <h3 className="text-xl font-semibold text-slate-950">
               {periodMode === "daily" ? "ארוחות" : "פירוט התקופה"}

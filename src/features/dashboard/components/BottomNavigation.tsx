@@ -1,5 +1,4 @@
 import { CalendarDays, Home, Plus, UserRound } from "lucide-react";
-import { Card, CardContent } from "../../../components/ui/card";
 import { cn } from "../../../utils/utils";
 import type { DashboardScreen } from "../types";
 
@@ -26,9 +25,9 @@ export function BottomNavigation({
   onOpenMealModal,
 }: BottomNavigationProps) {
   return (
-    <div className="fixed inset-x-4 bottom-4 z-40 md:hidden">
-      <Card className="border-white/80 bg-white/95 shadow-[0_22px_60px_rgba(15,23,42,0.14)] backdrop-blur">
-        <CardContent className="grid grid-cols-4 gap-2 p-2">
+    <div className="fixed bottom-0 left-0 w-full z-50 md:hidden pb-[env(safe-area-inset-bottom)]">
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800">
+        <div className="grid grid-cols-4 gap-2 p-2 pb-3">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const active = item.key !== "add" && activeScreen === item.key;
@@ -38,26 +37,24 @@ export function BottomNavigation({
                 key={item.key}
                 type="button"
                 className={cn(
-                  "rounded-[20px] px-2 py-3 text-xs font-medium transition",
+                  "rounded-button px-2 py-2 text-xs font-medium transition min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1",
                   item.key === "add"
-                    ? "bg-slate-950 text-white shadow-[0_16px_30px_rgba(15,23,42,0.18)]"
+                    ? "bg-slate-950 text-white shadow-soft-sm"
                     : active
-                      ? "bg-slate-100 text-slate-950"
-                      : "text-slate-500 hover:bg-slate-50",
+                      ? "text-slate-950 dark:text-white"
+                      : "text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800",
                 )}
                 onClick={() =>
                   item.key === "add" ? onOpenMealModal() : onNavigate(item.key)
                 }
               >
-                <div className="flex flex-col items-center gap-2">
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </div>
+                <Icon size={20} className={active ? "text-blue-500" : ""} />
+                <span className="text-[10px] leading-none">{item.label}</span>
               </button>
             );
           })}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
