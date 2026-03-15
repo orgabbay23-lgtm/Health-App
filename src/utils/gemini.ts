@@ -156,7 +156,7 @@ export async function parseMealDescription(
 ): Promise<ParsedMealDescription> {
   try {
     const rawApiKey = await getApiKey();
-    const sanitizedKey = String(rawApiKey).replace(/\s+/g, '').trim();
+    const sanitizedKey = String(rawApiKey).replace(/^["']|["']$/g, '').replace(/\s+/g, '').trim();
 
     if (!sanitizedKey) {
       throw new Error("MISSING_API_KEY");
@@ -201,6 +201,16 @@ export async function parseMealDescription(
         throw new Error("API_KEY_INVALID");
       }
 
+      const isInvalidKeyError = 
+        apiError?.status === 400 || 
+        apiError?.message?.includes("400") || 
+        apiError?.message?.includes("API_KEY_INVALID");
+
+      if (isInvalidKeyError) {
+        clearCachedApiKey();
+        throw new Error("INVALID_KEY_FROM_GOOGLE");
+      }
+
       const isQuotaError =
         apiError?.status === 429 ||
         apiError?.message?.includes("429") ||
@@ -221,7 +231,7 @@ export async function parseMealDescription(
     }
   } catch (error: any) {
     console.error("Gemini API Error details:", error);
-    if (error.message === "MISSING_API_KEY" || error.message === "API_KEY_INVALID") {
+    if (error.message === "MISSING_API_KEY" || error.message === "API_KEY_INVALID" || error.message === "INVALID_KEY_FROM_GOOGLE") {
       throw error;
     }
     throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
