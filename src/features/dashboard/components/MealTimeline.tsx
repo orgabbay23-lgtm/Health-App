@@ -142,11 +142,11 @@ function MealTimelineItem({
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-400">
+                    <span className="text-[13px] font-bold text-slate-500">
                       {formatMealTime(meal.timestamp)}
                     </span>
                     <span className="w-1 h-1 rounded-full bg-slate-200" />
-                    <span className="text-xs font-black text-slate-950">
+                    <span className="text-[13px] font-black text-slate-950">
                       {formatNutritionValue(meal.calories)} קק"ל
                     </span>
                   </div>
@@ -229,13 +229,13 @@ function MealTimelineItem({
                       key={key}
                       className="rounded-2xl bg-white/80 p-3 border border-white shadow-sm flex flex-col gap-1"
                     >
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <p className="text-[13px] font-black text-slate-500 uppercase tracking-widest">
                         {NUTRIENT_META[key].label}
                       </p>
                       <div className="flex items-center gap-1 text-sm font-black text-slate-900">
                         <Sparkles size={12} className="text-sky-400" />
                         {formatNutritionValue(meal.micronutrients[key])}
-                        <span className="text-[10px] text-slate-400">{NUTRIENT_META[key].unit}</span>
+                        <span className="text-[11px] text-slate-500">{NUTRIENT_META[key].unit}</span>
                       </div>
                     </div>
                   ))}

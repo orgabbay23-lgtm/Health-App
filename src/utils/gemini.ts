@@ -39,56 +39,37 @@ const mealResponseSchema: Schema = {
       type: SchemaType.OBJECT,
       properties: {
         fiber: { type: SchemaType.NUMBER, description: "Fiber in grams." },
-        sodium: {
-          type: SchemaType.NUMBER,
-          description: "Sodium in milligrams.",
-        },
-        potassium: {
-          type: SchemaType.NUMBER,
-          description: "Potassium in milligrams.",
-        },
-        magnesium: {
-          type: SchemaType.NUMBER,
-          description: "Magnesium in milligrams.",
-        },
-        calcium: {
-          type: SchemaType.NUMBER,
-          description: "Calcium in milligrams.",
-        },
+        sodium: { type: SchemaType.NUMBER, description: "Sodium in milligrams." },
+        potassium: { type: SchemaType.NUMBER, description: "Potassium in milligrams." },
+        magnesium: { type: SchemaType.NUMBER, description: "Magnesium in milligrams." },
+        calcium: { type: SchemaType.NUMBER, description: "Calcium in milligrams." },
         iron: { type: SchemaType.NUMBER, description: "Iron in milligrams." },
-        vitaminA: {
-          type: SchemaType.NUMBER,
-          description: "Vitamin A in micrograms.",
-        },
-        vitaminC: {
-          type: SchemaType.NUMBER,
-          description: "Vitamin C in milligrams.",
-        },
-        vitaminD: {
-          type: SchemaType.NUMBER,
-          description: "Vitamin D in micrograms.",
-        },
-        vitaminE: {
-          type: SchemaType.NUMBER,
-          description: "Vitamin E in milligrams.",
-        },
-        vitaminB12: {
-          type: SchemaType.NUMBER,
-          description: "Vitamin B12 in micrograms.",
-        },
+        vitaminA: { type: SchemaType.NUMBER, description: "Vitamin A in micrograms RAE." },
+        vitaminC: { type: SchemaType.NUMBER, description: "Vitamin C in milligrams." },
+        vitaminD: { type: SchemaType.NUMBER, description: "Vitamin D in micrograms." },
+        vitaminE: { type: SchemaType.NUMBER, description: "Vitamin E in milligrams alpha-tocopherol." },
+        vitaminB12: { type: SchemaType.NUMBER, description: "Vitamin B12 in micrograms." },
+        iodine: { type: SchemaType.NUMBER, description: "Iodine in micrograms." },
+        zinc: { type: SchemaType.NUMBER, description: "Zinc in milligrams." },
+        folicAcid: { type: SchemaType.NUMBER, description: "Folate (folic acid) in micrograms DFE." },
+        vitaminK: { type: SchemaType.NUMBER, description: "Vitamin K in micrograms." },
+        selenium: { type: SchemaType.NUMBER, description: "Selenium in micrograms." },
+        vitaminB6: { type: SchemaType.NUMBER, description: "Vitamin B6 (pyridoxine) in milligrams." },
+        vitaminB3: { type: SchemaType.NUMBER, description: "Vitamin B3 (niacin) in milligrams NE." },
+        vitaminB1: { type: SchemaType.NUMBER, description: "Vitamin B1 (thiamine) in milligrams." },
+        vitaminB2: { type: SchemaType.NUMBER, description: "Vitamin B2 (riboflavin) in milligrams." },
+        vitaminB5: { type: SchemaType.NUMBER, description: "Vitamin B5 (pantothenic acid) in milligrams." },
+        biotin: { type: SchemaType.NUMBER, description: "Biotin (B7) in micrograms." },
+        copper: { type: SchemaType.NUMBER, description: "Copper in milligrams." },
+        manganese: { type: SchemaType.NUMBER, description: "Manganese in milligrams." },
+        chromium: { type: SchemaType.NUMBER, description: "Chromium in micrograms." },
       },
       required: [
-        "fiber",
-        "sodium",
-        "potassium",
-        "magnesium",
-        "calcium",
-        "iron",
-        "vitaminA",
-        "vitaminC",
-        "vitaminD",
-        "vitaminE",
-        "vitaminB12",
+        "fiber", "sodium", "potassium", "magnesium", "calcium", "iron",
+        "vitaminA", "vitaminC", "vitaminD", "vitaminE", "vitaminB12",
+        "iodine", "zinc", "folicAcid", "vitaminK", "selenium",
+        "vitaminB6", "vitaminB3", "vitaminB1", "vitaminB2", "vitaminB5",
+        "biotin", "copper", "manganese", "chromium",
       ],
     },
   },
@@ -115,11 +96,31 @@ const mealResponseParser = z.object({
     vitaminD: z.number().finite().nonnegative(),
     vitaminE: z.number().finite().nonnegative(),
     vitaminB12: z.number().finite().nonnegative(),
+    iodine: z.number().finite().nonnegative(),
+    zinc: z.number().finite().nonnegative(),
+    folicAcid: z.number().finite().nonnegative(),
+    vitaminK: z.number().finite().nonnegative(),
+    selenium: z.number().finite().nonnegative(),
+    vitaminB6: z.number().finite().nonnegative(),
+    vitaminB3: z.number().finite().nonnegative(),
+    vitaminB1: z.number().finite().nonnegative(),
+    vitaminB2: z.number().finite().nonnegative(),
+    vitaminB5: z.number().finite().nonnegative(),
+    biotin: z.number().finite().nonnegative(),
+    copper: z.number().finite().nonnegative(),
+    manganese: z.number().finite().nonnegative(),
+    chromium: z.number().finite().nonnegative(),
   }),
 });
 
-const SYSTEM_INSTRUCTION =
-  "You are an expert clinical nutritionist and structured data extractor. Analyze Hebrew meal descriptions, estimate reasonable Israeli portion sizes when omitted, and return only valid JSON matching the requested schema. Do not return markdown, explanations, or extra keys.";
+const SYSTEM_INSTRUCTION = `You are an expert clinical nutritionist and structured data extractor. Analyze Hebrew meal descriptions, estimate reasonable Israeli portion sizes when omitted, and return only valid JSON matching the requested schema. Do not return markdown, explanations, or extra keys.
+
+CRITICAL — You MUST return accurate values for ALL 23 micronutrients in the "micronutrients" object:
+fiber, sodium, potassium, magnesium, calcium, iron, vitaminA, vitaminC, vitaminD, vitaminE, vitaminB12, iodine, zinc, folicAcid, vitaminK, selenium, vitaminB6, vitaminB3, vitaminB1, vitaminB2, vitaminB5, biotin, copper, manganese, chromium.
+
+Units: fiber (g), sodium/potassium/magnesium/calcium (mg), iron (mg), vitaminA (µg RAE), vitaminC (mg), vitaminD (µg), vitaminE (mg α-tocopherol), vitaminB12 (µg), iodine (µg), zinc (mg), folicAcid (µg DFE), vitaminK (µg), selenium (µg), vitaminB6 (mg), vitaminB3 (mg NE), vitaminB1 (mg), vitaminB2 (mg), vitaminB5 (mg), biotin (µg), copper (mg), manganese (mg), chromium (µg).
+
+Use USDA/clinical-grade reference data. If a micronutrient is truly absent from the meal, return 0. Never omit a key.`;
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 

@@ -206,7 +206,7 @@ export function MealLogModal({
                 className="space-y-6"
               >
                 <div className={cn("space-y-3 transition-all duration-500", isSubmitting ? "opacity-50 blur-sm" : "")}>
-                  <Label htmlFor="description" className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">ספר לי מה אכלת...</Label>
+                  <Label htmlFor="description" className="text-[13px] font-black text-slate-500 uppercase tracking-widest px-1">ספר לי מה אכלת...</Label>
                   <div className="relative group">
                     <Input
                       id="description"
@@ -218,7 +218,7 @@ export function MealLogModal({
                     <div className="absolute inset-0 rounded-2xl border border-slate-900/5 pointer-events-none group-focus-within:border-slate-950/20 transition-colors" />
                   </div>
                   {aiErrors.description && (
-                    <p className="text-xs font-bold text-rose-500 px-1">
+                    <p className="text-[13px] font-bold text-rose-500 px-1">
                       {aiErrors.description.message}
                     </p>
                   )}
@@ -264,7 +264,7 @@ export function MealLogModal({
                       className="flex items-end gap-3 p-4 rounded-3xl bg-slate-50/50 border border-slate-100"
                     >
                       <div className="flex-1 space-y-2">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">מאכל</Label>
+                        <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">מאכל</Label>
                         <Input
                           placeholder="שם המאכל"
                           className="bg-white border-none shadow-sm rounded-xl"
@@ -272,7 +272,7 @@ export function MealLogModal({
                         />
                       </div>
                       <div className="w-20 space-y-2">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">כמות</Label>
+                        <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">כמות</Label>
                         <Input
                           type="number"
                           className="bg-white border-none shadow-sm rounded-xl"
@@ -282,7 +282,7 @@ export function MealLogModal({
                         />
                       </div>
                       <div className="w-28 space-y-2">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">יחידה</Label>
+                        <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">יחידה</Label>
                         <Select
                           className="bg-white border-none shadow-sm rounded-xl h-10"
                           {...registerManual(`ingredients.${index}.unit`)}
@@ -357,7 +357,7 @@ export function MealLogModal({
                           <p className="font-black text-slate-950">
                             {saved.meal.meal_name}
                           </p>
-                          <p className="text-xs font-bold text-slate-400">
+                          <p className="text-[13px] font-bold text-slate-500">
                             {saved.meal.calories} קלוריות · {saved.meal.macronutrients.protein}ג' חלבון
                           </p>
                         </div>

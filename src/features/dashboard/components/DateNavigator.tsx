@@ -43,7 +43,7 @@ export function DateNavigator({
   return (
     <div className="flex flex-col gap-3 rounded-[28px] border border-white/70 bg-white/90 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center sm:justify-between">
       <div className="space-y-1">
-        <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+        <p className="text-[13px] font-semibold tracking-[0.18em] text-slate-500">
           ניווט תאריכים
         </p>
         <h2 className="text-lg font-semibold text-slate-950">

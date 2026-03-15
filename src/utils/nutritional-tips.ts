@@ -31,6 +31,20 @@ export const NUTRIENT_META: Record<
   vitaminD: { label: "ויטמין D", unit: 'מק"ג' },
   vitaminE: { label: "ויטמין E", unit: 'מ"ג' },
   vitaminB12: { label: "ויטמין B12", unit: 'מק"ג' },
+  iodine: { label: "יוד", unit: 'מק"ג' },
+  zinc: { label: "אבץ", unit: 'מ"ג' },
+  folicAcid: { label: "חומצה פולית", unit: 'מק"ג DFE' },
+  vitaminK: { label: "ויטמין K", unit: 'מק"ג' },
+  selenium: { label: "סלניום", unit: 'מק"ג' },
+  vitaminB6: { label: "ויטמין B6", unit: 'מ"ג' },
+  vitaminB3: { label: "ויטמין B3", unit: 'מ"ג' },
+  vitaminB1: { label: "ויטמין B1", unit: 'מ"ג' },
+  vitaminB2: { label: "ויטמין B2", unit: 'מ"ג' },
+  vitaminB5: { label: "ויטמין B5", unit: 'מ"ג' },
+  biotin: { label: "ביוטין", unit: 'מק"ג' },
+  copper: { label: "נחושת", unit: 'מ"ג' },
+  manganese: { label: "מנגן", unit: 'מ"ג' },
+  chromium: { label: "כרום", unit: 'מק"ג' },
 };
 
 function getTargetValue(
@@ -187,6 +201,51 @@ export function generateNutritionalTip(
       }
 
       return `${targetSentence} B12 חיוני ליצירת דם ולתפקוד עצבי. ${voice.combineVerb} דגים, ביצים, מוצרי חלב או מזונות מועשרים אם אינך אוכל מזון מהחי בכמות מספקת.`;
+
+    case "iodine":
+      return `${targetSentence} יוד חיוני לתפקוד בלוטת התריס ולמטבוליזם. ${voice.combineVerb} מלח מועשר ביוד, אצות, דגים ומוצרי חלב.`;
+
+    case "zinc":
+      return `${targetSentence} אבץ תומך במערכת החיסון, בריפוי פצעים ובחוש הטעם. ${voice.combineVerb} בשר, קטניות, אגוזים וזרעי דלעת.`;
+
+    case "folicAcid":
+      if (gender === "female" && age >= 18 && age <= 45) {
+        return `${targetSentence} חומצה פולית חשובה במיוחד לנשים בגיל הפוריות למניעת מומים בצינור העצבי. ${voice.combineVerb} ירוקים כהים, קטניות ומזונות מועשרים.`;
+      }
+      return `${targetSentence} חומצה פולית חיונית ליצירת DNA וחלוקת תאים. ${voice.combineVerb} ירקות עליים, קטניות, אספרגוס ומזונות מועשרים.`;
+
+    case "vitaminK":
+      return `${targetSentence} ויטמין K חיוני לקרישת דם ולבריאות העצם. ${voice.combineVerb} ירוקים עליים כהים כמו כרוב, תרד וברוקולי.`;
+
+    case "selenium":
+      return `${targetSentence} סלניום הוא נוגד חמצון חשוב שתומך בבלוטת התריס ובמערכת החיסון. ${voice.combineVerb} אגוזי ברזיל, דגים, ביצים ודגנים מלאים.`;
+
+    case "vitaminB6":
+      return `${targetSentence} ויטמין B6 תומך במטבוליזם של חלבון, ביצירת נוירוטרנסמיטורים ובתפקוד חיסוני. ${voice.combineVerb} עוף, דגים, תפוחי אדמה, בננות וחומוס.`;
+
+    case "vitaminB3":
+      return `${targetSentence} ניאצין (B3) חיוני למטבוליזם אנרגטי ולתיקון DNA. ${voice.combineVerb} עוף, טונה, בוטנים, פטריות ודגנים מועשרים.`;
+
+    case "vitaminB1":
+      return `${targetSentence} תיאמין (B1) חיוני למטבוליזם של פחמימות ולתפקוד עצבי תקין. ${voice.combineVerb} דגנים מלאים, קטניות וזרעי חמנייה.`;
+
+    case "vitaminB2":
+      return `${targetSentence} ריבופלבין (B2) תומך בייצור אנרגיה ובהגנה אנטיאוקסידנטית. ${voice.combineVerb} מוצרי חלב, ביצים, שקדים וירוקים עליים.`;
+
+    case "vitaminB5":
+      return `${targetSentence} חומצה פנטותנית (B5) חיונית לסינתזה של קואנזים A ולמטבוליזם של שומנים. ${voice.combineVerb} ביצים, אבוקדו, פטריות ובטטה.`;
+
+    case "biotin":
+      return `${targetSentence} ביוטין (B7) תומך במטבוליזם של שומנים ופחמימות ובבריאות שיער ועור. ${voice.combineVerb} ביצים, אגוזים, בטטה ותרד.`;
+
+    case "copper":
+      return `${targetSentence} נחושת חיונית ליצירת תאי דם אדומים, לספיגת ברזל ולתפקוד עצבי. ${voice.combineVerb} כבד, שוקולד מריר, קשיו וקטניות.`;
+
+    case "manganese":
+      return `${targetSentence} מנגן תומך במטבוליזם של עצמות, בקרישת דם ובהגנה אנטיאוקסידנטית. ${voice.combineVerb} אגוזי פקאן, דגנים מלאים, אננס ותרד.`;
+
+    case "chromium":
+      return `${targetSentence} כרום תומך ברגישות לאינסולין ובמטבוליזם של גלוקוז. ${voice.combineVerb} ברוקולי, ענבים, תפוחי אדמה ובשר.`;
 
     default:
       return targetSentence;

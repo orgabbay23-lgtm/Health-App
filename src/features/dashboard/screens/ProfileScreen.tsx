@@ -77,8 +77,8 @@ export function ProfileScreen({
                   {activeUser.name}
                 </h2>
                 <div className="flex gap-2">
-                   <span className="text-xs font-bold text-slate-400 uppercase bg-white/50 px-3 py-1 rounded-full">{loggedDaysCount} ימי רישום</span>
-                   <span className="text-xs font-bold text-slate-400 uppercase bg-white/50 px-3 py-1 rounded-full">{savedMealsCount} מועדפים</span>
+                   <span className="text-[13px] font-bold text-slate-500 uppercase bg-white/50 px-3 py-1 rounded-full">{loggedDaysCount} ימי רישום</span>
+                   <span className="text-[13px] font-bold text-slate-500 uppercase bg-white/50 px-3 py-1 rounded-full">{savedMealsCount} מועדפים</span>
                 </div>
               </div>
             </div>
@@ -131,7 +131,7 @@ export function ProfileScreen({
                 >
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                      <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">
                         {NUTRIENT_META[row.nutrient].label}
                       </p>
                       <p className="text-lg font-bold text-slate-900">{row.value}</p>
@@ -167,11 +167,11 @@ export function ProfileScreen({
 function ProfileStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[1.5rem] border border-white bg-white/80 p-5 shadow-sm">
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+      <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">
         {label}
       </p>
       <p className="mt-1 text-2xl font-black text-slate-900 tracking-tighter">{value}</p>
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">קק"ל / יום</p>
+      <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tighter">קק"ל / יום</p>
     </div>
   );
 }
@@ -179,7 +179,7 @@ function ProfileStat({ label, value }: { label: string; value: string }) {
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[1.25rem] border border-white bg-white/40 p-4">
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+      <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">
         {label}
       </p>
       <p className="mt-1 text-base font-bold text-slate-900">{value}</p>

@@ -19,7 +19,21 @@ export type MicronutrientKey =
   | "vitaminC"
   | "vitaminD"
   | "vitaminE"
-  | "vitaminB12";
+  | "vitaminB12"
+  | "iodine"
+  | "zinc"
+  | "folicAcid"
+  | "vitaminK"
+  | "selenium"
+  | "vitaminB6"
+  | "vitaminB3"
+  | "vitaminB1"
+  | "vitaminB2"
+  | "vitaminB5"
+  | "biotin"
+  | "copper"
+  | "manganese"
+  | "chromium";
 
 export interface MicronutrientTotals {
   fiber: number;
@@ -33,6 +47,20 @@ export interface MicronutrientTotals {
   vitaminD: number;
   vitaminE: number;
   vitaminB12: number;
+  iodine: number;
+  zinc: number;
+  folicAcid: number;
+  vitaminK: number;
+  selenium: number;
+  vitaminB6: number;
+  vitaminB3: number;
+  vitaminB1: number;
+  vitaminB2: number;
+  vitaminB5: number;
+  biotin: number;
+  copper: number;
+  manganese: number;
+  chromium: number;
 }
 
 export interface NutritionProfileInput {
@@ -114,6 +142,20 @@ export const MICRONUTRIENT_KEYS: MicronutrientKey[] = [
   "vitaminD",
   "vitaminE",
   "vitaminB12",
+  "iodine",
+  "zinc",
+  "folicAcid",
+  "vitaminK",
+  "selenium",
+  "vitaminB6",
+  "vitaminB3",
+  "vitaminB1",
+  "vitaminB2",
+  "vitaminB5",
+  "biotin",
+  "copper",
+  "manganese",
+  "chromium",
 ];
 
 export const EMPTY_MICRONUTRIENTS: MicronutrientTotals = {
@@ -128,6 +170,20 @@ export const EMPTY_MICRONUTRIENTS: MicronutrientTotals = {
   vitaminD: 0,
   vitaminE: 0,
   vitaminB12: 0,
+  iodine: 0,
+  zinc: 0,
+  folicAcid: 0,
+  vitaminK: 0,
+  selenium: 0,
+  vitaminB6: 0,
+  vitaminB3: 0,
+  vitaminB1: 0,
+  vitaminB2: 0,
+  vitaminB5: 0,
+  biotin: 0,
+  copper: 0,
+  manganese: 0,
+  chromium: 0,
 };
 
 const SODIUM_CDRR_MG = 2300;
@@ -290,6 +346,65 @@ function getVitaminB12Target(): number {
   return 2.4;
 }
 
+function getIodineTarget(): number {
+  return 150; // µg RDA for adults
+}
+
+function getZincTarget(age: number, gender: Gender): number {
+  if (age <= 13) return 8;
+  return gender === "male" ? 11 : 8;
+}
+
+function getFolicAcidTarget(): number {
+  return 400; // µg DFE
+}
+
+function getVitaminKTarget(gender: Gender): number {
+  return gender === "male" ? 120 : 90; // µg AI
+}
+
+function getSeleniumTarget(): number {
+  return 55; // µg RDA
+}
+
+function getVitaminB6Target(age: number): number {
+  if (age <= 13) return 1.0;
+  return 1.3; // mg RDA for adults (Male/Female)
+}
+
+function getVitaminB3Target(gender: Gender): number {
+  return gender === "male" ? 16 : 14; // mg NE
+}
+
+function getVitaminB1Target(gender: Gender): number {
+  return gender === "male" ? 1.2 : 1.1; // mg
+}
+
+function getVitaminB2Target(gender: Gender): number {
+  return gender === "male" ? 1.3 : 1.1; // mg
+}
+
+function getVitaminB5Target(): number {
+  return 5; // mg AI
+}
+
+function getBiotinTarget(): number {
+  return 30; // µg AI
+}
+
+function getCopperTarget(): number {
+  return 0.9; // mg RDA (900mcg)
+}
+
+function getManganeseTarget(gender: Gender): number {
+  return gender === "male" ? 2.3 : 1.8; // mg AI
+}
+
+function getChromiumTarget(age: number, gender: Gender): number {
+  if (age <= 13) return gender === "male" ? 25 : 21; // Child values as reference
+  return gender === "male" ? 35 : 25; // µg AI for adults
+}
+
 function getFiberFloor(age: number, gender: Gender): number {
   if (gender === "male") {
     return age >= 51 ? 30 : 38;
@@ -343,6 +458,20 @@ export function calculateMicros(
     vitaminD: getVitaminDTarget(age),
     vitaminE: getVitaminETarget(),
     vitaminB12: getVitaminB12Target(),
+    iodine: getIodineTarget(),
+    zinc: getZincTarget(age, gender),
+    folicAcid: getFolicAcidTarget(),
+    vitaminK: getVitaminKTarget(gender),
+    selenium: getSeleniumTarget(),
+    vitaminB6: getVitaminB6Target(age),
+    vitaminB3: getVitaminB3Target(gender),
+    vitaminB1: getVitaminB1Target(gender),
+    vitaminB2: getVitaminB2Target(gender),
+    vitaminB5: getVitaminB5Target(),
+    biotin: getBiotinTarget(),
+    copper: getCopperTarget(),
+    manganese: getManganeseTarget(gender),
+    chromium: getChromiumTarget(age, gender),
   };
 }
 

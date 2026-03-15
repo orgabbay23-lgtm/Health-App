@@ -118,10 +118,10 @@ export function PrimaryNutrientCard({
 
           <div className="flex w-full items-center justify-between bg-slate-50/50 backdrop-blur-sm rounded-3xl p-5 border border-white/50">
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">יעד יומי</span>
+              <span className="text-[13px] font-black text-slate-500 uppercase tracking-widest mb-1">יעד יומי</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl font-black text-slate-900">{formatNutritionValue(target)}</span>
-                <span className="text-xs font-bold text-slate-400">{meta.unit}</span>
+                <span className="text-[13px] font-bold text-slate-500">{meta.unit}</span>
               </div>
             </div>
             

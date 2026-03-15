@@ -64,7 +64,7 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
             ביטול
           </Button>
         </div>
-        <p className="text-center text-xs text-slate-400">
+        <p className="text-center text-[13px] text-slate-500">
           ניתן להשיג מפתח בחינם ב- <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline">Google AI Studio</a>
         </p>
       </div>

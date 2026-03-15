@@ -41,7 +41,7 @@ export function NutrientCard({
           <div className="flex items-start justify-between">
             <div className="space-y-0.5">
               <div className="flex items-center gap-1.5">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                <p className="text-[13px] font-black text-slate-600 uppercase tracking-widest leading-none">
                   {meta.label}
                 </p>
                 <TipPopover
@@ -54,14 +54,14 @@ export function NutrientCard({
                 <span className="text-sm font-bold text-slate-900 leading-none">
                   {formatNutritionValue(current)}
                 </span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tighter">
                   / {formatNutritionValue(target)} {meta.unit}
                 </span>
               </div>
             </div>
 
             <span className={cn(
-              "text-[10px] font-black px-2 py-0.5 rounded-full",
+              "text-[11px] font-black px-2 py-0.5 rounded-full",
               appearance.badgeClass
             )}>
               {appearance.percentage}%

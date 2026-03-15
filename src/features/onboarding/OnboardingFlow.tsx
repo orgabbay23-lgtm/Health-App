@@ -59,7 +59,7 @@ export function OnboardingFlow() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="overflow-hidden border-white/70 bg-[linear-gradient(160deg,_rgba(255,255,255,0.95),_rgba(255,250,240,0.95))] shadow-[0_28px_90px_rgba(15,23,42,0.12)]">
             <CardContent className="space-y-8 p-8 md:p-10">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-xs font-semibold tracking-[0.18em] text-slate-500 shadow-sm">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-semibold tracking-[0.18em] text-slate-500 shadow-sm">
                 <Sparkles size={14} />
                 הגדרת משתמש
               </div>
@@ -103,7 +103,7 @@ export function OnboardingFlow() {
             <CardContent className="space-y-6 p-8 md:p-10">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+                  <p className="text-[13px] font-semibold tracking-[0.18em] text-slate-500">
                     פרטי פרופיל
                   </p>
                   <h2 className="text-2xl font-semibold text-slate-950">

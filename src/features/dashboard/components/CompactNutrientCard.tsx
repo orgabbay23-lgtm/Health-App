@@ -61,10 +61,10 @@ export function CompactNutrientCard({
         <CardContent className="flex flex-col gap-4 p-5">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{meta.label}</p>
+              <p className="text-[13px] font-black text-slate-600 uppercase tracking-[0.15em]">{meta.label}</p>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-black text-slate-950">{formatNutritionValue(current)}</span>
-                <span className="text-[10px] font-bold text-slate-400">/ {formatNutritionValue(target)}</span>
+                <span className="text-[11px] font-bold text-slate-500">/ {formatNutritionValue(target)}</span>
               </div>
             </div>
             

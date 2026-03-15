@@ -28,7 +28,7 @@ export function HistoryArchive({
     <Card className="rounded-[30px] border-white/60 bg-white/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
       <CardContent className="space-y-4 p-6">
         <div className="space-y-1">
-          <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+          <p className="text-[13px] font-semibold tracking-[0.18em] text-slate-500">
             ארכיון
           </p>
           <h3 className="text-xl font-semibold text-slate-900">יומן אחרון</h3>
@@ -62,7 +62,7 @@ export function HistoryArchive({
                   <p className="font-semibold">{formatDay(dayKey)}</p>
                   <p
                     className={cn(
-                      "text-xs",
+                      "text-[13px]",
                       selectedDayKey === dayKey
                         ? "text-slate-300"
                         : "text-slate-500",
@@ -74,7 +74,7 @@ export function HistoryArchive({
 
                 <div
                   className={cn(
-                    "flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold",
+                    "flex items-center gap-2 rounded-full px-3 py-1 text-[13px] font-semibold",
                     selectedDayKey === dayKey
                       ? "bg-white/10 text-white"
                       : "bg-white text-slate-500 shadow-sm",
