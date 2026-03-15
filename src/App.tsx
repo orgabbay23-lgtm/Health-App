@@ -25,6 +25,22 @@ function App() {
     return <AuthCallback />;
   }
 
+  // Determine the primary screen to show
+  let screen = <AuthScreen />;
+  let key = "auth";
+
+  if (user) {
+    if (profile) {
+      screen = <Dashboard />;
+      key = "dashboard";
+    } else {
+      screen = <OnboardingFlow />;
+      key = "onboarding";
+    }
+  }
+
+  // Final Gate: Only show loader if we ARE loading and we DON'T have a profile yet (initial load)
+  // or if we are still checking the initial auth session.
   if (authLoading || (user && isLoadingData && !profile)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 relative overflow-hidden" dir="rtl">
@@ -93,19 +109,6 @@ function App() {
         </div>
       </div>
     );
-  }
-
-  let screen = <AuthScreen />;
-  let key = "auth";
-
-  if (user) {
-    if (profile) {
-      screen = <Dashboard />;
-      key = "dashboard";
-    } else {
-      screen = <OnboardingFlow />;
-      key = "onboarding";
-    }
   }
 
   return (

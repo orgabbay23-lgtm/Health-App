@@ -82,3 +82,11 @@
         4. Optimized **Loading Gate**: Updated App.tsx to only show the spinner if data is missing (!profile).
         5. Fixed useActiveSavedMeals bug where it was returning profile instead of savedMeals.
     * **Standard:** Use Zustand persistence for all core user data. All data syncing must be silent if local state is already hydrated. Prevent concurrent fetch race conditions at the store level.
+
+* **2026-03-15: Final Focus & Refresh Resolution (Root Cause: State Destruction)**
+    * **Issue:** App flickered or refreshed on focus because etchUserData was re-initializing state (setting objects to empty/null) during background refreshes.
+    * **Fix:** 
+        1. Refined etchUserData to **preserve** existing profile, dailyLogs, and savedMeals during updates. New data is merged/overwritten only when successfully fetched.
+        2. Increased concurrency throttle to 5 seconds to better handle rapid focus/blur events on mobile.
+        3. Ensured App.tsx logic only shows the Loading Spinner if the profile is physically missing (!profile), allowing silent background updates to happen without UI interruption.
+    * **Standard:** Background data synchronization MUST be non-destructive to existing state. Never reset state to 'empty' while waiting for a network response if valid data is already present.

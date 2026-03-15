@@ -287,13 +287,15 @@ export const useAppStore = create<AppState>()(
       _lastFetchTime: 0,
 
       fetchUserData: async (userId: string, isSilent?: boolean) => {
-        // Prevent redundant fetches within 2 seconds unless explicit
+        // Prevent redundant fetches within 5 seconds unless explicit
         const now = Date.now();
-        if (get().userId === userId && get().isLoadingData && (now - get()._lastFetchTime < 2000)) {
+        const { userId: existingUserId, profile: existingProfile, isLoadingData, _lastFetchTime } = get();
+        
+        if (existingUserId === userId && isLoadingData && (now - _lastFetchTime < 5000)) {
           return;
         }
 
-        const shouldBeSilent = isSilent ?? get().profile !== null;
+        const shouldBeSilent = isSilent ?? existingProfile !== null;
         if (!shouldBeSilent) {
           set({ isLoadingData: true });
         }
@@ -314,7 +316,7 @@ export const useAppStore = create<AppState>()(
              name = profileRes.data.name;
           }
 
-          let profile = null;
+          let profile = existingProfile;
           if (profileRes.data) {
             profile = normalizeUserProfile({
               name: name,
@@ -326,9 +328,12 @@ export const useAppStore = create<AppState>()(
               goalDeficit: profileRes.data.goals?.[0]?.deficit ?? 500,
               isSmoker: profileRes.data.medical_conditions?.includes('smoker') ?? false,
             });
+          } else if (!existingProfile) {
+            // Only set to null if we don't have one and didn't find one
+            profile = null;
           }
 
-          const dailyLogs: Record<string, DailyLog> = {};
+          const dailyLogs: Record<string, DailyLog> = { ...get().dailyLogs };
           if (logsRes.data) {
             logsRes.data.forEach(log => {
               const meals = (log.meals || []).map(normalizeMealItem);
@@ -339,7 +344,7 @@ export const useAppStore = create<AppState>()(
             });
           }
 
-          const savedMeals: SavedMeal[] = [];
+          const savedMeals: SavedMeal[] = logsRes.data ? [] : [...get().savedMeals];
           if (mealsRes.data) {
             mealsRes.data.forEach(sm => {
               savedMeals.push({
