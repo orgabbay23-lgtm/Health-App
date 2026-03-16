@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Save } from "lucide-react";
+import { Save, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import { type SavedMeal, useAppStore } from "../../store";
 import { Button } from "../../components/ui/button";
@@ -12,9 +12,10 @@ interface EditFavoriteModalProps {
   isOpen: boolean;
   onClose: () => void;
   savedMeal: SavedMeal | null;
+  onCalculateAndLog?: (text: string) => void;
 }
 
-export function EditFavoriteModal({ isOpen, onClose, savedMeal }: EditFavoriteModalProps) {
+export function EditFavoriteModal({ isOpen, onClose, savedMeal, onCalculateAndLog }: EditFavoriteModalProps) {
   const updateFavoriteTemplate = useAppStore((state) => state.updateFavoriteTemplate);
 
   const [name, setName] = useState("");
@@ -98,30 +99,53 @@ export function EditFavoriteModal({ isOpen, onClose, savedMeal }: EditFavoriteMo
           </p>
         </motion.div>
 
-        {/* Save Button */}
-        <Button
-          type="button"
-          size="lg"
-          className="w-full h-14 rounded-2xl text-lg"
-          disabled={isSaving}
-          onClick={handleSave}
-        >
-          {isSaving ? (
-            <span className="flex items-center gap-3">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-              />
-              שומר...
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <Save size={18} />
-              שמור שינויים
-            </span>
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          <Button
+            type="button"
+            size="lg"
+            className="w-full h-14 rounded-2xl text-lg"
+            disabled={isSaving}
+            onClick={handleSave}
+          >
+            {isSaving ? (
+              <span className="flex items-center gap-3">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                />
+                שומר...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Save size={18} />
+                שמור שינויים לתבנית
+              </span>
+            )}
+          </Button>
+          {onCalculateAndLog && (
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="w-full h-14 rounded-2xl text-lg border-violet-200 text-violet-700 hover:bg-violet-50"
+              onClick={() => {
+                const trimmedText = mealText.trim();
+                if (!trimmedText) {
+                  toast.error("יש להזין תיאור ארוחה");
+                  return;
+                }
+                onCalculateAndLog(trimmedText);
+              }}
+            >
+              <span className="flex items-center gap-2">
+                <CalendarPlus size={18} />
+                חשב והוסף להיום (חד-פעמי)
+              </span>
+            </Button>
           )}
-        </Button>
+        </div>
       </div>
     </ModalShell>
   );

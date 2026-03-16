@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useFieldArray, useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera } from "lucide-react";
+import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera, CalendarPlus } from "lucide-react";
 import { cn } from "../../utils/utils";
 import { toast } from "sonner";
 import { useActiveSavedMeals, useAppStore } from "../../store";
@@ -165,10 +165,12 @@ export function MealLogModal({
   };
 
   const onAiSubmit = (data: AiFormValues) => {
+    if (!window.confirm('האם אתה בטוח?')) return;
     processMealSubmission(data.description);
   };
 
   const onManualSubmit = (data: ManualFormValues) => {
+    if (!window.confirm('האם אתה בטוח?')) return;
     const description = data.ingredients
       .map(
         (ingredient) =>
@@ -179,10 +181,18 @@ export function MealLogModal({
     processMealSubmission(description);
   };
 
-  // NEW: Execute favorite template through AI flow
+  // Execute favorite template through AI flow
   const onExecuteFavoriteTemplate = (saved: SavedMeal) => {
+    if (!window.confirm('האם אתה בטוח?')) return;
     const textToAnalyze = saved.mealText || saved.meal.meal_name;
     processMealSubmission(textToAnalyze);
+  };
+
+  // Calculate & log from EditFavoriteModal (one-time, doesn't save template)
+  const handleCalculateAndLog = (text: string) => {
+    if (!window.confirm('האם אתה בטוח?')) return;
+    setEditingMeal(null);
+    processMealSubmission(text);
   };
 
   // NEW: Create favorite template handler
@@ -216,6 +226,7 @@ export function MealLogModal({
     // Reset input so the same file can be re-selected
     e.target.value = "";
 
+    if (!window.confirm('האם אתה בטוח?')) return;
     setIsAnalyzingImage(true);
     try {
       const base64 = await fileToBase64(file);
@@ -235,6 +246,7 @@ export function MealLogModal({
 
   const handleImageReviewConfirm = () => {
     if (!imageReviewText?.trim()) return;
+    if (!window.confirm('האם אתה בטוח?')) return;
     const text = imageReviewText.trim();
     setImageReviewText(null);
     processMealSubmission(text);
@@ -582,16 +594,15 @@ export function MealLogModal({
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.04 }}
                         className={cn(
-                          "group flex items-center justify-between p-4 rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-slate-200 transition-all cursor-pointer",
+                          "p-4 rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-slate-200 transition-all",
                           isSubmitting && "opacity-50 pointer-events-none"
                         )}
-                        onClick={() => onExecuteFavoriteTemplate(saved)}
                       >
-                        <div className="flex gap-4 min-w-0 flex-1">
-                          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                        <div className="flex gap-4 items-center mb-3">
+                          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
                             <Heart size={20} fill="currentColor" />
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <p className="font-black text-slate-950 truncate">
                               {saved.meal.meal_name}
                             </p>
@@ -600,28 +611,35 @@ export function MealLogModal({
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-2">
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-slate-200 hover:text-blue-500 hover:bg-blue-50 rounded-xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingMeal(saved);
-                            }}
+                            type="button"
+                            size="sm"
+                            className="flex-1 h-9 rounded-xl text-[13px] gap-1.5"
+                            onClick={() => onExecuteFavoriteTemplate(saved)}
                           >
-                            <Pencil size={16} />
+                            <CalendarPlus size={14} />
+                            הוסף להיום
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeSavedMeal(saved.id);
-                            }}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 rounded-xl text-[13px] gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => setEditingMeal(saved)}
                           >
-                            <Trash2 size={18} />
+                            <Pencil size={14} />
+                            ערוך
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 rounded-xl text-[13px] gap-1.5 text-rose-600 border-rose-200 hover:bg-rose-50"
+                            onClick={() => removeSavedMeal(saved.id)}
+                          >
+                            <Trash2 size={14} />
+                            מחק
                           </Button>
                         </div>
                       </motion.div>
@@ -663,6 +681,7 @@ export function MealLogModal({
         isOpen={editingMeal !== null}
         onClose={() => setEditingMeal(null)}
         savedMeal={editingMeal}
+        onCalculateAndLog={handleCalculateAndLog}
       />
     </>
   );

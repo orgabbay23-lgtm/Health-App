@@ -166,7 +166,7 @@ export function InsightModal({ isOpen, onClose, insightKey, userProfile }: Insig
               className="flex-1 overflow-y-auto px-8 min-h-0"
             >
               {/* Main insight */}
-              <div className="text-right text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
+              <div className="text-right text-base leading-relaxed whitespace-pre-wrap text-slate-700">
                 {stripMarkdown(insightText)}
               </div>
 
@@ -185,14 +185,14 @@ export function InsightModal({ isOpen, onClose, insightKey, userProfile }: Insig
                     {/* User question bubble */}
                     <div className="flex justify-start">
                       <div className="max-w-[85%] rounded-2xl rounded-tl-md bg-violet-100/70 backdrop-blur-sm border border-violet-200/40 px-4 py-3">
-                        <p className="text-sm text-violet-900 font-medium">{followUpQuestion}</p>
+                        <p className="text-base leading-relaxed text-violet-900 font-medium">{followUpQuestion}</p>
                       </div>
                     </div>
 
                     {/* AI answer bubble */}
                     <div className="flex justify-end">
                       <div className="max-w-[85%] rounded-2xl rounded-tr-md bg-white/70 backdrop-blur-sm border border-white/50 shadow-soft-sm px-4 py-3">
-                        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                        <p className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap">
                           {stripMarkdown(followUpAnswer)}
                         </p>
                       </div>

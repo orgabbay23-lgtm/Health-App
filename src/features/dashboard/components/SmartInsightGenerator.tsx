@@ -66,6 +66,7 @@ export function SmartInsightGenerator({
   };
 
   const generate = useCallback(async () => {
+    if (!window.confirm('האם אתה בטוח?')) return;
     setIsLoading(true);
     try {
       const nutritionData = buildNutritionPercentages(currentAggregations, periodTargets);

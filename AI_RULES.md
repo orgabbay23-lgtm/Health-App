@@ -231,11 +231,15 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
     * Located at `src/features/meal-logging/EditFavoriteModal.tsx`.
     * Allows renaming and editing the raw `mealText` prompt via a simple textarea.
     * Follows Glassmorphism aesthetic, RTL logical properties, minimum 13px font labels, and Immutable Shell constraints.
-    * Accessed via pencil icon in the MealLogModal's "Saved" tab.
+    * Accessed via "ערוך" button on each favorite card in the MealLogModal's "Saved" tab.
+    * **Two distinct primary actions:**
+        * **"שמור שינויים לתבנית"** — Updates the Favorite template in the store permanently. Does NOT trigger any AI calculation.
+        * **"חשב והוסף להיום (חד-פעמי)"** — Takes the currently edited text, triggers the Gemini calculation flow to add to today's log, but does NOT overwrite the saved Favorite template. Requires user confirmation (API Cost Protection gate).
 
 * **UI Entry Points:**
     * "צור ארוחה מועדפת חדשה" button in the Favorites tab opens an inline form for name + text.
-    * Pencil icon on each favorite opens `EditFavoriteModal`.
+    * Each favorite card displays three explicit action buttons: "הוסף להיום" (Log via AI), "ערוך" (Edit template), "מחק" (Delete).
+    * Clicking a favorite card does NOT auto-trigger the API. The user must explicitly click "הוסף להיום".
 
 * **Rule:** Any future feature that modifies Favorites must respect the template/log boundary. AI evaluation happens ONLY at execution (logging) time. Never write to `daily_logs` when updating a Favorite template, and never write to `saved_meals` when editing a historical log.
 
@@ -288,7 +292,19 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
     * Fiber (סיבים תזונתיים) is a first-class tracked nutrient with its own RDA (38g M / 25g F), displayed in Tier 1, and included in the AI insight analysis.
     * The follow-up feature is strictly single-turn: one question per insight. Regenerating the insight clears the previous follow-up and re-enables the input.
 
-## 18. Multimodal Vision-to-Text Meal Logging (March 2026)
+## 18. API Cost Protection — Gemini Confirmation Gates (March 2026)
+
+* **Rule:** ALL user actions that trigger a Gemini API call MUST be preceded by a `window.confirm('האם אתה בטוח?')` confirmation dialog. If the user declines, the action is silently aborted.
+* **Covered Actions:**
+    1. Submitting a manual text meal log (AI "חכם" tab and Manual tab in `MealLogModal`).
+    2. Submitting an image for analysis (camera capture in `MealLogModal`, and confirming the image review text).
+    3. Clicking "הוסף להיום" on a Favorite template (in `MealLogModal` saved tab).
+    4. Clicking "חשב והוסף להיום (חד-פעמי)" in `EditFavoriteModal`.
+    5. Generating or refreshing an AI Insight ("המלצה אישית עם AI" in `SmartInsightGenerator`).
+* **Implementation:** Native `window.confirm()` is used for zero-dependency simplicity. No explanatory text beyond "האם אתה בטוח?" — the dialog must be minimal.
+* **Standard:** Any future feature that introduces a new Gemini API call MUST include this confirmation gate. No exceptions.
+
+## 19. Multimodal Vision-to-Text Meal Logging (March 2026)
 
 * **Pipeline Overview:**
     * Users can photograph meals via a camera button in the AI (Smart) tab of `MealLogModal`.
