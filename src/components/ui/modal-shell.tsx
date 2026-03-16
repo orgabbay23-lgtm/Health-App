@@ -81,7 +81,7 @@ export function ModalShell({
   return (
     <AnimatePresence mode="wait">
       {isOpen ? (
-        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center overflow-hidden" dir="rtl">
+        <div className="fixed inset-0 h-[100dvh] z-[60] flex items-end md:items-center justify-center overflow-hidden" dir="rtl">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

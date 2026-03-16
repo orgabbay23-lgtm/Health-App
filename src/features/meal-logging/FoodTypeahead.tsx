@@ -207,7 +207,7 @@ export function FoodTypeahead({
       ) : (
         <Input
           {...sharedProps}
-          className={cn("bg-white border-none shadow-sm rounded-xl scroll-mt-24", inputClassName)}
+          className={cn("bg-white border-none shadow-sm rounded-xl scroll-mt-24 text-[16px]", inputClassName)}
           ref={(e) => {
             formRef(e);
             // @ts-ignore

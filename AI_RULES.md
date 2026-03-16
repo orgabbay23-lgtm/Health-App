@@ -357,3 +357,6 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
     * 429 quota errors fall back to `gemini-2.5-flash` per the standard fallback mechanism.
 
 * **Rule:** The Vision pipeline MUST remain a two-step process: (1) image → raw text, (2) raw text → structured JSON via `parseMealDescription`. Never bypass the user review step or send images directly to the structured JSON endpoint.
+
+## 20. UX & Routing
+* **Auto-Navigation & Feedback:** Upon successfully logging any meal, the app MUST automatically navigate the user back to the Home tab and smoothly scroll to the top to provide immediate visual feedback on their daily progress.

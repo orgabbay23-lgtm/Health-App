@@ -66,7 +66,13 @@ export function EditFavoriteModal({ isOpen, onClose, savedMeal, onCalculateAndLo
             id="fav-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-lg font-medium px-6"
+            onFocus={(e) => {
+              const target = e.target;
+              setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 350);
+            }}
+            className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-[16px] font-medium px-6 text-[16px]"
             placeholder="שם התבנית"
           />
         </div>
@@ -80,6 +86,12 @@ export function EditFavoriteModal({ isOpen, onClose, savedMeal, onCalculateAndLo
             id="fav-text"
             value={mealText}
             onChange={(e) => setMealText(e.target.value)}
+            onFocus={(e) => {
+              const target = e.target;
+              setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 350);
+            }}
             placeholder="למשל: 2 פרוסות לחם מלא, 2 ביצים קשות, חצי אבוקדו, עגבנייה"
             className="w-full h-32 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-[16px] font-medium px-6 py-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300/50"
             dir="rtl"

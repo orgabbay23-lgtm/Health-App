@@ -74,6 +74,13 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
               type="text"
               value={draft.name}
               onChange={(e) => handleChange("name", e.target.value)}
+              onFocus={(e) => {
+                const target = e.target;
+                setTimeout(() => {
+                  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 350);
+              }}
+              className="text-[16px]"
               required
             />
           </div>
@@ -85,6 +92,13 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 type="number"
                 value={draft.age || ""}
                 onChange={(e) => handleChange("age", Number(e.target.value))}
+                onFocus={(e) => {
+                  const target = e.target;
+                  setTimeout(() => {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 350);
+                }}
+                className="text-[16px]"
                 required
                 min={15}
                 max={120}
@@ -94,7 +108,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             <div className={containerClass}>
               <Label>מגדר</Label>
               <Select
-                className="text-right"
+                className="text-right text-[16px]"
                 value={draft.gender}
                 onChange={(e) => handleChange("gender", e.target.value)}
               >
@@ -109,6 +123,13 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 type="number"
                 value={draft.height || ""}
                 onChange={(e) => handleChange("height", Number(e.target.value))}
+                onFocus={(e) => {
+                  const target = e.target;
+                  setTimeout(() => {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 350);
+                }}
+                className="text-[16px]"
                 required
                 min={100}
                 max={250}
@@ -121,6 +142,13 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 type="number"
                 value={draft.weight || ""}
                 onChange={(e) => handleChange("weight", Number(e.target.value))}
+                onFocus={(e) => {
+                  const target = e.target;
+                  setTimeout(() => {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 350);
+                }}
+                className="text-[16px]"
                 required
                 min={30}
                 max={300}
@@ -130,7 +158,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             <div className={containerClass}>
               <Label>רמת פעילות</Label>
               <Select
-                className="text-right"
+                className="text-right text-[16px]"
                 value={draft.activityLevel}
                 onChange={(e) => handleChange("activityLevel", e.target.value)}
               >
@@ -145,7 +173,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
             <div className={containerClass}>
               <Label>יעד גרעון קלורי</Label>
               <Select
-                className="text-right"
+                className="text-right text-[16px]"
                 value={draft.goalDeficit}
                 onChange={(e) => handleChange("goalDeficit", Number(e.target.value))}
               >

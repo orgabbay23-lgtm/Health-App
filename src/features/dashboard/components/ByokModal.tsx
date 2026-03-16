@@ -52,7 +52,13 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
             placeholder="AIza..."
             value={inputKey}
             onChange={(e) => setInputKey(e.target.value)}
-            className="text-left"
+            onFocus={(e) => {
+              const target = e.target;
+              setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 350);
+            }}
+            className="text-left text-[16px]"
             dir="ltr"
           />
         </div>

@@ -317,6 +317,17 @@ export function Dashboard() {
       <MealLogModal
         isOpen={isMealModalOpen}
         onClose={() => setIsMealModalOpen(false)}
+        onSuccess={() => {
+          setActiveScreen("home");
+          setTimeout(() => {
+            const scrollCanvas = document.querySelector('.ios-scroll-canvas');
+            if (scrollCanvas) {
+              scrollCanvas.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }, 150);
+        }}
         targetDayKey={selectedDayKey}
       />
 

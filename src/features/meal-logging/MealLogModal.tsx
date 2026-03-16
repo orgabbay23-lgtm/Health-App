@@ -49,12 +49,14 @@ type ManualFormValues = z.infer<typeof manualSchema>;
 interface MealLogModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   targetDayKey?: string;
 }
 
 export function MealLogModal({
   isOpen,
   onClose,
+  onSuccess,
   targetDayKey = getLogicalDayKey(),
 }: MealLogModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,6 +139,9 @@ export function MealLogModal({
       resetAi();
       resetManual();
       onClose();
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error: any) {
       if (error.message === "BYOK_REQUIRED" || error.message === "API_KEY_INVALID" || error.message === "MISSING_API_KEY" || error.message === "INVALID_KEY_FROM_GOOGLE") {
         if (error.message === "API_KEY_INVALID") {
@@ -304,6 +309,12 @@ export function MealLogModal({
                       <textarea
                         value={imageReviewText}
                         onChange={(e) => setImageReviewText(e.target.value)}
+                        onFocus={(e) => {
+                          const target = e.target;
+                          setTimeout(() => {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }, 350);
+                        }}
                         className="w-full h-32 rounded-2xl border border-emerald-200/60 bg-white/90 backdrop-blur-sm text-[16px] font-medium px-5 py-4 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-300/50 transition-all"
                         dir="rtl"
                       />
@@ -385,7 +396,7 @@ export function MealLogModal({
                           <FoodTypeahead
                             name="description"
                             placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
-                            inputClassName="min-h-[4rem] rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-lg font-medium px-6 py-4"
+                            inputClassName="min-h-[4rem] rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-[16px] font-medium px-6 py-4"
                             multiSelect={true}
                             multiLine={true}
                             rows={2}
@@ -450,7 +461,13 @@ export function MealLogModal({
                           <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">כמות</Label>
                           <Input
                             type="number"
-                            className="bg-white border-none shadow-sm rounded-xl"
+                            className="bg-white border-none shadow-sm rounded-xl text-[16px]"
+                            onFocus={(e) => {
+                              const target = e.target;
+                              setTimeout(() => {
+                                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }, 350);
+                            }}
                             {...registerManual(`ingredients.${index}.quantity`, {
                               valueAsNumber: true,
                             })}
@@ -459,7 +476,7 @@ export function MealLogModal({
                       <div className="w-28 space-y-2">
                         <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">יחידה</Label>
                         <Select
-                          className="bg-white border-none shadow-sm rounded-xl h-10"
+                          className="bg-white border-none shadow-sm rounded-xl h-10 text-[16px]"
                           {...registerManual(`ingredients.${index}.unit`)}
                         >
                           <option value="גרם">גרם</option>
@@ -525,6 +542,12 @@ export function MealLogModal({
                         <Input
                           value={newFavName}
                           onChange={(e) => setNewFavName(e.target.value)}
+                          onFocus={(e) => {
+                            const target = e.target;
+                            setTimeout(() => {
+                              target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 350);
+                          }}
                           placeholder="למשל: ארוחת בוקר רגילה"
                           className="h-12 rounded-2xl border-slate-200 bg-white/80 focus:bg-white transition-all text-[16px] font-medium px-5"
                         />
@@ -534,6 +557,12 @@ export function MealLogModal({
                         <textarea
                           value={newFavText}
                           onChange={(e) => setNewFavText(e.target.value)}
+                          onFocus={(e) => {
+                            const target = e.target;
+                            setTimeout(() => {
+                              target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 350);
+                          }}
                           placeholder="למשל: 2 פרוסות לחם מלא, 2 ביצים קשות, חצי אבוקדו, עגבנייה"
                           className="w-full h-24 rounded-2xl border border-slate-200 bg-white/80 focus:bg-white transition-all text-[16px] font-medium px-5 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300/50 whitespace-pre-wrap break-words"
                           dir="rtl"

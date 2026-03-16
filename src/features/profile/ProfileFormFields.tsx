@@ -45,6 +45,13 @@ export function ProfileFormFields({
         <Input
           id="name"
           type="text"
+          onFocus={(e) => {
+            const target = e.target;
+            setTimeout(() => {
+              target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 350);
+          }}
+          className="text-[16px]"
           {...register("name")}
         />
       </FieldShell>
@@ -54,12 +61,19 @@ export function ProfileFormFields({
           <Input
             id="age"
             type="number"
+            onFocus={(e) => {
+              const target = e.target;
+              setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 350);
+            }}
+            className="text-[16px]"
             {...register("age", { valueAsNumber: true })}
           />
         </FieldShell>
 
         <FieldShell label="מגדר" tone={tone}>
-          <Select id="gender" className="text-right" {...register("gender")}>
+          <Select id="gender" className="text-right text-[16px]" {...register("gender")}>
             <option value="male">זכר</option>
             <option value="female">נקבה</option>
           </Select>
@@ -69,6 +83,13 @@ export function ProfileFormFields({
           <Input
             id="height"
             type="number"
+            onFocus={(e) => {
+              const target = e.target;
+              setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 350);
+            }}
+            className="text-[16px]"
             {...register("height", { valueAsNumber: true })}
           />
         </FieldShell>
@@ -77,6 +98,13 @@ export function ProfileFormFields({
           <Input
             id="weight"
             type="number"
+            onFocus={(e) => {
+              const target = e.target;
+              setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 350);
+            }}
+            className="text-[16px]"
             {...register("weight", { valueAsNumber: true })}
           />
         </FieldShell>
@@ -84,7 +112,7 @@ export function ProfileFormFields({
         <FieldShell label="רמת פעילות" tone={tone}>
           <Select
             id="activityLevel"
-            className="text-right"
+            className="text-right text-[16px]"
             {...register("activityLevel")}
           >
             {activityLevelOptions.map((option) => (
@@ -98,7 +126,7 @@ export function ProfileFormFields({
         <FieldShell label="יעד גרעון קלורי" tone={tone}>
           <Select
             id="goalDeficit"
-            className="text-right"
+            className="text-right text-[16px]"
             {...register("goalDeficit", { valueAsNumber: true })}
           >
             {goalDeficitOptions.map((option) => (
