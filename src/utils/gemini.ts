@@ -3,8 +3,14 @@ import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
 import { z } from "zod";
 import { supabase } from "../lib/supabase";
 
-const PRIMARY_MODEL = "gemini-3-flash-preview";
+const PRIMARY_MODEL = "gemini-3.1-flash-lite-preview";
 const FALLBACK_MODEL = "gemini-2.5-flash";
+
+// High Thinking configuration for all AI pipelines
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const THINKING_GENERATION_CONFIG: any = {
+  thinkingConfig: { thinkingLevel: "high" },
+};
 
 const mealResponseSchema: Schema = {
   type: SchemaType.OBJECT,
@@ -152,12 +158,29 @@ export async function analyzeMealImage(
 
   const performRequest = async (modelName: string) => {
     const genAI = new GoogleGenerativeAI(finalKey);
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      generationConfig: {
+        ...THINKING_GENERATION_CONFIG,
+      },
+    });
     const result = await model.generateContent([
       { inlineData: { data: base64Image, mimeType } },
       VISION_PROMPT,
     ]);
-    const text = result.response.text().trim();
+    // Extract only the final text answer, ignoring any "thoughts" parts
+    const candidates = result.response.candidates;
+    let text = "";
+    if (candidates && candidates.length > 0) {
+      const parts = candidates[0].content?.parts || [];
+      // Find the last text part (skip thought parts if present)
+      for (const part of parts) {
+        if ("text" in part && !(part as any).thought) {
+          text = (part as any).text;
+        }
+      }
+    }
+    text = text?.trim() || result.response.text().trim();
     if (!text) throw new Error("Empty response");
     return text;
   };
@@ -258,6 +281,9 @@ ${JSON.stringify(nutritionData)}
     const model = genAI.getGenerativeModel({
       model: modelName,
       systemInstruction: INSIGHT_SYSTEM_INSTRUCTION,
+      generationConfig: {
+        ...THINKING_GENERATION_CONFIG,
+      },
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
@@ -323,6 +349,9 @@ ${userQuestion}`;
     const model = genAI.getGenerativeModel({
       model: modelName,
       systemInstruction: FOLLOWUP_SYSTEM_INSTRUCTION,
+      generationConfig: {
+        ...THINKING_GENERATION_CONFIG,
+      },
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
@@ -379,6 +408,7 @@ export async function parseMealDescription(
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: mealResponseSchema,
+          ...THINKING_GENERATION_CONFIG,
         },
       });
       const result = await model.generateContent(description.trim());

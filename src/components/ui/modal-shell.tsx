@@ -81,7 +81,7 @@ export function ModalShell({
   return (
     <AnimatePresence mode="wait">
       {isOpen ? (
-        <div className="fixed inset-0 h-[100dvh] z-[60] flex items-end md:items-center justify-center overflow-hidden" dir="rtl">
+        <div className="fixed inset-0 h-[100dvh] z-[60] flex items-center justify-center overflow-hidden" dir="rtl">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -93,9 +93,9 @@ export function ModalShell({
           
           <SafeLayoutMotion
             ref={modalRef}
-            initial={{ opacity: 0, y: "100%", scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: "100%", scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.93 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.93 }}
             transition={{
               type: "spring",
               damping: 28,
@@ -103,11 +103,9 @@ export function ModalShell({
               mass: 0.8
             }}
             className={cn(
-              "relative w-full overflow-hidden bg-white/80 backdrop-blur-2xl text-right shadow-soft-2xl border border-white/60",
-              // Mobile: Bottom sheet — use dvh to shrink with iOS keyboard
-              "mt-auto max-h-[90dvh] rounded-t-[3rem] rounded-b-none pb-safe overscroll-contain",
-              // Desktop: Centered modal
-              "md:mt-0 md:max-h-[85dvh] md:max-w-2xl md:rounded-[3rem] md:mb-8",
+              "relative w-[95vw] bg-white/80 backdrop-blur-2xl text-right shadow-soft-2xl border border-white/60 overscroll-contain",
+              // Centered modal on all screen sizes
+              "max-h-[85dvh] rounded-[2rem] sm:max-w-md md:max-w-2xl",
               className,
             )}
             onClick={(event) => event.stopPropagation()}
@@ -117,11 +115,6 @@ export function ModalShell({
             <div className="absolute inset-0 pointer-events-none opacity-20 overflow-hidden -z-10">
               <div className="absolute -top-[20%] -left-[20%] w-[60%] h-[60%] rounded-full bg-blue-100 blur-[80px]" />
               <div className="absolute -bottom-[20%] -right-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100 blur-[80px]" />
-            </div>
-
-            {/* Mobile drag indicator handle */}
-            <div className="w-full flex justify-center pt-4 pb-2 md:hidden">
-              <div className="h-1.5 w-16 rounded-full bg-slate-200/80"></div>
             </div>
 
             <div className="flex items-start justify-between gap-4 px-8 py-6 md:py-8">
@@ -150,7 +143,7 @@ export function ModalShell({
               </motion.div>
             </div>
 
-            <div className="max-h-[calc(90dvh-120px)] overflow-y-auto overscroll-contain px-8 pb-10 md:max-h-[calc(85dvh-140px)]">
+            <div className="max-h-[calc(85dvh-120px)] overflow-y-auto overscroll-contain px-8 pb-10">
               {children}
             </div>
           </SafeLayoutMotion>

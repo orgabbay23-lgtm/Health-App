@@ -12,7 +12,7 @@
 ## 2. Core Clinical & Business Logic (FIXED - DO NOT ALTER)
 * **3 AM Rollover:** Daily logs reset at 03:00 AM local time.
 * **Nutritional Math:** Clinical formulas (MSJ for BMR, specific UL targets) are immutable.
-* **AI Fallback:** Primary: `gemini-3-flash-preview`, Fallback: `gemini-2.5-flash` on 429 errors.
+* **AI Fallback:** Primary: `gemini-3.1-flash-lite-preview`, Fallback: `gemini-2.5-flash` on 429 errors.
 
 ## 3. UI/UX Architecture ($1B Startup Aesthetic)
 * **Visual Identity:** Glassmorphism (backdrop-blur), soft layered shadows, and mesh gradients.
@@ -65,10 +65,16 @@ visibilitychange listeners to trigger global loading states or full-page refresh
 * **Focus Scroll Stabilization:** All text inputs inside modals should call `element.scrollIntoView({ behavior: 'smooth', block: 'center' })` via a `setTimeout` (~350ms) in their `onFocus` handler to ensure the input stays visible after the keyboard finishes expanding.
 * **Portal Dropdown Blur Prevention (CRITICAL):** Portal-based dropdowns (autocomplete, popovers) must use `onPointerDown` with `e.preventDefault()` on the dropdown container ג€” NOT `onMouseDown`. On iOS, `mousedown` fires AFTER `touchstart`-induced blur, so it's too late to prevent the input from losing focus. `pointerdown` fires before blur on all platforms. Additionally, NEVER call `inputRef.focus()` after selecting from a dropdown ג€” on desktop blur is already prevented, on iOS it causes a keyboard dismissג†’reappear cycle that violently jumps the viewport.
 * **Multi-Line for Long Text:** Use multi-line `<textarea>` with `whitespace-pre-wrap break-words` for any text entry that may contain long descriptions (e.g., meal descriptions, ingredient lists). Single-line `<input>` truncates long Hebrew strings and forces horizontal scrolling, which is unusable on mobile.       
-* **Viewport-Aware Modals:** Modal containers must use `dvh` units (`max-h-[90dvh]`) instead of `vh` to naturally shrink when the iOS virtual keyboard appears. Add `overscroll-contain` to prevent scroll bleed-through.
-* **RTL-Aware Dropdowns (CRITICAL):** Popovers and absolute/fixed dropdowns (like autocomplete) must be constrained to viewport width (`max-w-[95vw]`). In RTL layouts, use `right` positioning or center alignment (`left: 50%, transform: translateX(-50%)`) on mobile to prevent clipping on the right edge of the screen.
+* **Viewport-Aware Modals:** Modal containers must use `dvh` units (`max-h-[85dvh]`) instead of `vh` to naturally shrink when the iOS virtual keyboard appears. Add `overscroll-contain` to prevent scroll bleed-through.
+* **Centered Modal Positioning (CRITICAL):** All modals (including MealLogModal) MUST be strictly centered on the screen on all devices using `flex items-center justify-center` on the overlay and a scale animation (`scale: 0.93` → `1`). Do NOT use bottom-sheet/drawer positioning (`items-end`, `mt-auto`, `rounded-b-none`, `y: "100%"` animations). Modal panels use `w-[95vw] max-h-[85dvh] rounded-[2rem] sm:max-w-md md:max-w-2xl`.
+* **Inline Dropdowns in Modals (CRITICAL — replaces Portal approach):** Autocomplete/typeahead dropdowns inside modals MUST be rendered **inline** (in the normal document flow below the input), NOT via React Portal with `position: fixed`. `position: fixed` + `getBoundingClientRect()` coordinates are unreliable on iOS Safari when the virtual keyboard reshapes the viewport — the dropdown ends up at stale coordinates and covers the input. Inline rendering guarantees the dropdown is always physically below the input regardless of keyboard state. Use `max-h-[200px] overflow-y-auto` and auto-scroll with `scrollIntoView({ block: 'nearest' })` when suggestions appear. The modal's `overflow-y-auto` content area handles scrolling naturally.
 
 ## 7. Bug Fix History & Lessons Learned
+* **2026-03-17: Autocomplete Dropdown — Portal to Inline Migration (Final Fix)**
+    * **Issue:** On iOS Safari with the virtual keyboard open, the autocomplete dropdown covered the text input. Multiple attempts to fix via `position: fixed` coordinate math (stale `getBoundingClientRect`, `visualViewport` listeners, `renderTick` re-renders, timing delays) all failed because iOS Safari's viewport reshaping during keyboard animation makes `getBoundingClientRect()` return coordinates that are unreliable for `position: fixed` elements portaled outside the modal.
+    * **Fix:** Removed React Portal entirely. The dropdown is now rendered **inline** in the normal document flow below the input (inside the `containerRef` wrapper). Eliminated all coordinate state (`coords`), event listeners (`scroll`, `resize`, `visualViewport`), `useLayoutEffect`, `renderTick`, and `scheduleRerender`. The dropdown uses `mt-2 max-h-[200px] overflow-y-auto relative z-[50]` and auto-scrolls into view via `scrollIntoView({ block: 'nearest' })` when suggestions appear. The modal's `overflow-y-auto` content area handles scrolling naturally.
+    * **Standard:** See updated "Inline Dropdowns in Modals" rule in Section 6b.
+
 * **2026-03-16: RTL Autocomplete Dropdown Clipping Fix**
     * **Issue:** Autocomplete dropdown was clipped on the right side of the screen on mobile in RTL mode.
     * **Fix:** Refactored `FoodTypeahead` to use `fixed` positioning with responsive alignment (centered on mobile, anchored to right edge on desktop) and `max-w-[95vw]` viewport constraint.
@@ -97,6 +103,17 @@ visibilitychange listeners to trigger global loading states or full-page refresh
     * **Root Cause:** Two-part failure: (1) The `<ul>` dropdown used `onMouseDown` with `preventDefault` to prevent input blur ג€” but on iOS, blur happens during `touchstart`, BEFORE the synthetic `mousedown` fires. So blur prevention never applied on touch devices. (2) After selection, `setTimeout(() => inputRef.current?.focus(), 0)` re-focused the input, triggering a keyboard dismissג†’reappear cycle (two competing viewport shifts).
     * **Fix:** (1) Changed `onMouseDown` to `onPointerDown` on the dropdown `<ul>` ג€” `pointerdown` fires before blur on all platforms including iOS touch. (2) Removed the `setTimeout(() => focus(), 0)` from `selectSuggestion` ג€” on desktop blur is already prevented so it's redundant; on iOS it caused the jump.    
     * **Standard:** See "Portal Dropdown Blur Prevention" rule in Section 6b.
+
+* **2026-03-17: Autocomplete Dropdown RTL Clipping — Root Cause Resolution**
+    * **Issue:** Autocomplete dropdown was severely squished and clipped on the RIGHT side on iOS Safari in RTL mode, making suggestions unreadable.
+    * **Root Cause:** Three interacting failures in `FoodTypeahead.tsx` dropdown positioning: (1) `right` CSS property is RTL-sensitive — Safari treated it as a logical property in the RTL document context, miscalculating the anchor point. (2) `transform: translateX(-50%)` created a new stacking/compositing context that interfered with `position: fixed` inside iOS Safari scroll containers. (3) `window.innerWidth < 640` branching was non-reactive (evaluated once at render time), breaking on device rotation and viewport changes.
+    * **Fix:** Replaced the entire dual-branch positioning system with **physical-coordinate anchoring**: compute `left` and `width` exclusively from `getBoundingClientRect()` values, right-align with input via `idealLeft = rect.left + rect.width - dropdownWidth`, clamp to viewport edges with 8px padding. Added explicit `dir="rtl"` on the portaled `<ul>`. Zero use of `right`, `transform`, or viewport-width conditionals.
+    * **Standard:** See updated "RTL-Aware Dropdowns" rule in Section 6b.
+
+* **2026-03-17: Modal Centering Fix**
+    * **Issue:** MealLogModal opened as a bottom-sheet on mobile (`items-end`, `mt-auto`, `rounded-t-[3rem]`), not centered.
+    * **Fix:** Refactored `ModalShell` to use `items-center` on all screen sizes, removed bottom-sheet classes (`mt-auto`, `rounded-b-none`, `pb-safe`), changed animation from slide-up (`y: "100%"`) to centered scale (`scale: 0.93→1`), unified `max-h-[85dvh]` for all breakpoints. Removed mobile drag indicator handle.
+    * **Standard:** See "Centered Modal Positioning" and "Dropdown Portals in Modals" rules in Section 6b.
 
 * **2026-03-16: Autocomplete Dropdown Width Truncation Fix**
     * **Issue:** In Manual Entry mode, the autocomplete suggestion dropdown was clipped on the left side, truncating long Hebrew food strings.
@@ -303,7 +320,7 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 
 * **Architecture:**
     * `generateNutritionalInsight(timeframe, nutritionData, userProfile)` in `gemini.ts` sends aggregated nutrition percentages to Gemini with a dedicated Hebrew clinical nutritionist system prompt.
-    * Uses `gemini-3-flash-preview` with the established 429ג†’`gemini-2.5-flash` fallback mechanism.     
+    * Uses `gemini-3.1-flash-lite-preview` with the established 429ג†’`gemini-2.5-flash` fallback mechanism.     
     * The system prompt enforces: Hebrew language, warm/professional tone, bullet-point format, "׳ ׳§׳•׳“׳•׳× ׳׳©׳™׳׳•׳¨" (strengths) + "׳ ׳§׳•׳“׳•׳× ׳׳©׳™׳₪׳•׳¨" (improvements with 2-3 specific Israeli food suggestions).
 
 * **State Management (Zustand):**
@@ -349,14 +366,14 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 * **Pipeline Overview:**
     * Users can photograph meals via a camera button in the AI (Smart) tab of `MealLogModal`.
     * Images are converted to Base64 via `fileToBase64()` in `gemini.ts` (using `FileReader.readAsDataURL`, stripping the data URL prefix).
-    * The Base64 image + MIME type are sent to `analyzeMealImage()` which calls Gemini's multimodal API (`gemini-3-flash-preview` with `gemini-2.5-flash` fallback on 429) with an `inlineData` part and a strict Hebrew-only prompt.
+    * The Base64 image + MIME type are sent to `analyzeMealImage()` which calls Gemini's multimodal API (`gemini-3.1-flash-lite-preview` with `gemini-2.5-flash` fallback on 429) with an `inlineData` part and a strict Hebrew-only prompt.
     * Gemini returns a raw comma-separated Hebrew string describing identified foods with estimated quantities.
     * The user reviews and edits this string in an intermediary `ImageReviewPhase` (editable textarea) within the modal.
     * On confirmation ("׳”׳׳©׳ ׳׳—׳™׳©׳•׳‘"), the text is fed into the existing `parseMealDescription()` text-calculation pipeline ג€” identical to manual text entry.
 
 * **Architecture:**
     * `gemini.ts`: Exports `fileToBase64(file: File) => Promise<string>` and `analyzeMealImage(base64Image, mimeType) => Promise<string>`.
-    * `MealLogModal.tsx`: Hidden `<input type="file" accept="image/*" capture="environment" />` triggered by a circular Glassmorphism camera button. Three visual states: normal form, `isAnalyzingImage` shimmer, and `imageReviewText` edit phase.
+    * `MealLogModal.tsx`: Two hidden file inputs — (1) Camera: `<input type="file" accept="image/*" capture="environment" />` and (2) Gallery: `<input type="file" accept="image/*" />` (NO `capture` attribute). Both are triggered by adjacent circular Glassmorphism icon buttons (Camera icon + Image icon). Both share the same `isAnalyzingImage` loading state and `handleImageCapture` processing pipeline. Three visual states: normal form, `isAnalyzingImage` shimmer, and `imageReviewText` edit phase.
     * The vision prompt is intentionally separate from `SYSTEM_INSTRUCTION` ג€” it produces raw Hebrew text, not structured JSON.
 
 * **Error Handling:**
@@ -367,3 +384,19 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 
 ## 20. UX & Routing
 * **Auto-Navigation & Feedback:** Upon successfully logging any meal, the app MUST automatically navigate the user back to the Home tab and smoothly scroll to the top to provide immediate visual feedback on their daily progress.
+
+## 21. AI Architecture — Gemini 3.1 Flash Lite & High Thinking (Updated March 2026)
+
+* **Exclusive Model:** The app uses `gemini-3.1-flash-lite-preview` as the primary model for ALL AI operations. Fallback remains `gemini-2.5-flash` on 429 quota errors only.
+* **High Thinking Level:** All Gemini model initializations include `generationConfig: { thinkingConfig: { thinkingLevel: "high" } }`. A `@ts-ignore` comment bypasses SDK type definitions that may not yet include `thinkingConfig`.
+* **Applied Pipelines:** The model + thinking config is applied to all four AI pipelines:
+    1. `parseMealDescription()` — Structured JSON meal calculation.
+    2. `analyzeMealImage()` — Multimodal vision-to-text (camera/gallery).
+    3. `generateNutritionalInsight()` — Contextual AI recommendations.
+    4. `answerInsightFollowUp()` — Single-turn follow-up Q&A.
+* **Thinking Response Handling:** `analyzeMealImage()` explicitly parses response candidates to extract only the final `.text` answer, skipping any `thought`-flagged parts that the thinking model may return. Other pipelines use `result.response.text()` which auto-extracts the final answer.
+* **Dual Camera/Gallery Input:** `MealLogModal.tsx` provides two adjacent circular Glassmorphism icon buttons:
+    1. **Camera** (Lucide `Camera` icon): Triggers `<input capture="environment">` — opens device camera directly.
+    2. **Gallery** (Lucide `Image` icon): Triggers `<input>` WITHOUT `capture` — opens the photo picker/gallery.
+    * Both inputs share the same `handleImageCapture` handler and `isAnalyzingImage` loading state.
+* **Rule:** Any future AI pipeline addition MUST use `gemini-3.1-flash-lite-preview` with `thinkingConfig: { thinkingLevel: "high" }` and include the API Cost Protection confirmation gate (Section 18).

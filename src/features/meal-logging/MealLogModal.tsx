@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useFieldArray, useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera, CalendarPlus } from "lucide-react";
+import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera, Image as ImageIcon, CalendarPlus } from "lucide-react";
 import { cn } from "../../utils/utils";
 import { toast } from "sonner";
 import { useActiveSavedMeals, useAppStore } from "../../store";
@@ -72,6 +72,7 @@ export function MealLogModal({
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [imageReviewText, setImageReviewText] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const addMealLog = useAppStore((state) => state.addMealLog);
   const setActiveScreen = useAppStore((state) => state.setActiveScreen);
@@ -295,12 +296,20 @@ export function MealLogModal({
 
           <AnimatePresence mode="wait">
             <TabsContent value="ai" className="mt-8">
-              {/* Hidden file input for camera/gallery */}
+              {/* Hidden file input for camera (with capture) */}
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 capture="environment"
+                className="hidden"
+                onChange={handleImageCapture}
+              />
+              {/* Hidden file input for gallery (NO capture — opens photo picker) */}
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
                 className="hidden"
                 onChange={handleImageCapture}
               />
@@ -395,15 +404,26 @@ export function MealLogModal({
                       <div className={cn("space-y-3 transition-all duration-500", isSubmitting ? "opacity-50 blur-sm" : "")}>
                         <div className="flex items-center justify-between px-1">
                           <Label htmlFor="description" className="text-[13px] font-black text-slate-500 uppercase tracking-widest">ספר לי מה אכלת...</Label>
-                          <motion.button
-                            type="button"
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => fileInputRef.current?.click()}
-                            className="w-10 h-10 rounded-full bg-white/70 backdrop-blur-md border border-slate-200/60 shadow-sm flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:border-emerald-300 hover:shadow-emerald-100 transition-all"
-                            title="צלם או בחר תמונה"
-                          >
-                            <Camera size={18} />
-                          </motion.button>
+                          <div className="flex items-center gap-2">
+                            <motion.button
+                              type="button"
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => fileInputRef.current?.click()}
+                              className="w-10 h-10 rounded-full bg-white/70 backdrop-blur-md border border-slate-200/60 shadow-sm flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:border-emerald-300 hover:shadow-emerald-100 transition-all"
+                              title="צלם תמונה"
+                            >
+                              <Camera size={18} />
+                            </motion.button>
+                            <motion.button
+                              type="button"
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => galleryInputRef.current?.click()}
+                              className="w-10 h-10 rounded-full bg-white/70 backdrop-blur-md border border-slate-200/60 shadow-sm flex items-center justify-center text-slate-400 hover:text-violet-500 hover:border-violet-300 hover:shadow-violet-100 transition-all"
+                              title="בחר מגלריה"
+                            >
+                              <ImageIcon size={18} />
+                            </motion.button>
+                          </div>
                         </div>
                         <div className="relative group">
                           <FoodTypeahead
