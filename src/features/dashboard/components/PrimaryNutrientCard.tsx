@@ -10,12 +10,15 @@ import {
 import { formatNutritionValue } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
 import { getProgressAppearance } from "./progress-tone";
+import { type DashboardPeriod } from "../../../utils/date-navigation";
+import { cn } from "../../../utils/utils";
 
 interface PrimaryNutrientCardProps {
   nutrient: Extract<TrackedNutrientKey, "calories">;
   current: number;
   target: number;
   userProfile: UserProfile;
+  periodMode: DashboardPeriod;
 }
 
 export function PrimaryNutrientCard({
@@ -23,6 +26,7 @@ export function PrimaryNutrientCard({
   current,
   target,
   userProfile,
+  periodMode,
 }: PrimaryNutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
   const appearance = getProgressAppearance(current, target, "calories");
@@ -31,6 +35,14 @@ export function PrimaryNutrientCard({
   const circumference = 2 * Math.PI * radius;
   const safePercentage = Math.min(Math.max(appearance.percentage, 0), 100);
   const strokeDashoffset = circumference - (safePercentage / 100) * circumference;
+
+  const remaining = target - current;
+  const isOver = remaining < 0;
+
+  const periodLabel = 
+    periodMode === "daily" ? "יעד יומי" : 
+    periodMode === "weekly" ? "יעד שבועי" : 
+    "יעד חודשי";
 
   return (
     <motion.div
@@ -118,17 +130,32 @@ export function PrimaryNutrientCard({
 
           <div className="flex w-full items-center justify-between bg-slate-50/50 backdrop-blur-sm rounded-3xl p-5 border border-white/50">
             <div className="flex flex-col">
-              <span className="text-[13px] font-black text-slate-500 uppercase tracking-widest mb-1">יעד יומי</span>
+              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">{periodLabel}</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-slate-900">{formatNutritionValue(target)}</span>
-                <span className="text-[13px] font-bold text-slate-500">{meta.unit}</span>
+                <span className="text-xl font-black text-slate-900">{formatNutritionValue(target)}</span>
+                <span className="text-[11px] font-bold text-slate-500">{meta.unit}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center px-4 border-x border-slate-200/50">
+              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                {isOver ? "חריגה" : "נותרו"}
+              </span>
+              <div className="flex items-baseline gap-1">
+                <span className={cn(
+                  "text-xl font-black transition-colors duration-500",
+                  isOver ? "text-rose-600" : "text-emerald-600"
+                )}>
+                  {formatNutritionValue(Math.abs(remaining))}
+                </span>
+                <span className="text-[11px] font-bold text-slate-500">{meta.unit}</span>
               </div>
             </div>
             
             <motion.div 
               whileHover={{ scale: 1.1, rotate: 5 }}
               whileTap={{ scale: 0.9 }}
-              className="h-12 w-12 flex items-center justify-center rounded-2xl bg-white shadow-soft-xl border border-slate-100"
+              className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white shadow-soft-xl border border-slate-100 shrink-0"
             >
                 <TipPopover
                   content={generateNutritionalTip(nutrient, userProfile)}

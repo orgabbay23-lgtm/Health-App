@@ -92,6 +92,7 @@ export function HomeScreen({
           current={periodData.aggregations.calories}
           target={periodTargets.calories}
           userProfile={userProfile}
+          periodMode={periodMode}
         />
       </motion.section>
 
