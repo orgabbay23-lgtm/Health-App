@@ -27,12 +27,12 @@ export function FoodTypeahead({
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [openUpwards, setOpenUpwards] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const dailyLogs = useAppStore((state) => state.dailyLogs);
 
-  // Helper to get the current typing segment for multi-select (comma separated)
   const getCurrentSegment = (val: string) => {
     if (!multiSelect) return val;
     const segments = val.split(",");
@@ -43,7 +43,6 @@ export function FoodTypeahead({
     const currentSearch = getCurrentSegment(value);
 
     if (currentSearch.length >= 2 && isOpen) {
-      // 1. Prioritize user history
       const historySet = new Set<string>();
       Object.values(dailyLogs).forEach((log) => {
         log.meals.forEach((m) => {
@@ -54,12 +53,10 @@ export function FoodTypeahead({
       });
       const historyMatches = Array.from(historySet);
 
-      // 2. Secondary search from massive DB
       const dbMatches = foodSuggestions.filter((item) => 
         item.toLowerCase().includes(currentSearch.toLowerCase()) && !historySet.has(item)
       );
 
-      // Sort dbMatches: those starting with the search come first
       dbMatches.sort((a, b) => {
         const aStarts = a.toLowerCase().startsWith(currentSearch.toLowerCase());
         const bStarts = b.toLowerCase().startsWith(currentSearch.toLowerCase());
@@ -68,9 +65,16 @@ export function FoodTypeahead({
         return 0;
       });
 
-      const combined = [...historyMatches, ...dbMatches].slice(0, 8);
+      const combined = [...historyMatches, ...dbMatches].slice(0, 15);
       setSuggestions(combined);
       setActiveIndex(-1);
+
+      // Detect if we should open upwards
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        setOpenUpwards(spaceBelow < 250); // Threshold for dropdown height
+      }
     } else {
       setSuggestions([]);
     }
@@ -112,7 +116,7 @@ export function FoodTypeahead({
   const selectSuggestion = (suggestion: string) => {
     if (multiSelect) {
       const segments = value.split(",");
-      segments[segments.length - 1] = ` ${suggestion}`; // Add space for readability
+      segments[segments.length - 1] = ` ${suggestion}`;
       const newValue = segments.join(",").trim();
       setValue(name, newValue, { shouldValidate: true });
     } else {
@@ -147,11 +151,14 @@ export function FoodTypeahead({
       <AnimatePresence>
         {isOpen && suggestions.length > 0 && (
           <motion.ul
-            initial={{ opacity: 0, y: -5 }}
+            initial={{ opacity: 0, y: openUpwards ? 5 : -5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
+            exit={{ opacity: 0, y: openUpwards ? 5 : -5 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-[100] w-full mt-2 py-2 bg-white/90 backdrop-blur-2xl border border-slate-200/60 shadow-soft-2xl rounded-2xl overflow-hidden text-right"
+            className={cn(
+              "absolute z-[100] w-full py-2 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-soft-2xl rounded-2xl text-right max-h-[220px] overflow-y-auto overscroll-contain",
+              openUpwards ? "bottom-full mb-2" : "top-full mt-2"
+            )}
           >
             {suggestions.map((suggestion, idx) => (
               <li
@@ -162,6 +169,7 @@ export function FoodTypeahead({
                 )}
                 onPointerDown={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   selectSuggestion(suggestion);
                 }}
                 onMouseEnter={() => setActiveIndex(idx)}
