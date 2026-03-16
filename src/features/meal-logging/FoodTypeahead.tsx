@@ -13,14 +13,20 @@ interface FoodTypeaheadProps {
   className?: string;
   inputClassName?: string;
   multiSelect?: boolean;
+  /** Render a multi-line textarea instead of a single-line input */
+  multiLine?: boolean;
+  /** Rows for the textarea (default 2) */
+  rows?: number;
 }
 
-export function FoodTypeahead({ 
-  name, 
-  placeholder = "שם המאכל", 
+export function FoodTypeahead({
+  name,
+  placeholder = "שם המאכל",
   className,
   inputClassName,
-  multiSelect = false
+  multiSelect = false,
+  multiLine = false,
+  rows = 2,
 }: FoodTypeaheadProps) {
   const { register, watch, setValue } = useFormContext();
   const value = watch(name) || "";
@@ -31,7 +37,7 @@ export function FoodTypeahead({
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   
   const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
   const dailyLogs = useAppStore((state) => state.dailyLogs);
@@ -121,7 +127,7 @@ export function FoodTypeahead({
     };
   }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!isOpen || suggestions.length === 0) return;
 
     if (e.key === "ArrowDown") {
@@ -150,36 +156,65 @@ export function FoodTypeahead({
       setValue(name, suggestion, { shouldValidate: true });
     }
     setIsOpen(false);
-    setTimeout(() => inputRef.current?.focus(), 0);
+    // Note: Do NOT re-focus the input here.
+    // On desktop, blur is already prevented by onPointerDown on the dropdown.
+    // On iOS, re-focusing triggers a keyboard dismiss→reappear cycle that
+    // causes a violent viewport jump. The user taps the input to continue.
   };
 
   const { ref: formRef, ...rest } = register(name);
 
+  const sharedProps = {
+    placeholder,
+    autoComplete: "off" as const,
+    autoCorrect: "off" as const,
+    spellCheck: false as const,
+    dir: "rtl" as const,
+    ...rest,
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      rest.onChange(e);
+      setIsOpen(true);
+    },
+    onFocus: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setIsOpen(true);
+      // Ensure coords are fresh on focus (keyboard pop)
+      setTimeout(updateCoords, 300);
+      // iOS: scroll input into view after virtual keyboard finishes expanding
+      const target = e.target;
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 350);
+    },
+    onKeyDown: handleKeyDown,
+  };
+
   return (
     <div className={cn("relative w-full", className)} ref={containerRef}>
-      <Input
-        placeholder={placeholder}
-        className={cn("bg-white border-none shadow-sm rounded-xl scroll-mt-24", inputClassName)}
-        autoComplete="off"
-        autoCorrect="off"
-        spellCheck="false"
-        {...rest}
-        ref={(e) => {
-          formRef(e);
-          // @ts-ignore
-          inputRef.current = e;
-        }}
-        onChange={(e) => {
-          rest.onChange(e);
-          setIsOpen(true);
-        }}
-        onFocus={() => {
-          setIsOpen(true);
-          // Ensure coords are fresh on focus (keyboard pop)
-          setTimeout(updateCoords, 300);
-        }}
-        onKeyDown={handleKeyDown}
-      />
+      {multiLine ? (
+        <textarea
+          {...sharedProps}
+          rows={rows}
+          className={cn(
+            "flex w-full rounded-2xl border border-input bg-background/95 px-4 py-3 text-right text-[16px] shadow-[0_8px_20px_rgba(15,23,42,0.04)] ring-offset-background placeholder:text-muted-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none whitespace-pre-wrap break-words bg-white border-none shadow-sm rounded-xl scroll-mt-24",
+            inputClassName
+          )}
+          ref={(e) => {
+            formRef(e);
+            // @ts-ignore
+            inputRef.current = e;
+          }}
+        />
+      ) : (
+        <Input
+          {...sharedProps}
+          className={cn("bg-white border-none shadow-sm rounded-xl scroll-mt-24", inputClassName)}
+          ref={(e) => {
+            formRef(e);
+            // @ts-ignore
+            inputRef.current = e;
+          }}
+        />
+      )}
       
       {createPortal(
         <AnimatePresence>
@@ -199,8 +234,10 @@ export function FoodTypeahead({
                 maxWidth: "calc(100vw - 2rem)",
                 WebkitOverflowScrolling: "touch"
               }}
-              onMouseDown={(e) => {
-                // Prevent input blur on desktop pointer clicks
+              onPointerDown={(e) => {
+                // Prevent input blur on both desktop and iOS touch.
+                // pointerdown fires BEFORE blur on all platforms (unlike
+                // mousedown which fires after touchstart-induced blur on iOS).
                 e.preventDefault();
               }}
             >

@@ -81,7 +81,7 @@ export function EditFavoriteModal({ isOpen, onClose, savedMeal, onCalculateAndLo
             value={mealText}
             onChange={(e) => setMealText(e.target.value)}
             placeholder="למשל: 2 פרוסות לחם מלא, 2 ביצים קשות, חצי אבוקדו, עגבנייה"
-            className="w-full h-32 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-[15px] font-medium px-6 py-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300/50"
+            className="w-full h-32 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-[16px] font-medium px-6 py-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300/50"
             dir="rtl"
           />
           <p className="text-[13px] font-bold text-slate-400 px-1">

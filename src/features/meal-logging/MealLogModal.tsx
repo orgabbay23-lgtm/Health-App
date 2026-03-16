@@ -385,8 +385,10 @@ export function MealLogModal({
                           <FoodTypeahead
                             name="description"
                             placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
-                            inputClassName="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-lg font-medium px-6"
+                            inputClassName="min-h-[4rem] rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-lg font-medium px-6 py-4"
                             multiSelect={true}
+                            multiLine={true}
+                            rows={2}
                           />
                           <div className="absolute inset-0 rounded-2xl border border-slate-900/5 pointer-events-none group-focus-within:border-slate-950/20 transition-colors" />
                         </div>
@@ -524,7 +526,7 @@ export function MealLogModal({
                           value={newFavName}
                           onChange={(e) => setNewFavName(e.target.value)}
                           placeholder="למשל: ארוחת בוקר רגילה"
-                          className="h-12 rounded-2xl border-slate-200 bg-white/80 focus:bg-white transition-all text-[15px] font-medium px-5"
+                          className="h-12 rounded-2xl border-slate-200 bg-white/80 focus:bg-white transition-all text-[16px] font-medium px-5"
                         />
                       </div>
                       <div className="space-y-2">
@@ -533,7 +535,7 @@ export function MealLogModal({
                           value={newFavText}
                           onChange={(e) => setNewFavText(e.target.value)}
                           placeholder="למשל: 2 פרוסות לחם מלא, 2 ביצים קשות, חצי אבוקדו, עגבנייה"
-                          className="w-full h-24 rounded-2xl border border-slate-200 bg-white/80 focus:bg-white transition-all text-[15px] font-medium px-5 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300/50"
+                          className="w-full h-24 rounded-2xl border border-slate-200 bg-white/80 focus:bg-white transition-all text-[16px] font-medium px-5 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300/50 whitespace-pre-wrap break-words"
                           dir="rtl"
                         />
                       </div>

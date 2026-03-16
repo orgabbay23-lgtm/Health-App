@@ -93,7 +93,6 @@ export function ModalShell({
           
           <SafeLayoutMotion
             ref={modalRef}
-            layout
             initial={{ opacity: 0, y: "100%", scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: "100%", scale: 0.95 }}
@@ -105,10 +104,10 @@ export function ModalShell({
             }}
             className={cn(
               "relative w-full overflow-hidden bg-white/80 backdrop-blur-2xl text-right shadow-soft-2xl border border-white/60",
-              // Mobile: Bottom sheet
-              "mt-auto max-h-[92vh] rounded-t-[3rem] rounded-b-none pb-safe",
+              // Mobile: Bottom sheet — use dvh to shrink with iOS keyboard
+              "mt-auto max-h-[90dvh] rounded-t-[3rem] rounded-b-none pb-safe overscroll-contain",
               // Desktop: Centered modal
-              "md:mt-0 md:max-h-[90vh] md:max-w-2xl md:rounded-[3rem] md:mb-8",
+              "md:mt-0 md:max-h-[85dvh] md:max-w-2xl md:rounded-[3rem] md:mb-8",
               className,
             )}
             onClick={(event) => event.stopPropagation()}
@@ -151,7 +150,7 @@ export function ModalShell({
               </motion.div>
             </div>
 
-            <div className="max-h-[calc(92vh-120px)] overflow-y-auto px-8 pb-10 md:max-h-[calc(90vh-140px)]">
+            <div className="max-h-[calc(90dvh-120px)] overflow-y-auto overscroll-contain px-8 pb-10 md:max-h-[calc(85dvh-140px)]">
               {children}
             </div>
           </SafeLayoutMotion>

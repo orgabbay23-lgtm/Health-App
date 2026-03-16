@@ -57,6 +57,15 @@
 * **Safe Area Insets:** Use `pt-safe-top` and `pb-safe-bottom` (defined in `tailwind.config.js`) for layout containers and floating bars (like Bottom Navigation) to prevent overlap with device hardware (notches/home indicators).
 * **Scroll Hygiene:** Apply `overscroll-behavior: none` to `html` and `body` to disable browser pull-to-refresh/rubber-banding, ensuring a "one continuous surface" feel.
 
+## 6b. Mobile UX Input Standards (Hardened — March 2026)
+* **iOS Zoom Prevention (CRITICAL):** All interactive form elements (`<input>`, `<textarea>`, `<select>`) must use `text-[16px]` (hardcoded arbitrary Tailwind value). Do NOT use `text-base` — it resolves to `1rem` which depends on root font-size and can be overridden by parent containers. iOS Safari forcefully zooms the viewport when any input with computed font-size below 16px receives focus.
+* **No Framer `layout` on Modals (CRITICAL):** Never use `layout` or `layoutId` props on modal/dialog containers. When the iOS virtual keyboard appears/disappears, `dvh` units change the element's bounding box, causing Framer Motion's FLIP algorithm to trigger a layout animation — this is the root cause of the "viewport wildly jumping" bug. Entry/exit animations (`initial`/`animate`/`exit`) are sufficient.
+* **Viewport Meta — `interactive-widget`:** The viewport meta tag must include `interactive-widget=resizes-content` to instruct Safari to resize the layout viewport (not shift the visual viewport) when the virtual keyboard appears.
+* **Focus Scroll Stabilization:** All text inputs inside modals should call `element.scrollIntoView({ behavior: 'smooth', block: 'center' })` via a `setTimeout` (~350ms) in their `onFocus` handler to ensure the input stays visible after the keyboard finishes expanding.
+* **Portal Dropdown Blur Prevention (CRITICAL):** Portal-based dropdowns (autocomplete, popovers) must use `onPointerDown` with `e.preventDefault()` on the dropdown container — NOT `onMouseDown`. On iOS, `mousedown` fires AFTER `touchstart`-induced blur, so it's too late to prevent the input from losing focus. `pointerdown` fires before blur on all platforms. Additionally, NEVER call `inputRef.focus()` after selecting from a dropdown — on desktop blur is already prevented, on iOS it causes a keyboard dismiss→reappear cycle that violently jumps the viewport.
+* **Multi-Line for Long Text:** Use multi-line `<textarea>` with `whitespace-pre-wrap break-words` for any text entry that may contain long descriptions (e.g., meal descriptions, ingredient lists). Single-line `<input>` truncates long Hebrew strings and forces horizontal scrolling, which is unusable on mobile.
+* **Viewport-Aware Modals:** Modal containers must use `dvh` units (`max-h-[90dvh]`) instead of `vh` to naturally shrink when the iOS virtual keyboard appears. Add `overscroll-contain` to prevent scroll bleed-through.
+
 ## 7. Bug Fix History & Lessons Learned
 * **2026-03-15: Smart Tips Visibility Fix**
     * **Issue:** "Smart Tips" were being clipped by `overflow: hidden` on parent cards or overlapped by other dashboard layers despite high Z-index.
@@ -108,6 +117,30 @@
         1.  **Strict One-Way Latch:** Moved `isAppReady` to the Zustand store. Once set to `true`, it is IMMUTABLE and cannot be reset except by an explicit `SIGNED_OUT` event.
         2.  **Aggressive Auth Filtering:** Updated `onAuthStateChange` to silently handle `TOKEN_REFRESHED` and `USER_UPDATED`. If a profile already exists in the store, background syncs are strictly non-blocking and skip all loading state toggles.
     * **Standard:** **iOS Background Visibility/Token Refresh Rule:** Auth listeners must silently ignore `TOKEN_REFRESHED` for UI blocking/state resets to prevent Safari remounts. Initialization states must be implemented as one-way latches in persistent storage.
+
+* **2026-03-16: iOS Viewport Jump & Input Truncation Fix (Pass 1)**
+    * **Issue:** (1) iOS Safari zoomed/glitched the viewport when typing in meal inputs because font-size was below 16px (`text-sm`). (2) Single-line `<input>` truncated long autocomplete selections, forcing horizontal scrolling.
+    * **Fix (Partial):** Changed `Input` component base class from `text-sm` to `text-base` (16px). Refactored `FoodTypeahead` to support `multiLine` prop rendering a `<textarea>` with `whitespace-pre-wrap break-words`. Updated `ModalShell` to use `dvh` units and `overscroll-contain` for iOS keyboard resilience.
+
+* **2026-03-16: iOS Keyboard Viewport Glitch — Root Cause Resolution (Pass 2)**
+    * **Issue:** Viewport still wildly shifted/jumped when the iOS virtual keyboard appeared despite the `text-base` fix. Five distinct root causes identified:
+    * **Root Cause 1 (PRIMARY):** `ModalShell`'s `SafeLayoutMotion` had a `layout` prop. When the keyboard changed `dvh`, Framer Motion's FLIP algorithm detected a bounding box change and triggered a layout animation on the modal container — causing visible jumping/shifting.
+    * **Root Cause 2:** `text-base` resolves to `1rem`, not guaranteed `16px`. Parent font-size overrides could make it compute to <16px.
+    * **Root Cause 3:** `EditFavoriteModal` textarea used `text-[15px]` — 1px below the 16px iOS threshold.
+    * **Root Cause 4:** `Select` component still used `text-sm` (14px), triggering zoom on unit dropdowns.
+    * **Root Cause 5:** Missing `interactive-widget=resizes-content` in viewport meta — Safari shifted the visual viewport instead of resizing layout.
+    * **Fix:**
+        1. Removed `layout` prop from `ModalShell`'s `SafeLayoutMotion`.
+        2. Hardcoded `text-[16px]` (arbitrary Tailwind value) on `Input`, `Select`, `FoodTypeahead` textarea, `EditFavoriteModal` textarea, and all `MealLogModal` inline inputs.
+        3. Added `interactive-widget=resizes-content` to the viewport meta tag in `index.html`.
+        4. Added `scrollIntoView({ behavior: 'smooth', block: 'center' })` on focus with 350ms delay in `FoodTypeahead` to stabilize input position after keyboard expansion.
+    * **Standard:** See "Mobile UX Input Standards" (Section 6b).
+
+* **2026-03-16: iOS Autocomplete Selection Viewport Jump (Pass 3)**
+    * **Issue:** Viewport still jumped when selecting an autocomplete suggestion from the portal dropdown — but NOT when typing. Isolated to the selection interaction.
+    * **Root Cause:** Two-part failure: (1) The `<ul>` dropdown used `onMouseDown` with `preventDefault` to prevent input blur — but on iOS, blur happens during `touchstart`, BEFORE the synthetic `mousedown` fires. So blur prevention never applied on touch devices. (2) After selection, `setTimeout(() => inputRef.current?.focus(), 0)` re-focused the input, triggering a keyboard dismiss→reappear cycle (two competing viewport shifts).
+    * **Fix:** (1) Changed `onMouseDown` to `onPointerDown` on the dropdown `<ul>` — `pointerdown` fires before blur on all platforms including iOS touch. (2) Removed the `setTimeout(() => focus(), 0)` from `selectSuggestion` — on desktop blur is already prevented so it's redundant; on iOS it caused the jump.
+    * **Standard:** See "Portal Dropdown Blur Prevention" rule in Section 6b.
 
 * **2026-03-16: Autocomplete Dropdown Width Truncation Fix**
     * **Issue:** In Manual Entry mode, the autocomplete suggestion dropdown was clipped on the left side, truncating long Hebrew food strings.
