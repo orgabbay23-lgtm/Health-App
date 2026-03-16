@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { useFormContext } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "../../components/ui/input";
@@ -27,9 +28,11 @@ export function FoodTypeahead({
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [openUpwards, setOpenUpwards] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const dailyLogs = useAppStore((state) => state.dailyLogs);
 
@@ -38,6 +41,34 @@ export function FoodTypeahead({
     const segments = val.split(",");
     return segments[segments.length - 1].trim();
   };
+
+  // Update position coordinates - Always below the input
+  const updateCoords = () => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const scrollY = window.scrollY || window.pageYOffset;
+      const scrollX = window.scrollX || window.pageXOffset;
+      
+      setCoords({
+        top: rect.bottom + scrollY,
+        left: rect.left + scrollX,
+        width: rect.width
+      });
+    }
+  };
+
+  useLayoutEffect(() => {
+    if (isOpen) {
+      updateCoords();
+      // Use capture phase for scroll to catch it from anywhere
+      window.addEventListener("scroll", updateCoords, true);
+      window.addEventListener("resize", updateCoords);
+    }
+    return () => {
+      window.removeEventListener("scroll", updateCoords, true);
+      window.removeEventListener("resize", updateCoords);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     const currentSearch = getCurrentSegment(value);
@@ -68,13 +99,6 @@ export function FoodTypeahead({
       const combined = [...historyMatches, ...dbMatches].slice(0, 15);
       setSuggestions(combined);
       setActiveIndex(-1);
-
-      // Detect if we should open upwards
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
-        setOpenUpwards(spaceBelow < 250); // Threshold for dropdown height
-      }
     } else {
       setSuggestions([]);
     }
@@ -83,6 +107,9 @@ export function FoodTypeahead({
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        if (listRef.current && listRef.current.contains(event.target as Node)) {
+          return;
+        }
         setIsOpen(false);
       }
     }
@@ -132,8 +159,10 @@ export function FoodTypeahead({
     <div className={cn("relative w-full", className)} ref={containerRef}>
       <Input
         placeholder={placeholder}
-        className={cn("bg-white border-none shadow-sm rounded-xl", inputClassName)}
+        className={cn("bg-white border-none shadow-sm rounded-xl scroll-mt-24", inputClassName)}
         autoComplete="off"
+        autoCorrect="off"
+        spellCheck="false"
         {...rest}
         ref={(e) => {
           formRef(e);
@@ -144,42 +173,54 @@ export function FoodTypeahead({
           rest.onChange(e);
           setIsOpen(true);
         }}
-        onFocus={() => setIsOpen(true)}
+        onFocus={() => {
+          setIsOpen(true);
+          // Ensure coords are fresh on focus (keyboard pop)
+          setTimeout(updateCoords, 300);
+        }}
         onKeyDown={handleKeyDown}
       />
       
-      <AnimatePresence>
-        {isOpen && suggestions.length > 0 && (
-          <motion.ul
-            initial={{ opacity: 0, y: openUpwards ? 5 : -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: openUpwards ? 5 : -5 }}
-            transition={{ duration: 0.15 }}
-            className={cn(
-              "absolute z-[100] w-full py-2 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-soft-2xl rounded-2xl text-right max-h-[220px] overflow-y-auto overscroll-contain",
-              openUpwards ? "bottom-full mb-2" : "top-full mt-2"
-            )}
-          >
-            {suggestions.map((suggestion, idx) => (
-              <li
-                key={suggestion}
-                className={cn(
-                  "px-5 py-3 text-[14px] font-bold cursor-pointer transition-all flex items-center justify-start border-b border-slate-50 last:border-none",
-                  idx === activeIndex ? "bg-blue-50 text-blue-600" : "text-slate-700 active:bg-slate-100"
-                )}
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  selectSuggestion(suggestion);
-                }}
-                onMouseEnter={() => setActiveIndex(idx)}
-              >
-                <span className="truncate">{suggestion}</span>
-              </li>
-            ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && suggestions.length > 0 && (
+            <motion.ul
+              ref={listRef}
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.15 }}
+              className="absolute z-[9999] mt-2 py-2 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-soft-2xl rounded-2xl text-right overflow-y-auto overscroll-contain touch-pan-y"
+              style={{
+                top: coords.top,
+                left: coords.left,
+                width: coords.width,
+                maxHeight: "220px",
+                WebkitOverflowScrolling: "touch"
+              }}
+            >
+              {suggestions.map((suggestion, idx) => (
+                <li
+                  key={suggestion}
+                  className={cn(
+                    "px-6 py-4 text-[15px] font-bold cursor-pointer transition-all flex items-center justify-start border-b border-slate-50 last:border-none active:bg-blue-50/50",
+                    idx === activeIndex ? "bg-blue-50 text-blue-600" : "text-slate-700"
+                  )}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectSuggestion(suggestion);
+                  }}
+                  onMouseEnter={() => setActiveIndex(idx)}
+                >
+                  <span className="truncate">{suggestion}</span>
+                </li>
+              ))}
+            </motion.ul>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

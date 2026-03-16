@@ -228,3 +228,11 @@ The following 14 micronutrient RDA values are strictly enforced based on clinica
 * **Search Priority:** The Typeahead component (FoodTypeahead.tsx) prioritizes historical user meals (dailyLogs) before searching the static 1000-item database, ensuring personal favorites bubble to the top.
 * **UI/UX:** The suggestion dropdown utilizes ramer-motion for smooth entry/exit, adheres to Glassmorphism principles (g-white/80 backdrop-blur-xl), uses ms-2 and 	ext-right for RTL correctness, and features a minimum font size of 14px (	ext-sm) for accessibility.
 * **Stability:** The dropdown is rendered within the normal layout but utilizes bsolute z-[100] to avoid clipping, complying with absolute overlays without triggering viewport shifts on iOS.
+
+## 16. Advanced Typeahead & Localized Food Database (Finalized March 2026)
+* **Database Scale:** The system now utilizes a strictly unique, number-free, 10,000-item localized Hebrew food database (src/utils/food-suggestions.ts). It covers raw produce, brands (Tnuva, Strauss, Osem), home cooking, and street food.
+* **Architecture (Portal-Based):** Suggestions are rendered via React Portal to the document body with z-[9999]. This bypasses modal clipping and layout constraints, essential for mobile reliability.
+* **Positioning:** The suggestion list ALWAYS opens downwards (Google-style). It uses absolute positioning relative to the document scroll to remain 'glued' to the input even when the mobile keyboard shifts the viewport.
+* **Multi-Select (Smart Tab):** In the 'Smart' meal logging tab, the typeahead supports comma-separated entries. It detects the current segment (after the last comma) to provide suggestions without overwriting previous text.
+* **Mobile Optimization:** Uses onPointerDown to ensure selection precedes input blur on touch devices. Implements overscroll-contain and -webkit-overflow-scrolling: touch for smooth, isolated scrolling within the suggestion list.
+* **Search Heuristics:** Prioritizes 'Starts-with' matches over 'Contains' matches and user history over the static database.
