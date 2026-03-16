@@ -50,7 +50,7 @@
 - ✅ UI/UX Overhaul: Premium Glassmorphism & Native feel established.
 - ✅ Supabase Vault & BYOK: Fully operational and secure.
 - ✅ UI Color Infusion: Nutrient color-coding and dynamic visual feedback complete.
-- ✅ Clinical data expansion — 23 micronutrients, 3-tier hierarchy, accessibility font scale, updated Gemini prompt.
+- ✅ Clinical data expansion — 24 micronutrients (including Omega 3 EPA+DHA), 3-tier hierarchy, accessibility font scale, updated Gemini prompt.
 - 🔄 **CURRENT PHASE:** Contextual AI Insights — Smart nutritional recommendations via Gemini, period-aware insight generation and caching.
 ## 6. Native PWA & Mobile UX
 * **Theme Sync:** `index.html` must include `meta name="theme-color"` matching the primary background (`#f8fafc`) and `apple-mobile-web-app-status-bar-style: black-translucent`.
@@ -160,22 +160,22 @@
 * **Modal Focus Trap:**
     * The `ModalShell` focus trap query selector covers all input types: `input:not([disabled])` (universal), not just specific `input[type="text"]` variants. This ensures Tab-trapping works for `number`, `password`, `email`, `date`, and all future input types.
 
-## 10. Gemini Prompt & 23 Micronutrient Schema (Updated March 2026)
+## 10. Gemini Prompt & 24 Micronutrient Schema (Updated March 2026)
 
 * **System Instruction:**
-    * `gemini.ts` sends an explicit system prompt listing all 23 micronutrient keys by name and their expected units.
+    * `gemini.ts` sends an explicit system prompt listing all 24 micronutrient keys by name and their expected units.
     * The prompt demands USDA/clinical-grade accuracy and instructs Gemini to return 0 for absent nutrients (never omit a key).
 * **Schema & Validation:**
-    * `mealResponseSchema` (Google Generative AI Schema) and `mealResponseParser` (Zod) both require all 25 fields in `micronutrients` (fiber, sodium + 23 clinical micronutrients).
-    * New keys: `iodine`, `zinc`, `folicAcid`, `vitaminK`, `selenium`, `vitaminB6`, `vitaminB3`, `vitaminB1`, `vitaminB2`, `vitaminB5`, `biotin`, `copper`, `manganese`, `chromium`.
+    * `mealResponseSchema` (Google Generative AI Schema) and `mealResponseParser` (Zod) both require all 26 fields in `micronutrients` (fiber, sodium + 24 clinical micronutrients).
+    * New keys: `iodine`, `zinc`, `folicAcid`, `vitaminK`, `selenium`, `vitaminB6`, `vitaminB3`, `vitaminB1`, `vitaminB2`, `vitaminB5`, `biotin`, `copper`, `manganese`, `chromium`, `omega3`.
 * **RDA Targets:**
-    * All 14 new micronutrient RDA functions are in `nutrition-utils.ts`, age/gender-stratified per NIH DRI tables.
-    * `calculateMicros()` returns all 25 fields (fiber + sodium + 23 micros).
+    * All 15 new micronutrient RDA functions are in `nutrition-utils.ts`, age/gender-stratified per NIH DRI tables.
+    * `calculateMicros()` returns all 26 fields (fiber + sodium + 24 micros).
 
 ## 11. 3-Tier Micronutrient Hierarchy (Updated March 2026)
 
 * **Tier 1 (Default — always visible):** Vitamin D, B12, Iron, Magnesium, Iodine.
-* **Tier 2 (Expand — "הרחב" button):** Zinc, Vitamin C, Vitamin A, Folic Acid, Calcium.
+* **Tier 2 (Expand — "הרחב" button):** Zinc, Vitamin C, Vitamin A, Folic Acid, Calcium, Omega 3 (EPA+DHA).
 * **Tier 3 (More — "ערכים נוספים" button):** Potassium, Vitamin K, Vitamin E, Selenium, B6, B3, B1, B2, B5, Biotin, Copper, Manganese, Chromium.
 * **Implementation:** `NutrientGrid.tsx` uses `useState` for tier expansion and `framer-motion` `AnimatePresence` + staggered variants for smooth entry. A "צמצם" collapse button appears when expanded.
 * **Rule:** Fiber is displayed in Tier 1 (always visible) as a clinically significant dietary nutrient. Sodium is tracked internally but NOT displayed in the micronutrient grid (infrastructure nutrient managed via safety alerts).
@@ -187,7 +187,7 @@
 * **Scope:** Applies to NutrientCard, CompactNutrientCard, PrimaryNutrientCard, MealTimeline, DateNavigator, ProfileScreen, HistoryArchive, MealLogModal, OnboardingFlow, ByokModal.
 
 ## 13. Clinical Constants (RDA Targets - March 2026)
-The following 14 micronutrient RDA values are strictly enforced based on clinical truth tables for adults (>13y):
+The following 15 micronutrient RDA values are strictly enforced based on clinical truth tables for adults (>13y):
 - **Iodine (���):** 150mcg (Male/Female)
 - **Zinc (���):** 11mg (Male) | 8mg (Female)
 - **Folic Acid (����� �����):** 400mcg (Male/Female)
@@ -202,6 +202,7 @@ The following 14 micronutrient RDA values are strictly enforced based on clinica
 - **Copper (�����):** 900mcg (0.9mg) (Male/Female)
 - **Manganese (����):** 2.3mg (Male) | 1.8mg (Female)
 - **Chromium (����):** 35mcg (Male) | 25mcg (Female)
+- **Omega 3 (EPA+DHA):** 250mg (Male/Female)
 
 ## 14. Favorites Template Logic (Updated March 2026)
 
@@ -263,7 +264,7 @@ The following 14 micronutrient RDA values are strictly enforced based on clinica
 
 * **Integration:**
     * Placed in `HomeScreen.tsx` between the micronutrient accordion and the meals/period-breakdown card, visible across all period modes (daily/weekly/monthly).
-    * Calculates percentage-based nutrition data (current vs. targets for calories, macros, and all 23 micronutrients) before sending to Gemini.
+    * Calculates percentage-based nutrition data (current vs. targets for calories, macros, and all 24 micronutrients) before sending to Gemini.
 
 * **Rules:**
     * Insight keys must be deterministic per viewed period so re-generating overwrites the previous insight for that exact period.

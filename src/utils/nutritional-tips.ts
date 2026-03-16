@@ -45,6 +45,7 @@ export const NUTRIENT_META: Record<
   copper: { label: "נחושת", unit: 'מ"ג' },
   manganese: { label: "מנגן", unit: 'מ"ג' },
   chromium: { label: "כרום", unit: 'מק"ג' },
+  omega3: { label: "אומגה 3 (EPA+DHA)", unit: 'מ"ג' },
 };
 
 function getTargetValue(
@@ -246,6 +247,9 @@ export function generateNutritionalTip(
 
     case "chromium":
       return `${targetSentence} כרום תומך ברגישות לאינסולין ובמטבוליזם של גלוקוז. ${voice.combineVerb} ברוקולי, ענבים, תפוחי אדמה ובשר.`;
+
+    case "omega3":
+      return `${targetSentence} אומגה 3 (EPA+DHA) חיונית לבריאות הלב, המוח ולוויסות דלקת. ${voice.combineVerb} דגים שומניים כמו סלמון, סרדינים ומקרל, או תוסף שמן דגים/אצות לפחות 2-3 פעמים בשבוע.`;
 
     default:
       return targetSentence;

@@ -33,7 +33,8 @@ export type MicronutrientKey =
   | "biotin"
   | "copper"
   | "manganese"
-  | "chromium";
+  | "chromium"
+  | "omega3";
 
 export interface MicronutrientTotals {
   fiber: number;
@@ -61,6 +62,7 @@ export interface MicronutrientTotals {
   copper: number;
   manganese: number;
   chromium: number;
+  omega3: number;
 }
 
 export interface NutritionProfileInput {
@@ -156,6 +158,7 @@ export const MICRONUTRIENT_KEYS: MicronutrientKey[] = [
   "copper",
   "manganese",
   "chromium",
+  "omega3",
 ];
 
 export const EMPTY_MICRONUTRIENTS: MicronutrientTotals = {
@@ -184,6 +187,7 @@ export const EMPTY_MICRONUTRIENTS: MicronutrientTotals = {
   copper: 0,
   manganese: 0,
   chromium: 0,
+  omega3: 0,
 };
 
 const SODIUM_CDRR_MG = 2300;
@@ -400,6 +404,10 @@ function getManganeseTarget(gender: Gender): number {
   return gender === "male" ? 2.3 : 1.8; // mg AI
 }
 
+function getOmega3Target(): number {
+  return 250; // mg EPA+DHA combined, per EFSA/WHO recommendation
+}
+
 function getChromiumTarget(age: number, gender: Gender): number {
   if (age <= 13) return gender === "male" ? 25 : 21; // Child values as reference
   return gender === "male" ? 35 : 25; // µg AI for adults
@@ -472,6 +480,7 @@ export function calculateMicros(
     copper: getCopperTarget(),
     manganese: getManganeseTarget(gender),
     chromium: getChromiumTarget(age, gender),
+    omega3: getOmega3Target(),
   };
 }
 

@@ -26,6 +26,7 @@ const TIER_2: MicronutrientKey[] = [
   "vitaminA",
   "folicAcid",
   "calcium",
+  "omega3",
 ];
 
 const TIER_3: MicronutrientKey[] = [

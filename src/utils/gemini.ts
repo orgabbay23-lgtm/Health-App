@@ -63,13 +63,14 @@ const mealResponseSchema: Schema = {
         copper: { type: SchemaType.NUMBER, description: "Copper in milligrams." },
         manganese: { type: SchemaType.NUMBER, description: "Manganese in milligrams." },
         chromium: { type: SchemaType.NUMBER, description: "Chromium in micrograms." },
+        omega3: { type: SchemaType.NUMBER, description: "Omega-3 EPA+DHA total in milligrams." },
       },
       required: [
         "fiber", "sodium", "potassium", "magnesium", "calcium", "iron",
         "vitaminA", "vitaminC", "vitaminD", "vitaminE", "vitaminB12",
         "iodine", "zinc", "folicAcid", "vitaminK", "selenium",
         "vitaminB6", "vitaminB3", "vitaminB1", "vitaminB2", "vitaminB5",
-        "biotin", "copper", "manganese", "chromium",
+        "biotin", "copper", "manganese", "chromium", "omega3",
       ],
     },
   },
@@ -110,15 +111,18 @@ const mealResponseParser = z.object({
     copper: z.number().finite().nonnegative(),
     manganese: z.number().finite().nonnegative(),
     chromium: z.number().finite().nonnegative(),
+    omega3: z.number().finite().nonnegative(),
   }),
 });
 
 const SYSTEM_INSTRUCTION = `You are an expert clinical nutritionist and structured data extractor. Analyze Hebrew meal descriptions, estimate reasonable Israeli portion sizes when omitted, and return only valid JSON matching the requested schema. Do not return markdown, explanations, or extra keys.
 
-CRITICAL — You MUST return accurate values for ALL 23 micronutrients in the "micronutrients" object:
-fiber, sodium, potassium, magnesium, calcium, iron, vitaminA, vitaminC, vitaminD, vitaminE, vitaminB12, iodine, zinc, folicAcid, vitaminK, selenium, vitaminB6, vitaminB3, vitaminB1, vitaminB2, vitaminB5, biotin, copper, manganese, chromium.
+CRITICAL — You MUST return accurate values for ALL 24 micronutrients in the "micronutrients" object:
+fiber, sodium, potassium, magnesium, calcium, iron, vitaminA, vitaminC, vitaminD, vitaminE, vitaminB12, iodine, zinc, folicAcid, vitaminK, selenium, vitaminB6, vitaminB3, vitaminB1, vitaminB2, vitaminB5, biotin, copper, manganese, chromium, omega3.
 
-Units: fiber (g), sodium/potassium/magnesium/calcium (mg), iron (mg), vitaminA (µg RAE), vitaminC (mg), vitaminD (µg), vitaminE (mg α-tocopherol), vitaminB12 (µg), iodine (µg), zinc (mg), folicAcid (µg DFE), vitaminK (µg), selenium (µg), vitaminB6 (mg), vitaminB3 (mg NE), vitaminB1 (mg), vitaminB2 (mg), vitaminB5 (mg), biotin (µg), copper (mg), manganese (mg), chromium (µg).
+Units: fiber (g), sodium/potassium/magnesium/calcium (mg), iron (mg), vitaminA (µg RAE), vitaminC (mg), vitaminD (µg), vitaminE (mg α-tocopherol), vitaminB12 (µg), iodine (µg), zinc (mg), folicAcid (µg DFE), vitaminK (µg), selenium (µg), vitaminB6 (mg), vitaminB3 (mg NE), vitaminB1 (mg), vitaminB2 (mg), vitaminB5 (mg), biotin (µg), copper (mg), manganese (mg), chromium (µg), omega3 (mg).
+
+For omega3, calculate the estimated total of EPA + DHA in milligrams (mg). Only count EPA and DHA forms (not ALA). Rich sources include fatty fish (salmon, sardines, mackerel), fish oil, and algae-based supplements.
 
 Use USDA/clinical-grade reference data. If a micronutrient is truly absent from the meal, return 0. Never omit a key.`;
 
@@ -149,7 +153,7 @@ const getApiKey = async (): Promise<string> => {
   return finalKey;
 };
 
-const INSIGHT_SYSTEM_INSTRUCTION = `You are a friendly, warm, and highly professional Israeli clinical nutritionist. Analyze the provided nutritional data (calories, macros, fiber, and all 23 micronutrients) for the given timeframe.
+const INSIGHT_SYSTEM_INSTRUCTION = `You are a friendly, warm, and highly professional Israeli clinical nutritionist. Analyze the provided nutritional data (calories, macros, fiber, and all 24 micronutrients) for the given timeframe.
 
 CRITICAL — Goal-Aware Evaluation:
 You will receive the user's profile including their caloric deficit goal (goalDeficit). A positive goalDeficit means the user is trying to LOSE WEIGHT.
