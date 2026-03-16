@@ -50,7 +50,8 @@
 - ✅ UI/UX Overhaul: Premium Glassmorphism & Native feel established.
 - ✅ Supabase Vault & BYOK: Fully operational and secure.
 - ✅ UI Color Infusion: Nutrient color-coding and dynamic visual feedback complete.
-- 🔄 **CURRENT PHASE:** Clinical data expansion — 23 micronutrients, 3-tier hierarchy, accessibility font scale, updated Gemini prompt.
+- ✅ Clinical data expansion — 23 micronutrients, 3-tier hierarchy, accessibility font scale, updated Gemini prompt.
+- 🔄 **CURRENT PHASE:** Contextual AI Insights — Smart nutritional recommendations via Gemini, period-aware insight generation and caching.
 ## 6. Native PWA & Mobile UX
 * **Theme Sync:** `index.html` must include `meta name="theme-color"` matching the primary background (`#f8fafc`) and `apple-mobile-web-app-status-bar-style: black-translucent`.
 * **Safe Area Insets:** Use `pt-safe-top` and `pb-safe-bottom` (defined in `tailwind.config.js`) for layout containers and floating bars (like Bottom Navigation) to prevent overlap with device hardware (notches/home indicators).
@@ -236,3 +237,27 @@ The following 14 micronutrient RDA values are strictly enforced based on clinica
 * **Multi-Select (Smart Tab):** In the 'Smart' meal logging tab, the typeahead supports comma-separated entries. It detects the current segment (after the last comma) to provide suggestions without overwriting previous text.
 * **Mobile Optimization:** Uses onPointerDown to ensure selection precedes input blur on touch devices. Implements overscroll-contain and -webkit-overflow-scrolling: touch for smooth, isolated scrolling within the suggestion list.
 * **Search Heuristics:** Prioritizes 'Starts-with' matches over 'Contains' matches and user history over the static database.
+
+## 17. Contextual AI Insights (Smart Insight Generator — March 2026)
+
+* **Architecture:**
+    * `generateNutritionalInsight(timeframe, nutritionData, userProfile)` in `gemini.ts` sends aggregated nutrition percentages to Gemini with a dedicated Hebrew clinical nutritionist system prompt.
+    * Uses `gemini-3-flash-preview` with the established 429→`gemini-2.5-flash` fallback mechanism.
+    * The system prompt enforces: Hebrew language, warm/professional tone, bullet-point format, "נקודות לשימור" (strengths) + "נקודות לשיפור" (improvements with 2-3 specific Israeli food suggestions).
+
+* **State Management (Zustand):**
+    * `aiInsights: Record<string, string>` stores generated insight text, keyed by period identifier (e.g., `insight_day_2026-03-16`, `insight_week_2026-03-10`, `insight_month_2026-03`).
+    * Actions: `saveInsight(key, text)` overwrites any existing entry for that key. `clearInsight(key)` removes it.
+    * Persisted via the existing Zustand `persist` middleware alongside other user data.
+
+* **UI Components:**
+    * `SmartInsightGenerator.tsx`: Renders contextual button — "המלצה אישית עם AI ✨" (no existing insight) or "הצג המלצה אחרונה" + refresh icon (existing insight). Shimmer loading state during generation.
+    * `InsightModal.tsx`: Portal-based Glassmorphism modal (z-[100]) displaying the insight text. Uses framer-motion spring entry, RTL layout, mesh gradient background.
+
+* **Integration:**
+    * Placed in `HomeScreen.tsx` between the micronutrient accordion and the meals/period-breakdown card, visible across all period modes (daily/weekly/monthly).
+    * Calculates percentage-based nutrition data (current vs. targets for calories, macros, and all 23 micronutrients) before sending to Gemini.
+
+* **Rules:**
+    * Insight keys must be deterministic per viewed period so re-generating overwrites the previous insight for that exact period.
+    * The modal must use React Portal to `document.body` with `z-[100]` per the Absolute Overlays standard.

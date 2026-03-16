@@ -173,4 +173,10 @@
   .animate-sparkle {
     animation: sparkle 0.8s ease-in-out forwards;
   }
+
+  /* Shimmer Effect for AI loading */
+  @keyframes shimmer {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
 }

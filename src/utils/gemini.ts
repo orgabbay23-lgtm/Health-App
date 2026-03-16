@@ -149,6 +149,71 @@ const getApiKey = async (): Promise<string> => {
   return finalKey;
 };
 
+const INSIGHT_SYSTEM_INSTRUCTION = `You are a friendly, warm, and highly professional Israeli clinical nutritionist. Analyze the provided nutritional data (calories, macros, and all 23 micronutrients) for the given timeframe.
+Rules for your response:
+- Language: Hebrew. Tone: Warm, friendly, encouraging, strictly NO fluff.
+- Format: Use bullet points.
+- Structure:
+  1. A short, encouraging opening sentence.
+  2. 'נקודות לשימור' (What went well).
+  3. 'נקודות לשיפור' (What is missing/over the limit, and suggest 2-3 specific, common Israeli foods to fix it).
+- Keep it short, actionable, and easy to read.`;
+
+export async function generateNutritionalInsight(
+  timeframe: 'day' | 'week' | 'month',
+  nutritionData: Record<string, unknown>,
+  userProfile: Record<string, unknown>,
+): Promise<string> {
+  const finalKey = await getApiKey();
+
+  const userPrompt = `תקופה: ${timeframe === 'day' ? 'יום' : timeframe === 'week' ? 'שבוע' : 'חודש'}
+פרופיל המשתמש: ${JSON.stringify(userProfile)}
+נתוני התזונה (אחוזים מהיעד היומי/תקופתי): ${JSON.stringify(nutritionData)}
+
+נתח את הנתונים ותן המלצה מותאמת אישית.`;
+
+  const performRequest = async (modelName: string) => {
+    const genAI = new GoogleGenerativeAI(finalKey);
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      systemInstruction: INSIGHT_SYSTEM_INSTRUCTION,
+    });
+    const result = await model.generateContent(userPrompt);
+    const text = result.response.text().trim();
+    if (!text) throw new Error("Empty response");
+    return text;
+  };
+
+  try {
+    return await performRequest(PRIMARY_MODEL);
+  } catch (apiError: any) {
+    const isAuthError =
+      apiError?.status === 401 ||
+      apiError?.status === 403 ||
+      apiError?.message?.includes("401") ||
+      apiError?.message?.includes("403") ||
+      apiError?.message?.toLowerCase?.()?.includes("unauthorized") ||
+      apiError?.message?.toLowerCase?.()?.includes("invalid api key");
+
+    if (isAuthError) throw new Error("API_KEY_INVALID");
+
+    const isQuotaError =
+      apiError?.status === 429 ||
+      apiError?.message?.includes("429") ||
+      apiError?.message?.toLowerCase?.()?.includes("quota");
+
+    if (isQuotaError) {
+      try {
+        return await performRequest(FALLBACK_MODEL);
+      } catch {
+        throw new Error("שגיאה ביצירת ההמלצה, אנא נסו שוב מאוחר יותר.");
+      }
+    }
+
+    throw new Error("שגיאה ביצירת ההמלצה, אנא נסו שוב מאוחר יותר.");
+  }
+}
+
 export async function parseMealDescription(
   description: string,
 ): Promise<ParsedMealDescription> {

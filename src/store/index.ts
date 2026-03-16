@@ -260,12 +260,15 @@ interface AppState {
   profile: UserProfile | null;
   dailyLogs: Record<string, DailyLog>;
   savedMeals: SavedMeal[];
+  aiInsights: Record<string, string>;
   isLoadingData: boolean;
   isAppReady: boolean;
   _hasHydrated: boolean;
   userId: string | null;
   _lastFetchTime: number;
 
+  saveInsight: (key: string, text: string) => void;
+  clearInsight: (key: string) => void;
   fetchUserData: (userId: string, isSilent?: boolean) => Promise<void>;
   setAppReady: (ready: boolean) => void;
   setHasHydrated: (hydrated: boolean) => void;
@@ -287,11 +290,24 @@ export const useAppStore = create<AppState>()(
       profile: null,
       dailyLogs: {},
       savedMeals: [],
+      aiInsights: {},
       isLoadingData: false,
       isAppReady: false,
       _hasHydrated: false,
       userId: null,
       _lastFetchTime: 0,
+
+      saveInsight: (key, text) => {
+        set((state) => ({ aiInsights: { ...state.aiInsights, [key]: text } }));
+      },
+
+      clearInsight: (key) => {
+        set((state) => {
+          const next = { ...state.aiInsights };
+          delete next[key];
+          return { aiInsights: next };
+        });
+      },
 
       fetchUserData: async (userId: string, isSilent?: boolean) => {
         const now = Date.now();
@@ -385,7 +401,7 @@ export const useAppStore = create<AppState>()(
       },
 
       clearUserData: () => {
-        set({ name: null, profile: null, dailyLogs: {}, savedMeals: [], userId: null, _lastFetchTime: 0, isAppReady: false });
+        set({ name: null, profile: null, dailyLogs: {}, savedMeals: [], aiInsights: {}, userId: null, _lastFetchTime: 0, isAppReady: false });
         // FIX: Use Zustand persist clearStorage instead of raw localStorage
         useAppStore.persist.clearStorage();
       },
@@ -614,6 +630,7 @@ export const useAppStore = create<AppState>()(
     profile: state.profile,
     dailyLogs: state.dailyLogs,
     savedMeals: state.savedMeals,
+    aiInsights: state.aiInsights,
     userId: state.userId,
   }),
   // FIX: Wrap onRehydrateStorage in try/catch to handle corrupted storage

@@ -19,6 +19,7 @@ import { MealTimeline } from "../components/MealTimeline";
 import { PeriodBreakdown } from "../components/PeriodBreakdown";
 import { PrimaryNutrientCard } from "../components/PrimaryNutrientCard";
 import { SafetyAlertsCard } from "../components/SafetyAlertsCard";
+import { SmartInsightGenerator } from "../components/SmartInsightGenerator";
 
 interface HomeScreenProps {
   periodMode: DashboardPeriod;
@@ -46,6 +47,13 @@ export function HomeScreen({
   onSaveFavorite,
 }: HomeScreenProps) {
   const meals = selectedDailyLog?.meals ?? [];
+
+  const insightKey =
+    periodMode === "daily"
+      ? `insight_day_${periodDetails.startKey}`
+      : periodMode === "weekly"
+        ? `insight_week_${periodDetails.startKey}`
+        : `insight_month_${periodDetails.startKey.slice(0, 7)}`;
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -129,6 +137,16 @@ export function HomeScreen({
         <FullNutritionAccordion
           current={periodData.aggregations.micronutrients}
           target={periodTargets.micronutrients}
+          userProfile={userProfile}
+        />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <SmartInsightGenerator
+          periodMode={periodMode}
+          insightKey={insightKey}
+          currentAggregations={periodData.aggregations}
+          periodTargets={periodTargets}
           userProfile={userProfile}
         />
       </motion.div>
