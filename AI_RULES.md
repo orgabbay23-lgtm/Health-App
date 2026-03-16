@@ -109,6 +109,11 @@
         2.  **Aggressive Auth Filtering:** Updated `onAuthStateChange` to silently handle `TOKEN_REFRESHED` and `USER_UPDATED`. If a profile already exists in the store, background syncs are strictly non-blocking and skip all loading state toggles.
     * **Standard:** **iOS Background Visibility/Token Refresh Rule:** Auth listeners must silently ignore `TOKEN_REFRESHED` for UI blocking/state resets to prevent Safari remounts. Initialization states must be implemented as one-way latches in persistent storage.
 
+* **2026-03-16: Autocomplete Dropdown Width Truncation Fix**
+    * **Issue:** In Manual Entry mode, the autocomplete suggestion dropdown was clipped on the left side, truncating long Hebrew food strings.
+    * **Fix:** Set `minWidth` to input width with a floor of 280px, `maxWidth` to `calc(100vw - 2rem)`, and replaced `truncate` class on suggestion items with `whitespace-normal break-words` so long Hebrew text wraps instead of being clipped.
+    * **Standard:** Autocomplete/popover dropdowns must never truncate content. Use `whitespace-normal` and responsive min/max width constraints to ensure full legibility on mobile.
+
 ## 8. iOS PWA Architecture (Immutable Shell & Visibility-Aware Motion)
 
 * **Immutable CSS Shell (iOS Scroll Lock):**
@@ -204,26 +209,35 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
 - **Chromium (����):** 35mcg (Male) | 25mcg (Female)
 - **Omega 3 (EPA+DHA):** 250mg (Male/Female)
 
-## 14. Favorites Template Logic (Updated March 2026)
+## 14. Dynamic AI Templates — Favorites Architecture (Updated March 2026)
+
+* **Paradigm: "Dynamic AI Templates":**
+    * Favorites are **raw text prompts** (not pre-calculated nutritional data). Each `SavedMeal` stores an `id`, `name`, and `mealText` (the raw ingredient/meal description string).
+    * **Creating a Favorite** (`createFavoriteTemplate`) saves the name + text to the store/Supabase IMMEDIATELY, WITHOUT calling Gemini, and WITHOUT adding to the daily timeline.
+    * **Editing a Favorite** (`updateFavoriteTemplate` / `EditFavoriteModal`) modifies only the `name` and `mealText`. No nutritional recalculation occurs at edit time.
+    * **Executing a Favorite** (clicking it in the "Saved" tab): The `mealText` is extracted and sent through the standard Gemini AI calculation flow (identical to typing free text and hitting "Analyze"). A shimmer/loading state is shown while Gemini evaluates fresh nutritional values, and the result is saved to today's timeline.
 
 * **Template vs. Log Separation (CRITICAL):**
-    * Saved Meals (Favorites) are **templates** stored in the `saved_meals` table. They are independent of historical meal logs in `daily_logs`.
-    * When a user edits a Favorite via `updateSavedMeal`, **only the template** in `saved_meals` is updated. Historical `daily_logs` entries that were previously created from that template are NEVER retroactively modified.
-    * `addSavedMealToDay` creates a **new copy** of the template's data (with a fresh `id` and `timestamp`) in the daily log. After creation, the logged meal has no live link back to the template.
+    * Favorites are templates stored in `saved_meals`. They are independent of historical meal logs in `daily_logs`.
+    * AI evaluation ONLY occurs at the moment of logging the meal to a specific day — never at creation or edit time.
+    * Historical `daily_logs` entries created from a template are NEVER retroactively modified when the template is edited.
 
-* **`updateSavedMeal` Store Action:**
-    * Accepts `savedMealId` and an object `{ meal_name, meal }`.
-    * Performs optimistic update with rollback on Supabase failure.
-    * Recalculates `signature` from the updated meal data.
-    * Updates only `saved_meals` table (`name`, `ingredients`, `updated_at`). Does NOT touch `daily_logs`.
+* **Store Actions:**
+    * `createFavoriteTemplate(name, mealText)`: Saves a text-only template. No Gemini call. Optimistic update with rollback.
+    * `updateFavoriteTemplate(id, newName, newMealText)`: Updates template text. No Gemini call. Optimistic update with rollback.
+    * `saveMealAsFavorite(meal)`: Legacy — saves a fully-evaluated meal as a favorite (preserves backward compatibility for saving from timeline).
 
 * **`EditFavoriteModal` Component:**
     * Located at `src/features/meal-logging/EditFavoriteModal.tsx`.
-    * Allows renaming, editing ingredient list (add/remove/modify quantities), and shows real-time macro recalculation.
-    * Follows Glassmorphism aesthetic, RTL logical properties (`ms-2`), minimum 13px font labels, and Immutable Shell constraints (no `h-screen`).
+    * Allows renaming and editing the raw `mealText` prompt via a simple textarea.
+    * Follows Glassmorphism aesthetic, RTL logical properties, minimum 13px font labels, and Immutable Shell constraints.
     * Accessed via pencil icon in the MealLogModal's "Saved" tab.
 
-* **Rule:** Any future feature that modifies Favorites must respect the template/log boundary. Never write to `daily_logs` when updating a Favorite template, and never write to `saved_meals` when editing a historical log.
+* **UI Entry Points:**
+    * "צור ארוחה מועדפת חדשה" button in the Favorites tab opens an inline form for name + text.
+    * Pencil icon on each favorite opens `EditFavoriteModal`.
+
+* **Rule:** Any future feature that modifies Favorites must respect the template/log boundary. AI evaluation happens ONLY at execution (logging) time. Never write to `daily_logs` when updating a Favorite template, and never write to `saved_meals` when editing a historical log.
 
 ## 15. Smart Autocomplete Architecture (Updated March 2026)
 * **Food Database:** The project contains a local static database of 1000 common Israeli food items (src/utils/food-suggestions.ts) to enable rapid offline-first autocompletion without network roundtrips.

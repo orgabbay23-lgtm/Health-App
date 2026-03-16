@@ -62,6 +62,8 @@ export interface SavedMeal {
   savedAt: string;
   signature: string;
   meal: MealItem;
+  /** Raw text template for Dynamic AI Templates — the prompt sent to Gemini at log time */
+  mealText?: string;
 }
 
 export interface DailyAggregations {
@@ -281,6 +283,8 @@ interface AppState {
   saveMealAsFavorite: (meal: MealItem) => Promise<boolean>;
   removeSavedMeal: (savedMealId: string) => Promise<void>;
   updateSavedMeal: (savedMealId: string, updates: { meal_name: string; meal: MealItem }) => Promise<boolean>;
+  createFavoriteTemplate: (name: string, mealText: string) => Promise<boolean>;
+  updateFavoriteTemplate: (id: string, newName: string, newMealText: string) => Promise<boolean>;
   addSavedMealToDay: (dayKey: string, savedMealId: string) => Promise<NutritionSafetyAlert[]>;
 }
 
@@ -385,12 +389,16 @@ export const useAppStore = create<AppState>()(
           // FIX: Merge optimistic saved meals with server data instead of wholesale overwrite
           let savedMeals = [...get().savedMeals];
           if (mealsRes.data) {
-            const serverMeals = mealsRes.data.map(sm => ({
-              id: sm.id,
-              savedAt: sm.created_at,
-              signature: createMealSignature(sm.ingredients?.[0] || {}),
-              meal: normalizeMealItem(sm.ingredients?.[0] || {}),
-            }));
+            const serverMeals = mealsRes.data.map(sm => {
+              const raw = sm.ingredients?.[0] || {};
+              return {
+                id: sm.id,
+                savedAt: sm.created_at,
+                signature: createMealSignature(raw),
+                meal: normalizeMealItem(raw),
+                mealText: raw.mealText as string | undefined,
+              };
+            });
             const serverIds = new Set(serverMeals.map(sm => sm.id));
             // Keep local optimistic entries not yet on server, prepend them
             const localOnly = savedMeals.filter(sm => !serverIds.has(sm.id));
@@ -623,6 +631,88 @@ export const useAppStore = create<AppState>()(
     }
 
     toast.success("הארוחה עודכנה בהצלחה");
+    return true;
+  },
+
+  createFavoriteTemplate: async (name, mealText) => {
+    const { savedMeals, userId } = get();
+    if (!userId) return false;
+
+    const placeholderMeal = normalizeMealItem({
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      meal_name: name,
+      calories: 0,
+      macronutrients: { protein: 0, carbs: 0, fat: 0 },
+      micronutrients: { ...EMPTY_MICRONUTRIENTS },
+      sourceType: "food",
+    });
+
+    const newSavedMeal: SavedMeal = {
+      id: crypto.randomUUID(),
+      savedAt: new Date().toISOString(),
+      signature: createMealSignature(placeholderMeal),
+      meal: placeholderMeal,
+      mealText,
+    };
+
+    const previousSavedMeals = savedMeals;
+    set({ savedMeals: [newSavedMeal, ...savedMeals] });
+
+    const { error } = await supabase.from('saved_meals').insert({
+      id: newSavedMeal.id,
+      user_id: userId,
+      name,
+      ingredients: [{ ...placeholderMeal, mealText }],
+      created_at: newSavedMeal.savedAt,
+      updated_at: newSavedMeal.savedAt,
+    });
+
+    if (error) {
+      console.error("Error saving favorite template", error);
+      set({ savedMeals: previousSavedMeals });
+      toast.error("שגיאה בשמירת התבנית. השינוי בוטל.");
+      return false;
+    }
+
+    toast.success("תבנית מועדפת נשמרה בהצלחה");
+    return true;
+  },
+
+  updateFavoriteTemplate: async (id, newName, newMealText) => {
+    const { savedMeals, userId } = get();
+    if (!userId) return false;
+
+    const index = savedMeals.findIndex(sm => sm.id === id);
+    if (index === -1) return false;
+
+    const previousSavedMeals = savedMeals;
+    const existing = savedMeals[index];
+
+    const updatedMeal: SavedMeal = {
+      ...existing,
+      meal: { ...existing.meal, meal_name: newName },
+      mealText: newMealText,
+    };
+
+    const nextSavedMeals = [...savedMeals];
+    nextSavedMeals[index] = updatedMeal;
+    set({ savedMeals: nextSavedMeals });
+
+    const { error } = await supabase.from('saved_meals').update({
+      name: newName,
+      ingredients: [{ ...updatedMeal.meal, mealText: newMealText }],
+      updated_at: new Date().toISOString(),
+    }).eq('id', id).eq('user_id', userId);
+
+    if (error) {
+      console.error("Error updating favorite template", error);
+      set({ savedMeals: previousSavedMeals });
+      toast.error("שגיאה בעדכון התבנית. השינוי בוטל.");
+      return false;
+    }
+
+    toast.success("התבנית עודכנה בהצלחה");
     return true;
   },
 

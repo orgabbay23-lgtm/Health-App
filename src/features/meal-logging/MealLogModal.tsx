@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useFieldArray, useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Trash2, Plus, Heart, WandSparkles, Pencil } from "lucide-react";
+import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle } from "lucide-react";
 import { cn } from "../../utils/utils";
 import { toast } from "sonner";
 import { useActiveSavedMeals, useAppStore } from "../../store";
@@ -61,11 +61,15 @@ export function MealLogModal({
   const [isByokOpen, setIsByokOpen] = useState(false);
   const [pendingDescription, setPendingDescription] = useState<string | null>(null);
   const [editingMeal, setEditingMeal] = useState<SavedMeal | null>(null);
-  
+  const [showCreateFavorite, setShowCreateFavorite] = useState(false);
+  const [newFavName, setNewFavName] = useState("");
+  const [newFavText, setNewFavText] = useState("");
+  const [isCreatingFav, setIsCreatingFav] = useState(false);
+
   const addMealLog = useAppStore((state) => state.addMealLog);
   const savedMeals = useActiveSavedMeals();
-  const addSavedMealToDay = useAppStore((state) => state.addSavedMealToDay);
   const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
+  const createFavoriteTemplate = useAppStore((state) => state.createFavoriteTemplate);
 
   const aiFormMethods = useForm<AiFormValues>({
     resolver: zodResolver(aiSchema),
@@ -170,18 +174,34 @@ export function MealLogModal({
     processMealSubmission(description);
   };
 
-  const onAddSavedMeal = async (savedMealId: string) => {
-    const alerts = await addSavedMealToDay(targetDayKey, savedMealId);
+  // NEW: Execute favorite template through AI flow
+  const onExecuteFavoriteTemplate = (saved: SavedMeal) => {
+    const textToAnalyze = saved.mealText || saved.meal.meal_name;
+    processMealSubmission(textToAnalyze);
+  };
 
-    toast.success("הארוחה מהמועדפים נוספה ליום הנבחר");
-    alerts.forEach((alert) => {
-      toast.warning(alert.title, {
-        id: `${targetDayKey}-${alert.id}`,
-        description: alert.message,
-        duration: 7000,
-      });
-    });
-    onClose();
+  // NEW: Create favorite template handler
+  const handleCreateFavorite = async () => {
+    const trimmedName = newFavName.trim();
+    const trimmedText = newFavText.trim();
+    if (!trimmedName) {
+      toast.error("יש להזין שם לתבנית");
+      return;
+    }
+    if (!trimmedText) {
+      toast.error("יש להזין תיאור ארוחה");
+      return;
+    }
+
+    setIsCreatingFav(true);
+    const success = await createFavoriteTemplate(trimmedName, trimmedText);
+    setIsCreatingFav(false);
+
+    if (success) {
+      setNewFavName("");
+      setNewFavText("");
+      setShowCreateFavorite(false);
+    }
   };
 
   return (
@@ -206,11 +226,11 @@ export function MealLogModal({
           <AnimatePresence mode="wait">
             <TabsContent value="ai" className="mt-8">
               <FormProvider {...aiFormMethods}>
-                <motion.form 
+                <motion.form
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  onSubmit={handleAiSubmit(onAiSubmit)} 
+                  onSubmit={handleAiSubmit(onAiSubmit)}
                   className="space-y-6"
                 >
                   <div className={cn("space-y-3 transition-all duration-500", isSubmitting ? "opacity-50 blur-sm" : "")}>
@@ -230,16 +250,16 @@ export function MealLogModal({
                       </p>
                     )}
                   </div>
-                  
-                  <Button 
-                    type="submit" 
+
+                  <Button
+                    type="submit"
                     size="lg"
-                    className="w-full h-16 rounded-2xl text-lg" 
+                    className="w-full h-16 rounded-2xl text-lg"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
                       <span className="flex items-center gap-3">
-                        <motion.div 
+                        <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                           className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
@@ -265,7 +285,7 @@ export function MealLogModal({
                 >
                   <div className="space-y-4">
                     {fields.map((field, index) => (
-                      <motion.div 
+                      <motion.div
                         key={field.id}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -332,69 +352,165 @@ export function MealLogModal({
             </TabsContent>
 
             <TabsContent value="saved" className="mt-8">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="space-y-3 max-h-[450px] overflow-y-auto pr-1"
+                className="space-y-3"
               >
-                {savedMeals.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
-                      <Heart className="text-slate-200" size={32} />
-                    </div>
-                    <p className="text-sm font-bold text-slate-400">אין ארוחות שמורות עדיין</p>
-                  </div>
-                ) : (
-                  savedMeals.map((saved, index) => (
+                {/* Create New Favorite Template Button / Form */}
+                <AnimatePresence mode="wait">
+                  {showCreateFavorite ? (
                     <motion.div
-                      key={saved.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.04 }}
-                      className="group flex items-center justify-between p-4 rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-slate-200 transition-all cursor-pointer"
-                      onClick={() => onAddSavedMeal(saved.id)}
+                      key="create-form"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                      className="p-5 rounded-3xl bg-gradient-to-br from-violet-50/80 to-blue-50/50 border border-violet-200/50 space-y-4"
                     >
-                      <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Heart size={20} fill="currentColor" />
-                        </div>
-                        <div>
-                          <p className="font-black text-slate-950">
-                            {saved.meal.meal_name}
-                          </p>
-                          <p className="text-[13px] font-bold text-slate-500">
-                            {saved.meal.calories} קלוריות · {saved.meal.macronutrients.protein}ג' חלבון
-                          </p>
-                        </div>
+                      <p className="text-[13px] font-black text-violet-500 uppercase tracking-widest">תבנית מועדפת חדשה</p>
+                      <div className="space-y-2">
+                        <Label className="text-[13px] font-bold text-slate-500">שם התבנית</Label>
+                        <Input
+                          value={newFavName}
+                          onChange={(e) => setNewFavName(e.target.value)}
+                          placeholder="למשל: ארוחת בוקר רגילה"
+                          className="h-12 rounded-2xl border-slate-200 bg-white/80 focus:bg-white transition-all text-[15px] font-medium px-5"
+                        />
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="space-y-2">
+                        <Label className="text-[13px] font-bold text-slate-500">תיאור הארוחה (טקסט חופשי)</Label>
+                        <textarea
+                          value={newFavText}
+                          onChange={(e) => setNewFavText(e.target.value)}
+                          placeholder="למשל: 2 פרוסות לחם מלא, 2 ביצים קשות, חצי אבוקדו, עגבנייה"
+                          className="w-full h-24 rounded-2xl border border-slate-200 bg-white/80 focus:bg-white transition-all text-[15px] font-medium px-5 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300/50"
+                          dir="rtl"
+                        />
+                      </div>
+                      <div className="flex gap-2">
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-slate-200 hover:text-blue-500 hover:bg-blue-50 rounded-xl"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingMeal(saved);
-                          }}
+                          type="button"
+                          size="sm"
+                          className="flex-1 h-11 rounded-xl"
+                          disabled={isCreatingFav}
+                          onClick={handleCreateFavorite}
                         >
-                          <Pencil size={16} />
+                          {isCreatingFav ? "שומר..." : "שמור תבנית"}
                         </Button>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeSavedMeal(saved.id);
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-11 rounded-xl"
+                          onClick={() => {
+                            setShowCreateFavorite(false);
+                            setNewFavName("");
+                            setNewFavText("");
                           }}
                         >
-                          <Trash2 size={18} />
+                          ביטול
                         </Button>
                       </div>
                     </motion.div>
-                  ))
-                )}
+                  ) : (
+                    <motion.div key="create-btn">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full h-12 rounded-xl border-dashed border-2 border-violet-200 text-violet-400 hover:text-violet-600 hover:bg-violet-50/50 gap-2"
+                        onClick={() => setShowCreateFavorite(true)}
+                      >
+                        <PlusCircle size={18} />
+                        צור ארוחה מועדפת חדשה
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Favorites List */}
+                <div className="max-h-[350px] overflow-y-auto pe-1 space-y-3">
+                  {savedMeals.length === 0 && !showCreateFavorite ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                      <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
+                        <Heart className="text-slate-200" size={32} />
+                      </div>
+                      <p className="text-sm font-bold text-slate-400">אין ארוחות שמורות עדיין</p>
+                    </div>
+                  ) : (
+                    savedMeals.map((saved, index) => (
+                      <motion.div
+                        key={saved.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.04 }}
+                        className={cn(
+                          "group flex items-center justify-between p-4 rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-slate-200 transition-all cursor-pointer",
+                          isSubmitting && "opacity-50 pointer-events-none"
+                        )}
+                        onClick={() => onExecuteFavoriteTemplate(saved)}
+                      >
+                        <div className="flex gap-4 min-w-0 flex-1">
+                          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                            <Heart size={20} fill="currentColor" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-black text-slate-950 truncate">
+                              {saved.meal.meal_name}
+                            </p>
+                            <p className="text-[13px] font-bold text-slate-400 truncate">
+                              {saved.mealText || `${saved.meal.calories} קלוריות · ${saved.meal.macronutrients.protein}ג' חלבון`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-slate-200 hover:text-blue-500 hover:bg-blue-50 rounded-xl"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingMeal(saved);
+                            }}
+                          >
+                            <Pencil size={16} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeSavedMeal(saved.id);
+                            }}
+                          >
+                            <Trash2 size={18} />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+
+                {/* Loading shimmer when executing a favorite template */}
+                <AnimatePresence>
+                  {isSubmitting && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="p-6 rounded-3xl bg-gradient-to-br from-blue-50/80 to-violet-50/50 border border-blue-200/40 flex flex-col items-center gap-3"
+                    >
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-8 h-8 border-3 border-blue-200 border-t-blue-500 rounded-full"
+                      />
+                      <p className="text-[14px] font-bold text-blue-600">מחשב ערכים תזונתיים עם AI...</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             </TabsContent>
           </AnimatePresence>

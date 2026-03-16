@@ -194,7 +194,9 @@ export function FoodTypeahead({
               style={{
                 top: coords.top,
                 left: coords.left,
-                width: coords.width,
+                width: Math.max(coords.width, 280),
+                minWidth: coords.width,
+                maxWidth: "calc(100vw - 2rem)",
                 WebkitOverflowScrolling: "touch"
               }}
               onMouseDown={(e) => {
@@ -212,7 +214,7 @@ export function FoodTypeahead({
                   onClick={() => selectSuggestion(suggestion)}
                   onMouseEnter={() => setActiveIndex(idx)}
                 >
-                  <span className="truncate">{suggestion}</span>
+                  <span className="whitespace-normal break-words">{suggestion}</span>
                 </li>
               ))}
             </motion.ul>
