@@ -128,6 +128,70 @@ Use USDA/clinical-grade reference data. If a micronutrient is truly absent from 
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
+const VISION_PROMPT = `Analyze this image of food. Identify all distinct food items and estimate their quantities in grams, tablespoons, or logical units (e.g., slices). Output ONLY a single, simple, comma-separated string in Hebrew. Do NOT include any formatting, markdown, newlines, conversational text, or prefixes. Example outputs: 'חביתה משתי ביצים, לחם מלא שתי פרוסות, קוטג' 50 גרם, מלפפון אחד' or 'אורז לבן 60 גרם, חזה עוף 210 גרם, טחינה כף'.`;
+
+export function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip the data URL prefix (e.g., "data:image/jpeg;base64,")
+      const base64 = result.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function analyzeMealImage(
+  base64Image: string,
+  mimeType: string,
+): Promise<string> {
+  const finalKey = await getApiKey();
+
+  const performRequest = async (modelName: string) => {
+    const genAI = new GoogleGenerativeAI(finalKey);
+    const model = genAI.getGenerativeModel({ model: modelName });
+    const result = await model.generateContent([
+      { inlineData: { data: base64Image, mimeType } },
+      VISION_PROMPT,
+    ]);
+    const text = result.response.text().trim();
+    if (!text) throw new Error("Empty response");
+    return text;
+  };
+
+  try {
+    return await performRequest(PRIMARY_MODEL);
+  } catch (apiError: any) {
+    const isAuthError =
+      apiError?.status === 401 ||
+      apiError?.status === 403 ||
+      apiError?.message?.includes("401") ||
+      apiError?.message?.includes("403") ||
+      apiError?.message?.toLowerCase?.()?.includes("unauthorized") ||
+      apiError?.message?.toLowerCase?.()?.includes("invalid api key");
+
+    if (isAuthError) throw new Error("API_KEY_INVALID");
+
+    const isQuotaError =
+      apiError?.status === 429 ||
+      apiError?.message?.includes("429") ||
+      apiError?.message?.toLowerCase?.()?.includes("quota");
+
+    if (isQuotaError) {
+      try {
+        return await performRequest(FALLBACK_MODEL);
+      } catch {
+        throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
+      }
+    }
+
+    throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
+  }
+}
+
 export function clearCachedApiKey() {
   // No-op: Cache killed to guarantee fresh key on every request
 }

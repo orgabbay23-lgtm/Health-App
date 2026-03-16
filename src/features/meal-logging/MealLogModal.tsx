@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useFieldArray, useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle } from "lucide-react";
+import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera } from "lucide-react";
 import { cn } from "../../utils/utils";
 import { toast } from "sonner";
 import { useActiveSavedMeals, useAppStore } from "../../store";
 import { getLogicalDayKey } from "../../utils/nutrition-utils";
-import { parseMealDescription } from "../../utils/gemini";
+import { parseMealDescription, analyzeMealImage, fileToBase64 } from "../../utils/gemini";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -65,6 +65,11 @@ export function MealLogModal({
   const [newFavName, setNewFavName] = useState("");
   const [newFavText, setNewFavText] = useState("");
   const [isCreatingFav, setIsCreatingFav] = useState(false);
+
+  // Vision-to-Text states
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [imageReviewText, setImageReviewText] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addMealLog = useAppStore((state) => state.addMealLog);
   const savedMeals = useActiveSavedMeals();
@@ -204,6 +209,41 @@ export function MealLogModal({
     }
   };
 
+  // Vision-to-Text: handle file selection
+  const handleImageCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+
+    setIsAnalyzingImage(true);
+    try {
+      const base64 = await fileToBase64(file);
+      const detectedText = await analyzeMealImage(base64, file.type);
+      setImageReviewText(detectedText);
+    } catch (error: any) {
+      if (error.message === "API_KEY_INVALID" || error.message === "MISSING_API_KEY") {
+        setPendingDescription(null);
+        setIsByokOpen(true);
+      } else {
+        toast.error(error.message || "שגיאה בזיהוי התמונה");
+      }
+    } finally {
+      setIsAnalyzingImage(false);
+    }
+  };
+
+  const handleImageReviewConfirm = () => {
+    if (!imageReviewText?.trim()) return;
+    const text = imageReviewText.trim();
+    setImageReviewText(null);
+    processMealSubmission(text);
+  };
+
+  const handleImageReviewCancel = () => {
+    setImageReviewText(null);
+  };
+
   return (
     <>
       <ModalShell isOpen={isOpen} onClose={onClose} title="הוספת ארוחה">
@@ -225,53 +265,149 @@ export function MealLogModal({
 
           <AnimatePresence mode="wait">
             <TabsContent value="ai" className="mt-8">
-              <FormProvider {...aiFormMethods}>
-                <motion.form
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  onSubmit={handleAiSubmit(onAiSubmit)}
-                  className="space-y-6"
-                >
-                  <div className={cn("space-y-3 transition-all duration-500", isSubmitting ? "opacity-50 blur-sm" : "")}>
-                    <Label htmlFor="description" className="text-[13px] font-black text-slate-500 uppercase tracking-widest px-1">ספר לי מה אכלת...</Label>
-                    <div className="relative group">
-                      <FoodTypeahead
-                        name="description"
-                        placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
-                        inputClassName="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-lg font-medium px-6"
-                        multiSelect={true}
-                      />
-                      <div className="absolute inset-0 rounded-2xl border border-slate-900/5 pointer-events-none group-focus-within:border-slate-950/20 transition-colors" />
-                    </div>
-                    {aiErrors.description && (
-                      <p className="text-[13px] font-bold text-rose-500 px-1">
-                        {aiErrors.description.message}
-                      </p>
-                    )}
-                  </div>
+              {/* Hidden file input for camera/gallery */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleImageCapture}
+              />
 
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="w-full h-16 rounded-2xl text-lg"
-                    disabled={isSubmitting}
+              <AnimatePresence mode="wait">
+                {/* Image Review Phase */}
+                {imageReviewText !== null ? (
+                  <motion.div
+                    key="image-review"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-5"
                   >
-                    {isSubmitting ? (
-                      <span className="flex items-center gap-3">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                        />
-                        מנתח...
-                      </span>
-                    ) : (
-                      "הוסף ארוחה"
-                    )}
-                  </Button>
-                </motion.form>
-              </FormProvider>
+                    <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border border-emerald-200/50 space-y-4">
+                      <p className="text-[13px] font-black text-emerald-600 uppercase tracking-widest">
+                        זה מה שזיהינו. אפשר לתקן כמויות:
+                      </p>
+                      <textarea
+                        value={imageReviewText}
+                        onChange={(e) => setImageReviewText(e.target.value)}
+                        className="w-full h-32 rounded-2xl border border-emerald-200/60 bg-white/90 backdrop-blur-sm text-[16px] font-medium px-5 py-4 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-300/50 transition-all"
+                        dir="rtl"
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        type="button"
+                        size="lg"
+                        className="flex-1 h-14 rounded-2xl text-[15px] bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-500/25"
+                        onClick={handleImageReviewConfirm}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center gap-3">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                            />
+                            מחשב...
+                          </span>
+                        ) : (
+                          "המשך לחישוב"
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        className="h-14 rounded-2xl text-[15px] px-6"
+                        onClick={handleImageReviewCancel}
+                        disabled={isSubmitting}
+                      >
+                        בטל
+                      </Button>
+                    </div>
+                  </motion.div>
+                ) : isAnalyzingImage ? (
+                  /* Image analyzing shimmer */
+                  <motion.div
+                    key="image-analyzing"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex flex-col items-center gap-4 py-12"
+                  >
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-10 h-10 border-3 border-emerald-200 border-t-emerald-500 rounded-full"
+                    />
+                    <p className="text-[14px] font-bold text-emerald-600">מזהה את המאכלים בתמונה...</p>
+                  </motion.div>
+                ) : (
+                  /* Normal AI form */
+                  <FormProvider {...aiFormMethods}>
+                    <motion.form
+                      key="ai-form"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      onSubmit={handleAiSubmit(onAiSubmit)}
+                      className="space-y-6"
+                    >
+                      <div className={cn("space-y-3 transition-all duration-500", isSubmitting ? "opacity-50 blur-sm" : "")}>
+                        <div className="flex items-center justify-between px-1">
+                          <Label htmlFor="description" className="text-[13px] font-black text-slate-500 uppercase tracking-widest">ספר לי מה אכלת...</Label>
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-10 h-10 rounded-full bg-white/70 backdrop-blur-md border border-slate-200/60 shadow-sm flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:border-emerald-300 hover:shadow-emerald-100 transition-all"
+                            title="צלם או בחר תמונה"
+                          >
+                            <Camera size={18} />
+                          </motion.button>
+                        </div>
+                        <div className="relative group">
+                          <FoodTypeahead
+                            name="description"
+                            placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
+                            inputClassName="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-lg font-medium px-6"
+                            multiSelect={true}
+                          />
+                          <div className="absolute inset-0 rounded-2xl border border-slate-900/5 pointer-events-none group-focus-within:border-slate-950/20 transition-colors" />
+                        </div>
+                        {aiErrors.description && (
+                          <p className="text-[13px] font-bold text-rose-500 px-1">
+                            {aiErrors.description.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <Button
+                        type="submit"
+                        size="lg"
+                        className="w-full h-16 rounded-2xl text-lg"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center gap-3">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                            />
+                            מנתח...
+                          </span>
+                        ) : (
+                          "הוסף ארוחה"
+                        )}
+                      </Button>
+                    </motion.form>
+                  </FormProvider>
+                )}
+              </AnimatePresence>
             </TabsContent>
 
             <TabsContent value="manual" className="mt-8">

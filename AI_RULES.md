@@ -287,3 +287,24 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
     * Both the insight and follow-up system prompts instruct Gemini to use emojis natively (💪, 🥑, 🔥, ✨) for a vibrant tone, while strictly forbidding markdown formatting (`**`, `*`, `#`, backticks). `InsightModal` applies a `stripMarkdown()` safety parser on both insight and follow-up answer text.
     * Fiber (סיבים תזונתיים) is a first-class tracked nutrient with its own RDA (38g M / 25g F), displayed in Tier 1, and included in the AI insight analysis.
     * The follow-up feature is strictly single-turn: one question per insight. Regenerating the insight clears the previous follow-up and re-enables the input.
+
+## 18. Multimodal Vision-to-Text Meal Logging (March 2026)
+
+* **Pipeline Overview:**
+    * Users can photograph meals via a camera button in the AI (Smart) tab of `MealLogModal`.
+    * Images are converted to Base64 via `fileToBase64()` in `gemini.ts` (using `FileReader.readAsDataURL`, stripping the data URL prefix).
+    * The Base64 image + MIME type are sent to `analyzeMealImage()` which calls Gemini's multimodal API (`gemini-3-flash-preview` with `gemini-2.5-flash` fallback on 429) with an `inlineData` part and a strict Hebrew-only prompt.
+    * Gemini returns a raw comma-separated Hebrew string describing identified foods with estimated quantities.
+    * The user reviews and edits this string in an intermediary `ImageReviewPhase` (editable textarea) within the modal.
+    * On confirmation ("המשך לחישוב"), the text is fed into the existing `parseMealDescription()` text-calculation pipeline — identical to manual text entry.
+
+* **Architecture:**
+    * `gemini.ts`: Exports `fileToBase64(file: File) => Promise<string>` and `analyzeMealImage(base64Image, mimeType) => Promise<string>`.
+    * `MealLogModal.tsx`: Hidden `<input type="file" accept="image/*" capture="environment" />` triggered by a circular Glassmorphism camera button. Three visual states: normal form, `isAnalyzingImage` shimmer, and `imageReviewText` edit phase.
+    * The vision prompt is intentionally separate from `SYSTEM_INSTRUCTION` — it produces raw Hebrew text, not structured JSON.
+
+* **Error Handling:**
+    * API key errors (`API_KEY_INVALID`, `MISSING_API_KEY`) trigger the BYOK modal, consistent with the text flow.
+    * 429 quota errors fall back to `gemini-2.5-flash` per the standard fallback mechanism.
+
+* **Rule:** The Vision pipeline MUST remain a two-step process: (1) image → raw text, (2) raw text → structured JSON via `parseMealDescription`. Never bypass the user review step or send images directly to the structured JSON endpoint.
