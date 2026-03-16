@@ -2,15 +2,53 @@
 import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
 import { z } from "zod";
 import { supabase } from "../lib/supabase";
+import { getDailyAiUsageCount, incrementDailyAiUsage } from "../lib/supabase";
 
-const PRIMARY_MODEL = "gemini-3.1-flash-lite-preview";
-const FALLBACK_MODEL = "gemini-2.5-flash";
+// ── Tiered Model Routing ────────────────────────────────────────────
+// PRIMARY: Fast, free tier — used for the first 20 meal requests/day
+const PRIMARY_MODEL = "gemini-3-flash-preview";
+// FALLBACK: Lite with High Thinking — used after 20 requests, on 429, and exclusively for Insights
+const FALLBACK_MODEL = "gemini-3.1-flash-lite-preview";
 
-// High Thinking configuration for all AI pipelines
+const DAILY_AI_LIMIT = 20;
+
+// High Thinking configuration — applied ONLY to FALLBACK_MODEL
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const THINKING_GENERATION_CONFIG: any = {
+const FALLBACK_THINKING_CONFIG: any = {
   thinkingConfig: { thinkingLevel: "high" },
 };
+
+// ── Error detection helpers ─────────────────────────────────────────
+function checkIsAuthError(err: any): boolean {
+  return (
+    err?.status === 401 ||
+    err?.status === 403 ||
+    err?.message?.includes("401") ||
+    err?.message?.includes("403") ||
+    err?.message?.toLowerCase?.()?.includes("unauthorized") ||
+    err?.message?.toLowerCase?.()?.includes("invalid api key") ||
+    err?.message?.toLowerCase?.()?.includes("api key not found")
+  );
+}
+
+function checkIsRateLimitError(err: any): boolean {
+  return (
+    err?.status === 429 ||
+    err?.message?.includes("429") ||
+    err?.message?.toLowerCase?.()?.includes("quota") ||
+    err?.message?.toLowerCase?.()?.includes("too many requests") ||
+    err?.message?.toLowerCase?.()?.includes("resource exhausted") ||
+    err?.message?.toLowerCase?.()?.includes("rate limit")
+  );
+}
+
+function checkIsInvalidKeyError(err: any): boolean {
+  return (
+    err?.status === 400 ||
+    err?.message?.includes("400") ||
+    err?.message?.includes("API_KEY_INVALID")
+  );
+}
 
 const mealResponseSchema: Schema = {
   type: SchemaType.OBJECT,
@@ -150,18 +188,20 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
+// ── Meal Image Analysis (with Tiered Routing) ───────────────────────
 export async function analyzeMealImage(
   base64Image: string,
   mimeType: string,
+  userId?: string,
 ): Promise<string> {
   const finalKey = await getApiKey();
 
-  const performRequest = async (modelName: string) => {
+  const performRequest = async (modelName: string, useThinking: boolean) => {
     const genAI = new GoogleGenerativeAI(finalKey);
     const model = genAI.getGenerativeModel({
       model: modelName,
       generationConfig: {
-        ...THINKING_GENERATION_CONFIG,
+        ...(useThinking ? FALLBACK_THINKING_CONFIG : {}),
       },
     });
     const result = await model.generateContent([
@@ -173,7 +213,6 @@ export async function analyzeMealImage(
     let text = "";
     if (candidates && candidates.length > 0) {
       const parts = candidates[0].content?.parts || [];
-      // Find the last text part (skip thought parts if present)
       for (const part of parts) {
         if ("text" in part && !(part as any).thought) {
           text = (part as any).text;
@@ -185,27 +224,35 @@ export async function analyzeMealImage(
     return text;
   };
 
+  // Fire-and-forget increment on success
+  const onSuccess = (result: string) => {
+    if (userId) incrementDailyAiUsage(userId);
+    return result;
+  };
+
+  // Determine routing tier
+  const usageCount = userId ? await getDailyAiUsageCount(userId) : 0;
+
+  if (usageCount >= DAILY_AI_LIMIT) {
+    // Over limit → skip PRIMARY, go straight to FALLBACK
+    try {
+      return onSuccess(await performRequest(FALLBACK_MODEL, true));
+    } catch (apiError: any) {
+      if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
+      throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
+    }
+  }
+
+  // Under limit → try PRIMARY first
   try {
-    return await performRequest(PRIMARY_MODEL);
+    return onSuccess(await performRequest(PRIMARY_MODEL, false));
   } catch (apiError: any) {
-    const isAuthError =
-      apiError?.status === 401 ||
-      apiError?.status === 403 ||
-      apiError?.message?.includes("401") ||
-      apiError?.message?.includes("403") ||
-      apiError?.message?.toLowerCase?.()?.includes("unauthorized") ||
-      apiError?.message?.toLowerCase?.()?.includes("invalid api key");
+    if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
 
-    if (isAuthError) throw new Error("API_KEY_INVALID");
-
-    const isQuotaError =
-      apiError?.status === 429 ||
-      apiError?.message?.includes("429") ||
-      apiError?.message?.toLowerCase?.()?.includes("quota");
-
-    if (isQuotaError) {
+    if (checkIsRateLimitError(apiError)) {
+      console.warn("[Gemini Router] PRIMARY_MODEL rate limited on analyzeMealImage, falling back");
       try {
-        return await performRequest(FALLBACK_MODEL);
+        return onSuccess(await performRequest(FALLBACK_MODEL, true));
       } catch {
         throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
       }
@@ -239,6 +286,8 @@ const getApiKey = async (): Promise<string> => {
 
   return finalKey;
 };
+
+// ── Insight Functions (Exclusive FALLBACK_MODEL — no routing, no counter) ──
 
 const INSIGHT_SYSTEM_INSTRUCTION = `You are a friendly, warm, and highly professional Israeli clinical nutritionist. Analyze the provided nutritional data (calories, macros, fiber, and all 24 micronutrients) for the given timeframe.
 
@@ -276,47 +325,21 @@ ${JSON.stringify(nutritionData)}
 
 נתח את הנתונים ותן המלצה קצרה ומותאמת אישית.`;
 
-  const performRequest = async (modelName: string) => {
+  try {
     const genAI = new GoogleGenerativeAI(finalKey);
     const model = genAI.getGenerativeModel({
-      model: modelName,
+      model: FALLBACK_MODEL,
       systemInstruction: INSIGHT_SYSTEM_INSTRUCTION,
       generationConfig: {
-        ...THINKING_GENERATION_CONFIG,
+        ...FALLBACK_THINKING_CONFIG,
       },
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
     if (!text) throw new Error("Empty response");
     return text;
-  };
-
-  try {
-    return await performRequest(PRIMARY_MODEL);
   } catch (apiError: any) {
-    const isAuthError =
-      apiError?.status === 401 ||
-      apiError?.status === 403 ||
-      apiError?.message?.includes("401") ||
-      apiError?.message?.includes("403") ||
-      apiError?.message?.toLowerCase?.()?.includes("unauthorized") ||
-      apiError?.message?.toLowerCase?.()?.includes("invalid api key");
-
-    if (isAuthError) throw new Error("API_KEY_INVALID");
-
-    const isQuotaError =
-      apiError?.status === 429 ||
-      apiError?.message?.includes("429") ||
-      apiError?.message?.toLowerCase?.()?.includes("quota");
-
-    if (isQuotaError) {
-      try {
-        return await performRequest(FALLBACK_MODEL);
-      } catch {
-        throw new Error("שגיאה ביצירת ההמלצה, אנא נסו שוב מאוחר יותר.");
-      }
-    }
-
+    if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
     throw new Error("שגיאה ביצירת ההמלצה, אנא נסו שוב מאוחר יותר.");
   }
 }
@@ -344,53 +367,29 @@ ${JSON.stringify(userProfile)}
 שאלת המשתמש:
 ${userQuestion}`;
 
-  const performRequest = async (modelName: string) => {
+  try {
     const genAI = new GoogleGenerativeAI(finalKey);
     const model = genAI.getGenerativeModel({
-      model: modelName,
+      model: FALLBACK_MODEL,
       systemInstruction: FOLLOWUP_SYSTEM_INSTRUCTION,
       generationConfig: {
-        ...THINKING_GENERATION_CONFIG,
+        ...FALLBACK_THINKING_CONFIG,
       },
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
     if (!text) throw new Error("Empty response");
     return text;
-  };
-
-  try {
-    return await performRequest(PRIMARY_MODEL);
   } catch (apiError: any) {
-    const isAuthError =
-      apiError?.status === 401 ||
-      apiError?.status === 403 ||
-      apiError?.message?.includes("401") ||
-      apiError?.message?.includes("403") ||
-      apiError?.message?.toLowerCase?.()?.includes("unauthorized") ||
-      apiError?.message?.toLowerCase?.()?.includes("invalid api key");
-
-    if (isAuthError) throw new Error("API_KEY_INVALID");
-
-    const isQuotaError =
-      apiError?.status === 429 ||
-      apiError?.message?.includes("429") ||
-      apiError?.message?.toLowerCase?.()?.includes("quota");
-
-    if (isQuotaError) {
-      try {
-        return await performRequest(FALLBACK_MODEL);
-      } catch {
-        throw new Error("שגיאה בתשובה לשאלה, אנא נסו שוב מאוחר יותר.");
-      }
-    }
-
+    if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
     throw new Error("שגיאה בתשובה לשאלה, אנא נסו שוב מאוחר יותר.");
   }
 }
 
+// ── Meal Text Parsing (with Tiered Routing) ─────────────────────────
 export async function parseMealDescription(
   description: string,
+  userId?: string,
 ): Promise<ParsedMealDescription> {
   try {
     const finalKey = await getApiKey();
@@ -399,8 +398,7 @@ export async function parseMealDescription(
       throw new Error("MISSING_API_KEY");
     }
 
-    const performRequest = async (modelName: string) => {
-      // FIX: Removed console.log that leaked API key content
+    const performRequest = async (modelName: string, useThinking: boolean) => {
       const genAI = new GoogleGenerativeAI(finalKey);
       const model = genAI.getGenerativeModel({
         model: modelName,
@@ -408,7 +406,7 @@ export async function parseMealDescription(
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: mealResponseSchema,
-          ...THINKING_GENERATION_CONFIG,
+          ...(useThinking ? FALLBACK_THINKING_CONFIG : {}),
         },
       });
       const result = await model.generateContent(description.trim());
@@ -421,40 +419,37 @@ export async function parseMealDescription(
       return mealResponseParser.parse(JSON.parse(responseText));
     };
 
+    // Fire-and-forget increment on success
+    const onSuccess = (result: ParsedMealDescription) => {
+      if (userId) incrementDailyAiUsage(userId);
+      return result;
+    };
+
+    // Determine routing tier
+    const usageCount = userId ? await getDailyAiUsageCount(userId) : 0;
+
+    if (usageCount >= DAILY_AI_LIMIT) {
+      // Over limit → skip PRIMARY, go straight to FALLBACK
+      try {
+        return onSuccess(await performRequest(FALLBACK_MODEL, true));
+      } catch (apiError: any) {
+        if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
+        if (checkIsInvalidKeyError(apiError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+        throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
+      }
+    }
+
+    // Under limit → try PRIMARY first
     try {
-      return await performRequest(PRIMARY_MODEL);
+      return onSuccess(await performRequest(PRIMARY_MODEL, false));
     } catch (apiError: any) {
-      const isAuthError =
-        apiError?.status === 401 ||
-        apiError?.status === 403 ||
-        apiError?.message?.includes("401") ||
-        apiError?.message?.includes("403") ||
-        apiError?.message?.toLowerCase().includes("unauthorized") ||
-        apiError?.message?.toLowerCase().includes("invalid api key") ||
-        apiError?.message?.toLowerCase().includes("api key not found");
+      if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
+      if (checkIsInvalidKeyError(apiError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
 
-      if (isAuthError) {
-        throw new Error("API_KEY_INVALID");
-      }
-
-      const isInvalidKeyError =
-        apiError?.status === 400 ||
-        apiError?.message?.includes("400") ||
-        apiError?.message?.includes("API_KEY_INVALID");
-
-      if (isInvalidKeyError) {
-        throw new Error("INVALID_KEY_FROM_GOOGLE");
-      }
-
-      const isQuotaError =
-        apiError?.status === 429 ||
-        apiError?.message?.includes("429") ||
-        apiError?.message?.toLowerCase().includes("quota") ||
-        apiError?.message?.toLowerCase().includes("too many requests");
-
-      if (isQuotaError) {
+      if (checkIsRateLimitError(apiError)) {
+        console.warn("[Gemini Router] PRIMARY_MODEL rate limited on parseMealDescription, falling back");
         try {
-          return await performRequest(FALLBACK_MODEL);
+          return onSuccess(await performRequest(FALLBACK_MODEL, true));
         } catch {
           throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
         }
