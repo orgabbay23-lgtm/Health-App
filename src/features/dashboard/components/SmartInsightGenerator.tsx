@@ -48,26 +48,27 @@ export function SmartInsightGenerator({
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const existingInsight = useAppStore((s) => s.aiInsights[insightKey]);
+  const existingRecord = useAppStore((s) => s.aiInsights[insightKey]);
   const saveInsight = useAppStore((s) => s.saveInsight);
 
   const timeframe: 'day' | 'week' | 'month' =
     periodMode === "daily" ? "day" : periodMode === "weekly" ? "week" : "month";
 
+  const profileData = {
+    name: userProfile.name,
+    age: userProfile.age,
+    gender: userProfile.gender,
+    weight: userProfile.weight,
+    height: userProfile.height,
+    activityLevel: userProfile.activityLevel,
+    goalDeficit: userProfile.goalDeficit,
+    isSmoker: userProfile.isSmoker,
+  };
+
   const generate = useCallback(async () => {
     setIsLoading(true);
     try {
       const nutritionData = buildNutritionPercentages(currentAggregations, periodTargets);
-      const profileData = {
-        name: userProfile.name,
-        age: userProfile.age,
-        gender: userProfile.gender,
-        weight: userProfile.weight,
-        height: userProfile.height,
-        activityLevel: userProfile.activityLevel,
-        goalDeficit: userProfile.goalDeficit,
-        isSmoker: userProfile.isSmoker,
-      };
 
       const text = await generateNutritionalInsight(timeframe, nutritionData, profileData);
       saveInsight(insightKey, text);
@@ -84,7 +85,7 @@ export function SmartInsightGenerator({
   }, [currentAggregations, periodTargets, userProfile, timeframe, insightKey, saveInsight]);
 
   const handlePrimaryClick = () => {
-    if (existingInsight) {
+    if (existingRecord) {
       setIsModalOpen(true);
     } else {
       generate();
@@ -104,14 +105,13 @@ export function SmartInsightGenerator({
         >
           {isLoading ? (
             <>
-              {/* Shimmer overlay */}
               <div className="absolute inset-0 rounded-2xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-l from-transparent via-violet-100/60 to-transparent animate-[shimmer_1.5s_ease-in-out_infinite]" />
               </div>
               <RefreshCw size={16} className="animate-spin" />
               <span>מייצר המלצה...</span>
             </>
-          ) : existingInsight ? (
+          ) : existingRecord ? (
             <>
               <Sparkles size={16} />
               <span>הצג המלצה אחרונה</span>
@@ -124,7 +124,7 @@ export function SmartInsightGenerator({
           )}
         </motion.button>
 
-        {existingInsight && !isLoading ? (
+        {existingRecord && !isLoading ? (
           <motion.button
             type="button"
             whileHover={{ scale: 1.1, rotate: 15 }}
@@ -141,7 +141,8 @@ export function SmartInsightGenerator({
       <InsightModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        content={existingInsight ?? ""}
+        insightKey={insightKey}
+        userProfile={profileData}
       />
     </>
   );

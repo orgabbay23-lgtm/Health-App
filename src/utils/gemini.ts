@@ -165,6 +165,7 @@ Rules for your response:
   1. A short, encouraging opening sentence (max 1 sentence).
   2. נקודות לשימור - What went well (2-3 short bullets, max 1-2 sentences each).
   3. נקודות לשיפור - What is missing/over the limit, and suggest 2-3 specific, common Israeli foods to fix it (2-3 short bullets, max 1-2 sentences each).
+- Use relevant and fun emojis natively within the text (e.g., 💪, 🥑, 🔥, ✨, 🥗, 💧, 🌟) to make the tone vibrant and engaging.
 - Keep it extremely concise, punchy, and actionable. No long explanations.`;
 
 export async function generateNutritionalInsight(
@@ -223,6 +224,71 @@ ${JSON.stringify(nutritionData)}
     }
 
     throw new Error("שגיאה ביצירת ההמלצה, אנא נסו שוב מאוחר יותר.");
+  }
+}
+
+const FOLLOWUP_SYSTEM_INSTRUCTION = `You are the same friendly Israeli clinical nutritionist. The user is asking a follow-up question regarding your previous recommendation.
+Rules:
+- Language: Hebrew.
+- Answer directly, concisely (max 2-3 sentences), in a warm and friendly tone.
+- Use relevant emojis to keep the tone vibrant.
+- DO NOT use markdown asterisks (**) for bolding. Use standard plain text only.`;
+
+export async function answerInsightFollowUp(
+  originalInsight: string,
+  userQuestion: string,
+  userProfile: Record<string, unknown>,
+): Promise<string> {
+  const finalKey = await getApiKey();
+
+  const userPrompt = `ההמלצה הקודמת שלך:
+${originalInsight}
+
+פרופיל המשתמש:
+${JSON.stringify(userProfile)}
+
+שאלת המשתמש:
+${userQuestion}`;
+
+  const performRequest = async (modelName: string) => {
+    const genAI = new GoogleGenerativeAI(finalKey);
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      systemInstruction: FOLLOWUP_SYSTEM_INSTRUCTION,
+    });
+    const result = await model.generateContent(userPrompt);
+    const text = result.response.text().trim();
+    if (!text) throw new Error("Empty response");
+    return text;
+  };
+
+  try {
+    return await performRequest(PRIMARY_MODEL);
+  } catch (apiError: any) {
+    const isAuthError =
+      apiError?.status === 401 ||
+      apiError?.status === 403 ||
+      apiError?.message?.includes("401") ||
+      apiError?.message?.includes("403") ||
+      apiError?.message?.toLowerCase?.()?.includes("unauthorized") ||
+      apiError?.message?.toLowerCase?.()?.includes("invalid api key");
+
+    if (isAuthError) throw new Error("API_KEY_INVALID");
+
+    const isQuotaError =
+      apiError?.status === 429 ||
+      apiError?.message?.includes("429") ||
+      apiError?.message?.toLowerCase?.()?.includes("quota");
+
+    if (isQuotaError) {
+      try {
+        return await performRequest(FALLBACK_MODEL);
+      } catch {
+        throw new Error("שגיאה בתשובה לשאלה, אנא נסו שוב מאוחר יותר.");
+      }
+    }
+
+    throw new Error("שגיאה בתשובה לשאלה, אנא נסו שוב מאוחר יותר.");
   }
 }
 

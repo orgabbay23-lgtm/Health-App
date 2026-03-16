@@ -260,7 +260,7 @@ interface AppState {
   profile: UserProfile | null;
   dailyLogs: Record<string, DailyLog>;
   savedMeals: SavedMeal[];
-  aiInsights: Record<string, string>;
+  aiInsights: Record<string, { insight: string; followUpQuestion?: string; followUpAnswer?: string }>;
   isLoadingData: boolean;
   isAppReady: boolean;
   _hasHydrated: boolean;
@@ -268,6 +268,7 @@ interface AppState {
   _lastFetchTime: number;
 
   saveInsight: (key: string, text: string) => void;
+  saveInsightFollowUp: (key: string, question: string, answer: string) => void;
   clearInsight: (key: string) => void;
   fetchUserData: (userId: string, isSilent?: boolean) => Promise<void>;
   setAppReady: (ready: boolean) => void;
@@ -298,7 +299,22 @@ export const useAppStore = create<AppState>()(
       _lastFetchTime: 0,
 
       saveInsight: (key, text) => {
-        set((state) => ({ aiInsights: { ...state.aiInsights, [key]: text } }));
+        set((state) => ({
+          aiInsights: { ...state.aiInsights, [key]: { insight: text } },
+        }));
+      },
+
+      saveInsightFollowUp: (key, question, answer) => {
+        set((state) => {
+          const existing = state.aiInsights[key];
+          if (!existing) return state;
+          return {
+            aiInsights: {
+              ...state.aiInsights,
+              [key]: { ...existing, followUpQuestion: question, followUpAnswer: answer },
+            },
+          };
+        });
       },
 
       clearInsight: (key) => {

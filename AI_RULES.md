@@ -237,6 +237,8 @@ The following 14 micronutrient RDA values are strictly enforced based on clinica
 * **Multi-Select (Smart Tab):** In the 'Smart' meal logging tab, the typeahead supports comma-separated entries. It detects the current segment (after the last comma) to provide suggestions without overwriting previous text.
 * **Mobile Optimization:** Uses onPointerDown to ensure selection precedes input blur on touch devices. Implements overscroll-contain and -webkit-overflow-scrolling: touch for smooth, isolated scrolling within the suggestion list.
 * **Search Heuristics:** Prioritizes 'Starts-with' matches over 'Contains' matches and user history over the static database.
+* **Data Integrity & Realism:** Food database items must always include specific fat percentages, preparation methods, and sugar content identifiers. 
+* **Grammar & Brand Logic:** All Hebrew items MUST maintain perfect gender matching (e.g., עגבניה טריה). Brands must only be used where they realistically offer unique nutritional profiles (no "Alpro Cottage"). Avoid programmatic Cartesian products; curate items for clinical realism.
 
 ## 17. Contextual AI Insights (Smart Insight Generator — March 2026)
 
@@ -246,13 +248,18 @@ The following 14 micronutrient RDA values are strictly enforced based on clinica
     * The system prompt enforces: Hebrew language, warm/professional tone, bullet-point format, "נקודות לשימור" (strengths) + "נקודות לשיפור" (improvements with 2-3 specific Israeli food suggestions).
 
 * **State Management (Zustand):**
-    * `aiInsights: Record<string, string>` stores generated insight text, keyed by period identifier (e.g., `insight_day_2026-03-16`, `insight_week_2026-03-10`, `insight_month_2026-03`).
-    * Actions: `saveInsight(key, text)` overwrites any existing entry for that key. `clearInsight(key)` removes it.
+    * `aiInsights: Record<string, { insight: string; followUpQuestion?: string; followUpAnswer?: string }>` stores structured insight data per period.
+    * Keys are period identifiers (e.g., `insight_day_2026-03-16`, `insight_week_2026-03-10`, `insight_month_2026-03`).
+    * Actions: `saveInsight(key, text)` creates/overwrites with a fresh `{ insight }` object (clears any previous follow-up). `saveInsightFollowUp(key, question, answer)` appends follow-up Q&A to an existing record. `clearInsight(key)` removes the entire entry.
     * Persisted via the existing Zustand `persist` middleware alongside other user data.
 
 * **UI Components:**
     * `SmartInsightGenerator.tsx`: Renders contextual button — "המלצה אישית עם AI ✨" (no existing insight) or "הצג המלצה אחרונה" + refresh icon (existing insight). Shimmer loading state during generation.
-    * `InsightModal.tsx`: Portal-based Glassmorphism modal (z-[100]) displaying the insight text. Uses framer-motion spring entry, RTL layout, mesh gradient background.
+    * `InsightModal.tsx`: Portal-based Glassmorphism modal (z-[100]) with two sections:
+        1. Main insight display with `stripMarkdown()` safety.
+        2. Single-turn follow-up Q&A: input field ("יש לך שאלה על ההמלצה?") + Send button when no follow-up exists; user-question bubble (violet) + AI-answer bubble (white glass) when answered. Loading state (Loader2 spinner) during fetch.
+    * Follow-up is powered by `answerInsightFollowUp()` in `gemini.ts` — a separate Gemini call with its own concise system prompt.
+    * Regenerating the insight (refresh button) resets the follow-up Q&A, allowing a fresh question.
 
 * **Integration:**
     * Placed in `HomeScreen.tsx` between the micronutrient accordion and the meals/period-breakdown card, visible across all period modes (daily/weekly/monthly).
@@ -262,5 +269,6 @@ The following 14 micronutrient RDA values are strictly enforced based on clinica
     * Insight keys must be deterministic per viewed period so re-generating overwrites the previous insight for that exact period.
     * The modal must use React Portal to `document.body` with `z-[100]` per the Absolute Overlays standard.
     * The Insight system prompt MUST receive the full user profile including `goalDeficit`. If `goalDeficit > 0`, Gemini must treat the user as targeting weight loss and never congratulate exceeding calorie targets.
-    * The system prompt strictly forbids markdown formatting (`**`, `*`, `#`, backticks). `InsightModal` applies a `stripMarkdown()` safety parser before rendering as a fallback against any residual markdown leakage.
+    * Both the insight and follow-up system prompts instruct Gemini to use emojis natively (💪, 🥑, 🔥, ✨) for a vibrant tone, while strictly forbidding markdown formatting (`**`, `*`, `#`, backticks). `InsightModal` applies a `stripMarkdown()` safety parser on both insight and follow-up answer text.
     * Fiber (סיבים תזונתיים) is a first-class tracked nutrient with its own RDA (38g M / 25g F), displayed in Tier 1, and included in the AI insight analysis.
+    * The follow-up feature is strictly single-turn: one question per insight. Regenerating the insight clears the previous follow-up and re-enables the input.
