@@ -10,6 +10,16 @@ interface InsightModalProps {
   content: string;
 }
 
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*\*/g, "")  // bold+italic ***
+    .replace(/\*\*/g, "")    // bold **
+    .replace(/\*/g, "")      // italic *
+    .replace(/^#{1,6}\s+/gm, "")  // headings
+    .replace(/`{1,3}/g, "")  // code
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");  // links → text only
+}
+
 export function InsightModal({ isOpen, onClose, content }: InsightModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -103,8 +113,8 @@ export function InsightModal({ isOpen, onClose, content }: InsightModalProps) {
 
             {/* Content */}
             <div className="max-h-[calc(92vh-120px)] overflow-y-auto px-8 pb-10 md:max-h-[calc(90vh-140px)]">
-              <div className="prose prose-sm prose-slate max-w-none text-right text-sm leading-relaxed whitespace-pre-wrap">
-                {content}
+              <div className="max-w-none text-right text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
+                {stripMarkdown(content)}
               </div>
             </div>
           </motion.div>

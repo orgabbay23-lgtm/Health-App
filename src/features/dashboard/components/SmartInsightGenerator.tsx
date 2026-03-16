@@ -65,6 +65,7 @@ export function SmartInsightGenerator({
         weight: userProfile.weight,
         height: userProfile.height,
         activityLevel: userProfile.activityLevel,
+        goalDeficit: userProfile.goalDeficit,
         isSmoker: userProfile.isSmoker,
       };
 

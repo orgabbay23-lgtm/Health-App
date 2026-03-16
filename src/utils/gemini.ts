@@ -149,15 +149,23 @@ const getApiKey = async (): Promise<string> => {
   return finalKey;
 };
 
-const INSIGHT_SYSTEM_INSTRUCTION = `You are a friendly, warm, and highly professional Israeli clinical nutritionist. Analyze the provided nutritional data (calories, macros, and all 23 micronutrients) for the given timeframe.
+const INSIGHT_SYSTEM_INSTRUCTION = `You are a friendly, warm, and highly professional Israeli clinical nutritionist. Analyze the provided nutritional data (calories, macros, fiber, and all 23 micronutrients) for the given timeframe.
+
+CRITICAL — Goal-Aware Evaluation:
+You will receive the user's profile including their caloric deficit goal (goalDeficit). A positive goalDeficit means the user is trying to LOSE WEIGHT.
+- If the user's goal is Weight Loss (goalDeficit > 0) and they exceeded their calorie target (calories > 100%), you MUST gently flag this as a point for improvement. ABSOLUTELY DO NOT congratulate them for exceeding calories.
+- If the user's goal is Weight Loss and calories are at or under target, praise them for caloric discipline.
+- Always evaluate macros and micros relative to the user's specific profile (age, gender, activity level, smoker status).
+
 Rules for your response:
-- Language: Hebrew. Tone: Warm, friendly, encouraging, strictly NO fluff.
-- Format: Use bullet points.
+- Language: Hebrew.
+- Tone: Warm, friendly, encouraging, strictly NO fluff.
+- Format: Use plain bullet points with a dash (-). DO NOT use markdown asterisks (**) for bolding. DO NOT use any markdown formatting. Use standard plain text only.
 - Structure:
-  1. A short, encouraging opening sentence.
-  2. 'נקודות לשימור' (What went well).
-  3. 'נקודות לשיפור' (What is missing/over the limit, and suggest 2-3 specific, common Israeli foods to fix it).
-- Keep it short, actionable, and easy to read.`;
+  1. A short, encouraging opening sentence (max 1 sentence).
+  2. נקודות לשימור - What went well (2-3 short bullets, max 1-2 sentences each).
+  3. נקודות לשיפור - What is missing/over the limit, and suggest 2-3 specific, common Israeli foods to fix it (2-3 short bullets, max 1-2 sentences each).
+- Keep it extremely concise, punchy, and actionable. No long explanations.`;
 
 export async function generateNutritionalInsight(
   timeframe: 'day' | 'week' | 'month',
@@ -167,10 +175,14 @@ export async function generateNutritionalInsight(
   const finalKey = await getApiKey();
 
   const userPrompt = `תקופה: ${timeframe === 'day' ? 'יום' : timeframe === 'week' ? 'שבוע' : 'חודש'}
-פרופיל המשתמש: ${JSON.stringify(userProfile)}
-נתוני התזונה (אחוזים מהיעד היומי/תקופתי): ${JSON.stringify(nutritionData)}
 
-נתח את הנתונים ותן המלצה מותאמת אישית.`;
+פרופיל המשתמש:
+${JSON.stringify(userProfile)}
+
+נתוני התזונה (אחוזים מהיעד היומי/תקופתי — 100% = הגעת ליעד):
+${JSON.stringify(nutritionData)}
+
+נתח את הנתונים ותן המלצה קצרה ומותאמת אישית.`;
 
   const performRequest = async (modelName: string) => {
     const genAI = new GoogleGenerativeAI(finalKey);

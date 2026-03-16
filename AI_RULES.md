@@ -178,7 +178,7 @@
 * **Tier 2 (Expand — "הרחב" button):** Zinc, Vitamin C, Vitamin A, Folic Acid, Calcium.
 * **Tier 3 (More — "ערכים נוספים" button):** Potassium, Vitamin K, Vitamin E, Selenium, B6, B3, B1, B2, B5, Biotin, Copper, Manganese, Chromium.
 * **Implementation:** `NutrientGrid.tsx` uses `useState` for tier expansion and `framer-motion` `AnimatePresence` + staggered variants for smooth entry. A "צמצם" collapse button appears when expanded.
-* **Rule:** Fiber and Sodium are tracked internally but NOT displayed in the micronutrient grid (they are infrastructure nutrients managed via safety alerts).
+* **Rule:** Fiber is displayed in Tier 1 (always visible) as a clinically significant dietary nutrient. Sodium is tracked internally but NOT displayed in the micronutrient grid (infrastructure nutrient managed via safety alerts).
 
 ## 12. Accessibility & Typography Standard (Updated March 2026)
 
@@ -261,3 +261,6 @@ The following 14 micronutrient RDA values are strictly enforced based on clinica
 * **Rules:**
     * Insight keys must be deterministic per viewed period so re-generating overwrites the previous insight for that exact period.
     * The modal must use React Portal to `document.body` with `z-[100]` per the Absolute Overlays standard.
+    * The Insight system prompt MUST receive the full user profile including `goalDeficit`. If `goalDeficit > 0`, Gemini must treat the user as targeting weight loss and never congratulate exceeding calorie targets.
+    * The system prompt strictly forbids markdown formatting (`**`, `*`, `#`, backticks). `InsightModal` applies a `stripMarkdown()` safety parser before rendering as a fallback against any residual markdown leakage.
+    * Fiber (סיבים תזונתיים) is a first-class tracked nutrient with its own RDA (38g M / 25g F), displayed in Tier 1, and included in the AI insight analysis.

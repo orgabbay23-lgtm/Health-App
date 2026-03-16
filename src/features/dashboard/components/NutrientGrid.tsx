@@ -12,6 +12,7 @@ interface NutrientGridProps {
 }
 
 const TIER_1: MicronutrientKey[] = [
+  "fiber",
   "vitaminD",
   "vitaminB12",
   "iron",
