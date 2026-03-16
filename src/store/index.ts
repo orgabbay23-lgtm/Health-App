@@ -268,7 +268,9 @@ interface AppState {
   _hasHydrated: boolean;
   userId: string | null;
   _lastFetchTime: number;
+  activeScreen: "home" | "calendar" | "profile";
 
+  setActiveScreen: (screen: "home" | "calendar" | "profile") => void;
   saveInsight: (key: string, text: string) => void;
   saveInsightFollowUp: (key: string, question: string, answer: string) => void;
   clearInsight: (key: string) => void;
@@ -301,6 +303,9 @@ export const useAppStore = create<AppState>()(
       _hasHydrated: false,
       userId: null,
       _lastFetchTime: 0,
+      activeScreen: "home",
+
+      setActiveScreen: (screen) => set({ activeScreen: screen }),
 
       saveInsight: (key, text) => {
         set((state) => ({

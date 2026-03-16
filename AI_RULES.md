@@ -1,4 +1,4 @@
-# 🧠 AI Agent Project Context & Constraints
+# ₪  AI Agent Project Context & Constraints
 
 **Target Audience:** Any AI Assistant/Agent working on this codebase.
 **CRITICAL INSTRUCTION:** Read this entire document BEFORE executing any code changes.
@@ -18,16 +18,17 @@
 * **Visual Identity:** Glassmorphism (backdrop-blur), soft layered shadows, and mesh gradients.
 * **Hierarchy:** 1. Calories (Massive Ring) -> 2. Macros (Clean Grid) -> 3. Micros (Expandable).
 * **Navigation:** Floating Bottom Navigation Bar with "Safe Area" support for mobile.
-* **Motion:** Staggered entry animations and haptic-like scale effects (`whileTap`) on all buttons.
+* **Motion:** Staggered entry animations and haptic-like scale effects (`whileTap`) on all buttons.       
 * **Desktop:** Strictly constrained to `max-w-2xl` and centered.
-* **Ultra-Minimalist Header (Home Screen):** * The Dashboard header must be extremely slim. 
+* **Ultra-Minimalist Header (Home Screen):** * The Dashboard header must be extremely slim.
     * NO greetings, names, avatars, or large Date Navigator cards on the Home screen.
     * The only persistent element at the top should be the Today/Week/Month toggle.
     * The "Date Navigator" and biometric details should be moved to a secondary "Profile" or "Diary" view or accessible via a small, subtle icon only.
-* * **Focus & Stability (CRITICAL):** * Never use window.focus or visibilitychange listeners to trigger global loading states or full-page refreshes.
+* * **Focus & Stability (CRITICAL):** * Never use window.focus or
+visibilitychange listeners to trigger global loading states or full-page refreshes.
     * If data fetching is needed on focus (e.g., token refreshes), it MUST be silent (isSilent: true) to avoid unmounting the UI or resetting local component state.
     * Maintain a 'still' UI; the app should feel like a single continuous session regardless of tab switching or backgrounding.
-* **Content Visibility & Clipping (CRITICAL):*** * Never use `overflow: hidden` on parent containers that house dynamic expanding content like "Smart Tips". 
+* **Content Visibility & Clipping (CRITICAL):*** * Never use `overflow: hidden` on parent containers that house dynamic expanding content like "Smart Tips".
     * Use `z-index` properly to ensure floating tips appear above all other dashboard elements.
     * Expanding elements must use `height: auto` and `transition: height` to ensure Hebrew text is never clipped or hidden behind other cards.
 * **Absolute Overlays (Portals):** * All floating UI elements like "Smart Tips", Popovers, or Modals MUST be rendered using a React Portal to the document body.
@@ -47,26 +48,61 @@
 
 ---
 **Current Phase / Next Steps (Last Updated: March 2026)**
-- ✅ UI/UX Overhaul: Premium Glassmorphism & Native feel established.
-- ✅ Supabase Vault & BYOK: Fully operational and secure.
-- ✅ UI Color Infusion: Nutrient color-coding and dynamic visual feedback complete.
-- ✅ Clinical data expansion — 24 micronutrients (including Omega 3 EPA+DHA), 3-tier hierarchy, accessibility font scale, updated Gemini prompt.
-- 🔄 **CURRENT PHASE:** Contextual AI Insights — Smart nutritional recommendations via Gemini, period-aware insight generation and caching.
+- ג… UI/UX Overhaul: Premium Glassmorphism & Native feel established.
+- ג… Supabase Vault & BYOK: Fully operational and secure.
+- ג… UI Color Infusion: Nutrient color-coding and dynamic visual feedback complete.
+- ג… Clinical data expansion ג€” 24 micronutrients (including Omega 3 EPA+DHA), 3-tier hierarchy, accessibility font scale, updated Gemini prompt.
+- ׳ ג€ג€ **CURRENT PHASE:** Contextual AI Insights & UX Refinement ׳’ג‚¬ג€ Smart nutritional recommendations and seamless feedback loops (auto-navigation + scroll).
 ## 6. Native PWA & Mobile UX
 * **Theme Sync:** `index.html` must include `meta name="theme-color"` matching the primary background (`#f8fafc`) and `apple-mobile-web-app-status-bar-style: black-translucent`.
 * **Safe Area Insets:** Use `pt-safe-top` and `pb-safe-bottom` (defined in `tailwind.config.js`) for layout containers and floating bars (like Bottom Navigation) to prevent overlap with device hardware (notches/home indicators).
 * **Scroll Hygiene:** Apply `overscroll-behavior: none` to `html` and `body` to disable browser pull-to-refresh/rubber-banding, ensuring a "one continuous surface" feel.
 
-## 6b. Mobile UX Input Standards (Hardened — March 2026)
-* **iOS Zoom Prevention (CRITICAL):** All interactive form elements (`<input>`, `<textarea>`, `<select>`) must use `text-[16px]` (hardcoded arbitrary Tailwind value). Do NOT use `text-base` — it resolves to `1rem` which depends on root font-size and can be overridden by parent containers. iOS Safari forcefully zooms the viewport when any input with computed font-size below 16px receives focus.
-* **No Framer `layout` on Modals (CRITICAL):** Never use `layout` or `layoutId` props on modal/dialog containers. When the iOS virtual keyboard appears/disappears, `dvh` units change the element's bounding box, causing Framer Motion's FLIP algorithm to trigger a layout animation — this is the root cause of the "viewport wildly jumping" bug. Entry/exit animations (`initial`/`animate`/`exit`) are sufficient.
-* **Viewport Meta — `interactive-widget`:** The viewport meta tag must include `interactive-widget=resizes-content` to instruct Safari to resize the layout viewport (not shift the visual viewport) when the virtual keyboard appears.
+## 6b. Mobile UX Input Standards (Hardened ג€” March 2026)
+* **iOS Zoom Prevention (CRITICAL):** All interactive form elements (`<input>`, `<textarea>`, `<select>`) must use `text-[16px]` (hardcoded arbitrary Tailwind value). Do NOT use `text-base` ג€” it resolves to `1rem` which depends on root font-size and can be overridden by parent containers. iOS Safari forcefully zooms the viewport when any input with computed font-size below 16px receives focus.
+* **No Framer `layout` on Modals (CRITICAL):** Never use `layout` or `layoutId` props on modal/dialog containers. When the iOS virtual keyboard appears/disappears, `dvh` units change the element's bounding box, causing Framer Motion's FLIP algorithm to trigger a layout animation ג€” this is the root cause of the "viewport wildly jumping" bug. Entry/exit animations (`initial`/`animate`/`exit`) are sufficient.
+* **Viewport Meta ג€” `interactive-widget`:** The viewport meta tag must include `interactive-widget=resizes-content` to instruct Safari to resize the layout viewport (not shift the visual viewport) when the virtual keyboard appears.
 * **Focus Scroll Stabilization:** All text inputs inside modals should call `element.scrollIntoView({ behavior: 'smooth', block: 'center' })` via a `setTimeout` (~350ms) in their `onFocus` handler to ensure the input stays visible after the keyboard finishes expanding.
-* **Portal Dropdown Blur Prevention (CRITICAL):** Portal-based dropdowns (autocomplete, popovers) must use `onPointerDown` with `e.preventDefault()` on the dropdown container — NOT `onMouseDown`. On iOS, `mousedown` fires AFTER `touchstart`-induced blur, so it's too late to prevent the input from losing focus. `pointerdown` fires before blur on all platforms. Additionally, NEVER call `inputRef.focus()` after selecting from a dropdown — on desktop blur is already prevented, on iOS it causes a keyboard dismiss→reappear cycle that violently jumps the viewport.
-* **Multi-Line for Long Text:** Use multi-line `<textarea>` with `whitespace-pre-wrap break-words` for any text entry that may contain long descriptions (e.g., meal descriptions, ingredient lists). Single-line `<input>` truncates long Hebrew strings and forces horizontal scrolling, which is unusable on mobile.
+* **Portal Dropdown Blur Prevention (CRITICAL):** Portal-based dropdowns (autocomplete, popovers) must use `onPointerDown` with `e.preventDefault()` on the dropdown container ג€” NOT `onMouseDown`. On iOS, `mousedown` fires AFTER `touchstart`-induced blur, so it's too late to prevent the input from losing focus. `pointerdown` fires before blur on all platforms. Additionally, NEVER call `inputRef.focus()` after selecting from a dropdown ג€” on desktop blur is already prevented, on iOS it causes a keyboard dismissג†’reappear cycle that violently jumps the viewport.
+* **Multi-Line for Long Text:** Use multi-line `<textarea>` with `whitespace-pre-wrap break-words` for any text entry that may contain long descriptions (e.g., meal descriptions, ingredient lists). Single-line `<input>` truncates long Hebrew strings and forces horizontal scrolling, which is unusable on mobile.       
 * **Viewport-Aware Modals:** Modal containers must use `dvh` units (`max-h-[90dvh]`) instead of `vh` to naturally shrink when the iOS virtual keyboard appears. Add `overscroll-contain` to prevent scroll bleed-through.
+* **RTL-Aware Dropdowns (CRITICAL):** Popovers and absolute/fixed dropdowns (like autocomplete) must be constrained to viewport width (`max-w-[95vw]`). In RTL layouts, use `right` positioning or center alignment (`left: 50%, transform: translateX(-50%)`) on mobile to prevent clipping on the right edge of the screen.
 
 ## 7. Bug Fix History & Lessons Learned
+* **2026-03-16: RTL Autocomplete Dropdown Clipping Fix**
+    * **Issue:** Autocomplete dropdown was clipped on the right side of the screen on mobile in RTL mode.
+    * **Fix:** Refactored `FoodTypeahead` to use `fixed` positioning with responsive alignment (centered on mobile, anchored to right edge on desktop) and `max-w-[95vw]` viewport constraint.
+    * **Standard:** See \"RTL-Aware Dropdowns\" in Section 6b.
+
+* **2026-03-16: iOS Viewport Jump & Input Truncation Fix (Pass 1)**
+    * **Issue:** (1) iOS Safari zoomed/glitched the viewport when typing in meal inputs because font-size was below 16px (`text-sm`). (2) Single-line `<input>` truncated long autocomplete selections, forcing horizontal scrolling.
+    * **Fix (Partial):** Changed `Input` component base class from `text-sm` to `text-base` (16px). Refactored `FoodTypeahead` to support `multiLine` prop rendering a `<textarea>` with `whitespace-pre-wrap break-words`. Updated `ModalShell` to use `dvh` units and `overscroll-contain` for iOS keyboard resilience.     
+
+* **2026-03-16: iOS Keyboard Viewport Glitch ג€” Root Cause Resolution (Pass 2)**
+    * **Issue:** Viewport still wildly shifted/jumped when the iOS virtual keyboard appeared despite the `text-base` fix. Five distinct root causes identified:
+    * **Root Cause 1 (PRIMARY):** `ModalShell`'s `SafeLayoutMotion` had a `layout` prop. When the keyboard changed `dvh`, Framer Motion's FLIP algorithm detected a bounding box change and triggered a layout animation on the modal container ג€” causing visible jumping/shifting.
+    * **Root Cause 2:** `text-base` resolves to `1rem`, not guaranteed `16px`. Parent font-size overrides could make it compute to <16px.
+    * **Root Cause 3:** `EditFavoriteModal` textarea used `text-[15px]` ג€” 1px below the 16px iOS threshold.
+    * **Root Cause 4:** `Select` component still used `text-sm` (14px), triggering zoom on unit dropdowns.
+    * **Root Cause 5:** Missing `interactive-widget=resizes-content` in viewport meta ג€” Safari shifted the visual viewport instead of resizing layout.
+    * **Fix:**
+        1. Removed `layout` prop from `ModalShell`'s `SafeLayoutMotion`.
+        2. Hardcoded `text-[16px]` (arbitrary Tailwind value) on `Input`, `Select`, `FoodTypeahead` textarea, `EditFavoriteModal` textarea, and all `MealLogModal` inline inputs.
+        3. Added `interactive-widget=resizes-content` to the viewport meta tag in `index.html`.
+        4. Added `scrollIntoView({ behavior: 'smooth', block: 'center' })` on focus with 350ms delay in `FoodTypeahead` to stabilize input position after keyboard expansion.
+    * **Standard:** See "Mobile UX Input Standards" (Section 6b).
+
+* **2026-03-16: iOS Autocomplete Selection Viewport Jump (Pass 3)**
+    * **Issue:** Viewport still jumped when selecting an autocomplete suggestion from the portal dropdown ג€” but NOT when typing. Isolated to the selection interaction.
+    * **Root Cause:** Two-part failure: (1) The `<ul>` dropdown used `onMouseDown` with `preventDefault` to prevent input blur ג€” but on iOS, blur happens during `touchstart`, BEFORE the synthetic `mousedown` fires. So blur prevention never applied on touch devices. (2) After selection, `setTimeout(() => inputRef.current?.focus(), 0)` re-focused the input, triggering a keyboard dismissג†’reappear cycle (two competing viewport shifts).
+    * **Fix:** (1) Changed `onMouseDown` to `onPointerDown` on the dropdown `<ul>` ג€” `pointerdown` fires before blur on all platforms including iOS touch. (2) Removed the `setTimeout(() => focus(), 0)` from `selectSuggestion` ג€” on desktop blur is already prevented so it's redundant; on iOS it caused the jump.    
+    * **Standard:** See "Portal Dropdown Blur Prevention" rule in Section 6b.
+
+* **2026-03-16: Autocomplete Dropdown Width Truncation Fix**
+    * **Issue:** In Manual Entry mode, the autocomplete suggestion dropdown was clipped on the left side, truncating long Hebrew food strings.
+    * **Fix:** Set `minWidth` to input width with a floor of 280px, `maxWidth` to `calc(100vw - 2rem)`, and replaced `truncate` class on suggestion items with `whitespace-normal break-words` so long Hebrew text wraps instead of being clipped.
+    * **Standard:** Autocomplete/popover dropdowns must never truncate content. Use `whitespace-normal` and responsive min/max width constraints to ensure full legibility on mobile.
+
 * **2026-03-15: Smart Tips Visibility Fix**
     * **Issue:** "Smart Tips" were being clipped by `overflow: hidden` on parent cards or overlapped by other dashboard layers despite high Z-index.
     * **Fix:** Refactored `TipPopover` to use **React Portals** (`createPortal`), rendering it directly under `document.body`.
@@ -78,15 +114,14 @@
 
 * **2026-03-15: Focus-induced Refresh Fix**
     * **Issue:** App triggered a full loading spinner/unmount when window focus changed (Visibility Change), especially on mobile.
-    * **Fix:** Refactored fetchUserData to support isSilent parameter. Updated AuthProvider to use silent fetching for TOKEN_REFRESHED events. Refined fetchUserData to be silent by default if profile data already exists.
+    * **Fix:** Refactored
+fetchUserData to support isSilent parameter. Updated AuthProvider to use silent fetching for TOKEN_REFRESHED events. Refined
+fetchUserData to be silent by default if profile data already exists.
     * **Standard:** Never trigger global loading states for background sync or focus-based updates. Use "silent" data fetching to maintain UI stability and prevent component unmounting/state resets.
 
-
-
-
 * **2026-03-15: Permanent Flicker & Refresh Resolution (Zustand Persistence)**
-    * **Issue:** Intermittent UI refreshes/flickers despite previous focus fix. Caused by race conditions between getSession and onAuthStateChange, lack of store persistence, and non-silent data fetching logic.
-    * **Fix:** 
+    * **Issue:** Intermittent UI refreshes/flickers despite previous focus fix. Caused by race conditions between getSession and onAuthStateChange, lack of store persistence, and non-silent data fetching logic.  
+    * **Fix:**
         1. Implemented **Zustand Persistence** (persist middleware) to maintain profile and dailyLogs across reloads/unmounts.
         2. Added **Concurrency Throttling** (_lastFetchTime) in the store to block redundant fetches within 2 seconds.
         3. Refined **Silent Fetching**: Data fetch is now silent by default if profile already exists in the store.
@@ -95,7 +130,7 @@
     * **Standard:** Use Zustand persistence for all core user data. All data syncing must be silent if local state is already hydrated. Prevent concurrent fetch race conditions at the store level.
 
 * **2026-03-15: Final Focus & Refresh Resolution (Root Cause: State Destruction)**
-    * **Issue:** App flickered or refreshed on focus because fetchUserData was re-initializing state (setting objects to empty/null) during background refreshes.       
+    * **Issue:** App flickered or refreshed on focus because fetchUserData was re-initializing state (setting objects to empty/null) during background refreshes.
     * **Fix:**
         1. Refined fetchUserData to **preserve** existing profile, dailyLogs, and savedMeals during updates. New data is merged/overwritten only when successfully fetched.
         2. Increased concurrency throttle to 5 seconds to better handle rapid focus/blur events on mobile.
@@ -118,35 +153,6 @@
         2.  **Aggressive Auth Filtering:** Updated `onAuthStateChange` to silently handle `TOKEN_REFRESHED` and `USER_UPDATED`. If a profile already exists in the store, background syncs are strictly non-blocking and skip all loading state toggles.
     * **Standard:** **iOS Background Visibility/Token Refresh Rule:** Auth listeners must silently ignore `TOKEN_REFRESHED` for UI blocking/state resets to prevent Safari remounts. Initialization states must be implemented as one-way latches in persistent storage.
 
-* **2026-03-16: iOS Viewport Jump & Input Truncation Fix (Pass 1)**
-    * **Issue:** (1) iOS Safari zoomed/glitched the viewport when typing in meal inputs because font-size was below 16px (`text-sm`). (2) Single-line `<input>` truncated long autocomplete selections, forcing horizontal scrolling.
-    * **Fix (Partial):** Changed `Input` component base class from `text-sm` to `text-base` (16px). Refactored `FoodTypeahead` to support `multiLine` prop rendering a `<textarea>` with `whitespace-pre-wrap break-words`. Updated `ModalShell` to use `dvh` units and `overscroll-contain` for iOS keyboard resilience.
-
-* **2026-03-16: iOS Keyboard Viewport Glitch — Root Cause Resolution (Pass 2)**
-    * **Issue:** Viewport still wildly shifted/jumped when the iOS virtual keyboard appeared despite the `text-base` fix. Five distinct root causes identified:
-    * **Root Cause 1 (PRIMARY):** `ModalShell`'s `SafeLayoutMotion` had a `layout` prop. When the keyboard changed `dvh`, Framer Motion's FLIP algorithm detected a bounding box change and triggered a layout animation on the modal container — causing visible jumping/shifting.
-    * **Root Cause 2:** `text-base` resolves to `1rem`, not guaranteed `16px`. Parent font-size overrides could make it compute to <16px.
-    * **Root Cause 3:** `EditFavoriteModal` textarea used `text-[15px]` — 1px below the 16px iOS threshold.
-    * **Root Cause 4:** `Select` component still used `text-sm` (14px), triggering zoom on unit dropdowns.
-    * **Root Cause 5:** Missing `interactive-widget=resizes-content` in viewport meta — Safari shifted the visual viewport instead of resizing layout.
-    * **Fix:**
-        1. Removed `layout` prop from `ModalShell`'s `SafeLayoutMotion`.
-        2. Hardcoded `text-[16px]` (arbitrary Tailwind value) on `Input`, `Select`, `FoodTypeahead` textarea, `EditFavoriteModal` textarea, and all `MealLogModal` inline inputs.
-        3. Added `interactive-widget=resizes-content` to the viewport meta tag in `index.html`.
-        4. Added `scrollIntoView({ behavior: 'smooth', block: 'center' })` on focus with 350ms delay in `FoodTypeahead` to stabilize input position after keyboard expansion.
-    * **Standard:** See "Mobile UX Input Standards" (Section 6b).
-
-* **2026-03-16: iOS Autocomplete Selection Viewport Jump (Pass 3)**
-    * **Issue:** Viewport still jumped when selecting an autocomplete suggestion from the portal dropdown — but NOT when typing. Isolated to the selection interaction.
-    * **Root Cause:** Two-part failure: (1) The `<ul>` dropdown used `onMouseDown` with `preventDefault` to prevent input blur — but on iOS, blur happens during `touchstart`, BEFORE the synthetic `mousedown` fires. So blur prevention never applied on touch devices. (2) After selection, `setTimeout(() => inputRef.current?.focus(), 0)` re-focused the input, triggering a keyboard dismiss→reappear cycle (two competing viewport shifts).
-    * **Fix:** (1) Changed `onMouseDown` to `onPointerDown` on the dropdown `<ul>` — `pointerdown` fires before blur on all platforms including iOS touch. (2) Removed the `setTimeout(() => focus(), 0)` from `selectSuggestion` — on desktop blur is already prevented so it's redundant; on iOS it caused the jump.
-    * **Standard:** See "Portal Dropdown Blur Prevention" rule in Section 6b.
-
-* **2026-03-16: Autocomplete Dropdown Width Truncation Fix**
-    * **Issue:** In Manual Entry mode, the autocomplete suggestion dropdown was clipped on the left side, truncating long Hebrew food strings.
-    * **Fix:** Set `minWidth` to input width with a floor of 280px, `maxWidth` to `calc(100vw - 2rem)`, and replaced `truncate` class on suggestion items with `whitespace-normal break-words` so long Hebrew text wraps instead of being clipped.
-    * **Standard:** Autocomplete/popover dropdowns must never truncate content. Use `whitespace-normal` and responsive min/max width constraints to ensure full legibility on mobile.
-
 ## 8. iOS PWA Architecture (Immutable Shell & Visibility-Aware Motion)
 
 * **Immutable CSS Shell (iOS Scroll Lock):**
@@ -157,7 +163,7 @@
 
 * **SafeLayoutMotion Component:**
     * All Framer Motion elements that use `layout` or `layoutId` props MUST use `<SafeLayoutMotion>` (from `src/components/SafeLayoutMotion.tsx`) instead of raw `<motion.div>`.
-    * This wrapper strips `layout` and `layoutId` when `document.visibilityState` is `hidden`, preventing FLIP bounding-box calculations against corrupted DOM metrics during iOS Safari's freeze-thaw cycle.
+    * This wrapper strips `layout` and `layoutId` when `document.visibilityState` is `hidden`, preventing FLIP bounding-box calculations against corrupted DOM metrics during iOS Safari's freeze-thaw cycle.       
     * The visibility state is tracked via `useIsVisible()` hook (`src/hooks/useVisibilityState.ts`) using `useSyncExternalStore` for tear-free concurrent rendering.
 
 * **Zustand Hydration Gate:**
@@ -193,7 +199,7 @@
     * No API key content (even partial) is logged to the console.
 
 * **Shadow Utility Standardization:**
-    * All `shadow-soft-*` classes (`soft-sm`, `soft-lg`, `soft-xl`, `soft-2xl`) are defined in `tailwind.config.js` under `theme.extend.boxShadow`. The duplicate CSS definitions in `index.css` have been removed.
+    * All `shadow-soft-*` classes (`soft-sm`, `soft-lg`, `soft-xl`, `soft-2xl`) are defined in `tailwind.config.js` under `theme.extend.boxShadow`. The duplicate CSS definitions in `index.css` have been removed. 
 
 * **Modal Focus Trap:**
     * The `ModalShell` focus trap query selector covers all input types: `input:not([disabled])` (universal), not just specific `input[type="text"]` variants. This ensures Tab-trapping works for `number`, `password`, `email`, `date`, and all future input types.
@@ -212,37 +218,37 @@
 
 ## 11. 3-Tier Micronutrient Hierarchy (Updated March 2026)
 
-* **Tier 1 (Default — always visible):** Vitamin D, B12, Iron, Magnesium, Iodine.
-* **Tier 2 (Expand — "הרחב" button):** Zinc, Vitamin C, Vitamin A, Folic Acid, Calcium, Omega 3 (EPA+DHA).
-* **Tier 3 (More — "ערכים נוספים" button):** Potassium, Vitamin K, Vitamin E, Selenium, B6, B3, B1, B2, B5, Biotin, Copper, Manganese, Chromium.
-* **Implementation:** `NutrientGrid.tsx` uses `useState` for tier expansion and `framer-motion` `AnimatePresence` + staggered variants for smooth entry. A "צמצם" collapse button appears when expanded.
+* **Tier 1 (Default ג€” always visible):** Vitamin D, B12, Iron, Magnesium, Iodine.
+* **Tier 2 (Expand ג€” "׳”׳¨׳—׳‘" button):** Zinc, Vitamin C, Vitamin A, Folic Acid, Calcium, Omega 3 (EPA+DHA).
+* **Tier 3 (More ג€” "׳¢׳¨׳›׳™׳ ׳ ׳•׳¡׳₪׳™׳" button):** Potassium, Vitamin K, Vitamin E, Selenium, B6, B3, B1, B2, B5, Biotin, Copper, Manganese, Chromium.
+* **Implementation:** `NutrientGrid.tsx` uses `useState` for tier expansion and `framer-motion` `AnimatePresence` + staggered variants for smooth entry. A "׳¦׳׳¦׳" collapse button appears when expanded.
 * **Rule:** Fiber is displayed in Tier 1 (always visible) as a clinically significant dietary nutrient. Sodium is tracked internally but NOT displayed in the micronutrient grid (infrastructure nutrient managed via safety alerts).
 
 ## 12. Accessibility & Typography Standard (Updated March 2026)
 
-* **Minimum Font Size:** All label/secondary text must be ≥ 13px (`text-[13px]`). No `text-xs` (12px) or below in data-bearing UI.
+* **Minimum Font Size:** All label/secondary text must be ג‰¥ 13px (`text-[13px]`). No `text-xs` (12px) or below in data-bearing UI.
 * **Contrast Boost:** All secondary labels upgraded from `text-slate-400` to `text-slate-500` or `text-slate-600` for high contrast against Glassmorphism backgrounds.
 * **Scope:** Applies to NutrientCard, CompactNutrientCard, PrimaryNutrientCard, MealTimeline, DateNavigator, ProfileScreen, HistoryArchive, MealLogModal, OnboardingFlow, ByokModal.
 
 ## 13. Clinical Constants (RDA Targets - March 2026)
 The following 15 micronutrient RDA values are strictly enforced based on clinical truth tables for adults (>13y):
-- **Iodine (���):** 150mcg (Male/Female)
-- **Zinc (���):** 11mg (Male) | 8mg (Female)
-- **Folic Acid (����� �����):** 400mcg (Male/Female)
+- **Iodine (ן¿½ן¿½ן¿½):** 150mcg (Male/Female)
+- **Zinc (ן¿½ן¿½ן¿½):** 11mg (Male) | 8mg (Female)
+- **Folic Acid (ן¿½ן¿½ן¿½ן¿½ן¿½ ן¿½ן¿½ן¿½ן¿½ן¿½):** 400mcg (Male/Female)
 - **Vitamin K:** 120mcg (Male) | 90mcg (Female)
-- **Selenium (������):** 55mcg (Male/Female)
+- **Selenium (ן¿½ן¿½ן¿½ן¿½ן¿½ן¿½):** 55mcg (Male/Female)
 - **Vitamin B6:** 1.3mg (Male/Female)
 - **Vitamin B3 (Niacin):** 16mg (Male) | 14mg (Female)
 - **Vitamin B1 (Thiamine):** 1.2mg (Male) | 1.1mg (Female)
 - **Vitamin B2 (Riboflavin):** 1.3mg (Male) | 1.1mg (Female)
 - **Vitamin B5:** 5mg (Male/Female)
 - **Biotin (B7):** 30mcg (Male/Female)
-- **Copper (�����):** 900mcg (0.9mg) (Male/Female)
-- **Manganese (����):** 2.3mg (Male) | 1.8mg (Female)
-- **Chromium (����):** 35mcg (Male) | 25mcg (Female)
+- **Copper (ן¿½ן¿½ן¿½ן¿½ן¿½):** 900mcg (0.9mg) (Male/Female)
+- **Manganese (ן¿½ן¿½ן¿½ן¿½):** 2.3mg (Male) | 1.8mg (Female)
+- **Chromium (ן¿½ן¿½ן¿½ן¿½):** 35mcg (Male) | 25mcg (Female)
 - **Omega 3 (EPA+DHA):** 250mg (Male/Female)
 
-## 14. Dynamic AI Templates — Favorites Architecture (Updated March 2026)
+## 14. Dynamic AI Templates ג€” Favorites Architecture (Updated March 2026)
 
 * **Paradigm: "Dynamic AI Templates":**
     * Favorites are **raw text prompts** (not pre-calculated nutritional data). Each `SavedMeal` stores an `id`, `name`, and `mealText` (the raw ingredient/meal description string).
@@ -252,35 +258,36 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
 
 * **Template vs. Log Separation (CRITICAL):**
     * Favorites are templates stored in `saved_meals`. They are independent of historical meal logs in `daily_logs`.
-    * AI evaluation ONLY occurs at the moment of logging the meal to a specific day — never at creation or edit time.
+    * AI evaluation ONLY occurs at the moment of logging the meal to a specific day ג€” never at creation or edit time.
     * Historical `daily_logs` entries created from a template are NEVER retroactively modified when the template is edited.
 
 * **Store Actions:**
     * `createFavoriteTemplate(name, mealText)`: Saves a text-only template. No Gemini call. Optimistic update with rollback.
     * `updateFavoriteTemplate(id, newName, newMealText)`: Updates template text. No Gemini call. Optimistic update with rollback.
-    * `saveMealAsFavorite(meal)`: Legacy — saves a fully-evaluated meal as a favorite (preserves backward compatibility for saving from timeline).
+    * `saveMealAsFavorite(meal)`: Legacy ג€” saves a fully-evaluated meal as a favorite (preserves backward compatibility for saving from timeline).
 
 * **`EditFavoriteModal` Component:**
     * Located at `src/features/meal-logging/EditFavoriteModal.tsx`.
     * Allows renaming and editing the raw `mealText` prompt via a simple textarea.
     * Follows Glassmorphism aesthetic, RTL logical properties, minimum 13px font labels, and Immutable Shell constraints.
-    * Accessed via "ערוך" button on each favorite card in the MealLogModal's "Saved" tab.
+    * Accessed via "׳¢׳¨׳•׳" button on each favorite card in the MealLogModal's "Saved" tab.
     * **Two distinct primary actions:**
-        * **"שמור שינויים לתבנית"** — Updates the Favorite template in the store permanently. Does NOT trigger any AI calculation.
-        * **"חשב והוסף להיום (חד-פעמי)"** — Takes the currently edited text, triggers the Gemini calculation flow to add to today's log, but does NOT overwrite the saved Favorite template. Requires user confirmation (API Cost Protection gate).
+        * **"׳©׳׳•׳¨ ׳©׳™׳ ׳•׳™׳™׳ ׳׳×׳‘׳ ׳™׳×"** ג€” Updates the Favorite template in the store permanently. Does NOT trigger any AI calculation.
+        * **"׳—׳©׳‘ ׳•׳”׳•׳¡׳£ ׳׳”׳™׳•׳ (׳—׳“-׳₪׳¢׳׳™)"** ג€” Takes the currently edited text, triggers the Gemini calculation flow to add to today's log, but does NOT overwrite the saved Favorite template. Requires user confirmation (API Cost Protection gate).
 
 * **UI Entry Points:**
-    * "צור ארוחה מועדפת חדשה" button in the Favorites tab opens an inline form for name + text.
-    * Each favorite card displays three explicit action buttons: "הוסף להיום" (Log via AI), "ערוך" (Edit template), "מחק" (Delete).
-    * Clicking a favorite card does NOT auto-trigger the API. The user must explicitly click "הוסף להיום".
+    * "׳¦׳•׳¨ ׳׳¨׳•׳—׳” ׳׳•׳¢׳“׳₪׳× ׳—׳“׳©׳”" button in the Favorites tab opens an inline form for name + text.
+    * Each favorite card displays three explicit action buttons: "׳”׳•׳¡׳£ ׳׳”׳™׳•׳" (Log via AI), "׳¢׳¨׳•׳" (Edit template), "׳׳—׳§" (Delete).
+    * Clicking a favorite card does NOT auto-trigger the API. The user must explicitly click "׳”׳•׳¡׳£ ׳׳”׳™׳•׳".
 
 * **Rule:** Any future feature that modifies Favorites must respect the template/log boundary. AI evaluation happens ONLY at execution (logging) time. Never write to `daily_logs` when updating a Favorite template, and never write to `saved_meals` when editing a historical log.
 
 ## 15. Smart Autocomplete Architecture (Updated March 2026)
-* **Food Database:** The project contains a local static database of 1000 common Israeli food items (src/utils/food-suggestions.ts) to enable rapid offline-first autocompletion without network roundtrips.
-* **Search Priority:** The Typeahead component (FoodTypeahead.tsx) prioritizes historical user meals (dailyLogs) before searching the static 1000-item database, ensuring personal favorites bubble to the top.
-* **UI/UX:** The suggestion dropdown utilizes ramer-motion for smooth entry/exit, adheres to Glassmorphism principles (g-white/80 backdrop-blur-xl), uses ms-2 and 	ext-right for RTL correctness, and features a minimum font size of 14px (	ext-sm) for accessibility.
-* **Stability:** The dropdown is rendered within the normal layout but utilizes bsolute z-[100] to avoid clipping, complying with absolute overlays without triggering viewport shifts on iOS.
+* **Food Database:** The project contains a local static database of 1000 common Israeli food items (src/utils/food-suggestions.ts) to enable rapid offline-first autocompletion without network roundtrips.        
+* **Search Priority:** The Typeahead component (FoodTypeahead.tsx) prioritizes historical user meals (dailyLogs) before searching the static 1000-item database, ensuring personal favorites bubble to the top.     
+* **UI/UX:** The suggestion dropdown utilizes
+ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/80 backdrop-blur-xl), uses ms-2 and       ext-right for RTL correctness, and features a minimum font size of 14px (       ext-sm) for accessibility.
+* **Stability:** The dropdown is rendered within the normal layout but utilizes bsolute z-[100] to avoid clipping, complying with absolute overlays without triggering viewport shifts on iOS.
 
 ## 16. Advanced Typeahead & Localized Food Database (Finalized March 2026)
 * **Database Scale:** The system now utilizes a strictly unique, number-free, 10,000-item localized Hebrew food database (src/utils/food-suggestions.ts). It covers raw produce, brands (Tnuva, Strauss, Osem), home cooking, and street food.
@@ -289,15 +296,15 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
 * **Multi-Select (Smart Tab):** In the 'Smart' meal logging tab, the typeahead supports comma-separated entries. It detects the current segment (after the last comma) to provide suggestions without overwriting previous text.
 * **Mobile Optimization:** Uses `onClick` for item selection (fires only on tap, not on scroll-drag) and `onMouseDown` with `preventDefault` on the `<ul>` container to prevent input blur on desktop. The list enforces `touch-pan-y` so the browser handles vertical scroll gestures natively, `overscroll-contain` to isolate scroll, `select-none` on items to prevent text selection during drag, and `max-h-[40vh]` to prevent off-screen clipping when the virtual keyboard is open. Implements `-webkit-overflow-scrolling: touch` for smooth inertial scrolling.
 * **Search Heuristics:** Prioritizes 'Starts-with' matches over 'Contains' matches and user history over the static database.
-* **Data Integrity & Realism:** Food database items must always include specific fat percentages, preparation methods, and sugar content identifiers. 
-* **Grammar & Brand Logic:** All Hebrew items MUST maintain perfect gender matching (e.g., עגבניה טריה). Brands must only be used where they realistically offer unique nutritional profiles (no "Alpro Cottage"). Avoid programmatic Cartesian products; curate items for clinical realism.
+* **Data Integrity & Realism:** Food database items must always include specific fat percentages, preparation methods, and sugar content identifiers.
+* **Grammar & Brand Logic:** All Hebrew items MUST maintain perfect gender matching (e.g., ׳¢׳’׳‘׳ ׳™׳” ׳˜׳¨׳™׳”). Brands must only be used where they realistically offer unique nutritional profiles (no "Alpro Cottage"). Avoid programmatic Cartesian products; curate items for clinical realism.
 
-## 17. Contextual AI Insights (Smart Insight Generator — March 2026)
+## 17. Contextual AI Insights (Smart Insight Generator ג€” March 2026)
 
 * **Architecture:**
     * `generateNutritionalInsight(timeframe, nutritionData, userProfile)` in `gemini.ts` sends aggregated nutrition percentages to Gemini with a dedicated Hebrew clinical nutritionist system prompt.
-    * Uses `gemini-3-flash-preview` with the established 429→`gemini-2.5-flash` fallback mechanism.
-    * The system prompt enforces: Hebrew language, warm/professional tone, bullet-point format, "נקודות לשימור" (strengths) + "נקודות לשיפור" (improvements with 2-3 specific Israeli food suggestions).
+    * Uses `gemini-3-flash-preview` with the established 429ג†’`gemini-2.5-flash` fallback mechanism.     
+    * The system prompt enforces: Hebrew language, warm/professional tone, bullet-point format, "׳ ׳§׳•׳“׳•׳× ׳׳©׳™׳׳•׳¨" (strengths) + "׳ ׳§׳•׳“׳•׳× ׳׳©׳™׳₪׳•׳¨" (improvements with 2-3 specific Israeli food suggestions).
 
 * **State Management (Zustand):**
     * `aiInsights: Record<string, { insight: string; followUpQuestion?: string; followUpAnswer?: string }>` stores structured insight data per period.
@@ -306,12 +313,12 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
     * Persisted via the existing Zustand `persist` middleware alongside other user data.
 
 * **UI Components:**
-    * `SmartInsightGenerator.tsx`: Renders contextual button — "המלצה אישית עם AI ✨" (no existing insight) or "הצג המלצה אחרונה" + refresh icon (existing insight). Shimmer loading state during generation.
+    * `SmartInsightGenerator.tsx`: Renders contextual button ג€” "׳”׳׳׳¦׳” ׳׳™׳©׳™׳× ׳¢׳ AI ג¨" (no existing insight) or "׳”׳¦׳’ ׳”׳׳׳¦׳” ׳׳—׳¨׳•׳ ׳”" + refresh icon (existing insight). Shimmer loading state during generation.
     * `InsightModal.tsx`: Portal-based Glassmorphism modal (z-[100]) with two sections:
         1. Main insight display with `stripMarkdown()` safety.
-        2. Single-turn follow-up Q&A: input field ("יש לך שאלה על ההמלצה?") + Send button when no follow-up exists; user-question bubble (violet) + AI-answer bubble (white glass) when answered. Loading state (Loader2 spinner) during fetch.
-    * Follow-up is powered by `answerInsightFollowUp()` in `gemini.ts` — a separate Gemini call with its own concise system prompt.
-    * Regenerating the insight (refresh button) resets the follow-up Q&A, allowing a fresh question.
+        2. Single-turn follow-up Q&A: input field ("׳™׳© ׳׳ ׳©׳׳׳” ׳¢׳ ׳”׳”׳׳׳¦׳”?") + Send button when no follow-up exists; user-question bubble (violet) + AI-answer bubble (white glass) when answered. Loading state (Loader2 spinner) during fetch.
+    * Follow-up is powered by `answerInsightFollowUp()` in `gemini.ts` ג€” a separate Gemini call with its own concise system prompt.
+    * Regenerating the insight (refresh button) resets the follow-up Q&A, allowing a fresh question.      
 
 * **Integration:**
     * Placed in `HomeScreen.tsx` between the micronutrient accordion and the meals/period-breakdown card, visible across all period modes (daily/weekly/monthly).
@@ -321,20 +328,20 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
     * Insight keys must be deterministic per viewed period so re-generating overwrites the previous insight for that exact period.
     * The modal must use React Portal to `document.body` with `z-[100]` per the Absolute Overlays standard.
     * The Insight system prompt MUST receive the full user profile including `goalDeficit`. If `goalDeficit > 0`, Gemini must treat the user as targeting weight loss and never congratulate exceeding calorie targets.
-    * Both the insight and follow-up system prompts instruct Gemini to use emojis natively (💪, 🥑, 🔥, ✨) for a vibrant tone, while strictly forbidding markdown formatting (`**`, `*`, `#`, backticks). `InsightModal` applies a `stripMarkdown()` safety parser on both insight and follow-up answer text.
-    * Fiber (סיבים תזונתיים) is a first-class tracked nutrient with its own RDA (38g M / 25g F), displayed in Tier 1, and included in the AI insight analysis.
+    * Both the insight and follow-up system prompts instruct Gemini to use emojis natively (נ’×, נ¥‘, נ”¥, ג¨) for a vibrant tone, while strictly forbidding markdown formatting (`**`, `*`, `#`, backticks). `InsightModal` applies a `stripMarkdown()` safety parser on both insight and follow-up answer text.
+    * Fiber (׳¡׳™׳‘׳™׳ ׳×׳–׳•׳ ׳×׳™׳™׳) is a first-class tracked nutrient with its own RDA (38g M / 25g F), displayed in Tier 1, and included in the AI insight analysis.
     * The follow-up feature is strictly single-turn: one question per insight. Regenerating the insight clears the previous follow-up and re-enables the input.
 
-## 18. API Cost Protection — Gemini Confirmation Gates (March 2026)
+## 18. API Cost Protection ג€” Gemini Confirmation Gates (March 2026)
 
-* **Rule:** ALL user actions that trigger a Gemini API call MUST be preceded by a `window.confirm('האם אתה בטוח?')` confirmation dialog. If the user declines, the action is silently aborted.
+* **Rule:** ALL user actions that trigger a Gemini API call MUST be preceded by a `window.confirm('׳”׳׳ ׳׳×׳ה ׳‘׳˜׳•׳—?')` confirmation dialog. If the user declines, the action is silently aborted.
 * **Covered Actions:**
-    1. Submitting a manual text meal log (AI "חכם" tab and Manual tab in `MealLogModal`).
+    1. Submitting a manual text meal log (AI "׳—׳›׳" tab and Manual tab in `MealLogModal`).
     2. Submitting an image for analysis (camera capture in `MealLogModal`, and confirming the image review text).
-    3. Clicking "הוסף להיום" on a Favorite template (in `MealLogModal` saved tab).
-    4. Clicking "חשב והוסף להיום (חד-פעמי)" in `EditFavoriteModal`.
-    5. Generating or refreshing an AI Insight ("המלצה אישית עם AI" in `SmartInsightGenerator`).
-* **Implementation:** Native `window.confirm()` is used for zero-dependency simplicity. No explanatory text beyond "האם אתה בטוח?" — the dialog must be minimal.
+    3. Clicking "׳”׳•׳¡׳£ ׳׳”׳™׳•׳" on a Favorite template (in `MealLogModal` saved tab).
+    4. Clicking "׳—׳©׳‘ ׳•׳”׳•׳¡׳£ ׳׳”׳™׳•׳ (׳—׳“-׳₪׳¢׳׳™)" in `EditFavoriteModal`.
+    5. Generating or refreshing an AI Insight ("׳”׳׳׳¦׳” ׳׳™׳©׳™׳× ׳¢׳ AI" in `SmartInsightGenerator`).   
+* **Implementation:** Native `window.confirm()` is used for zero-dependency simplicity. No explanatory text beyond "׳”׳׳ ׳׳×׳ה ׳‘׳˜׳•׳—?" ג€” the dialog must be minimal.
 * **Standard:** Any future feature that introduces a new Gemini API call MUST include this confirmation gate. No exceptions.
 
 ## 19. Multimodal Vision-to-Text Meal Logging (March 2026)
@@ -345,18 +352,18 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
     * The Base64 image + MIME type are sent to `analyzeMealImage()` which calls Gemini's multimodal API (`gemini-3-flash-preview` with `gemini-2.5-flash` fallback on 429) with an `inlineData` part and a strict Hebrew-only prompt.
     * Gemini returns a raw comma-separated Hebrew string describing identified foods with estimated quantities.
     * The user reviews and edits this string in an intermediary `ImageReviewPhase` (editable textarea) within the modal.
-    * On confirmation ("המשך לחישוב"), the text is fed into the existing `parseMealDescription()` text-calculation pipeline — identical to manual text entry.
+    * On confirmation ("׳”׳׳©׳ ׳׳—׳™׳©׳•׳‘"), the text is fed into the existing `parseMealDescription()` text-calculation pipeline ג€” identical to manual text entry.
 
 * **Architecture:**
     * `gemini.ts`: Exports `fileToBase64(file: File) => Promise<string>` and `analyzeMealImage(base64Image, mimeType) => Promise<string>`.
     * `MealLogModal.tsx`: Hidden `<input type="file" accept="image/*" capture="environment" />` triggered by a circular Glassmorphism camera button. Three visual states: normal form, `isAnalyzingImage` shimmer, and `imageReviewText` edit phase.
-    * The vision prompt is intentionally separate from `SYSTEM_INSTRUCTION` — it produces raw Hebrew text, not structured JSON.
+    * The vision prompt is intentionally separate from `SYSTEM_INSTRUCTION` ג€” it produces raw Hebrew text, not structured JSON.
 
 * **Error Handling:**
     * API key errors (`API_KEY_INVALID`, `MISSING_API_KEY`) trigger the BYOK modal, consistent with the text flow.
     * 429 quota errors fall back to `gemini-2.5-flash` per the standard fallback mechanism.
 
-* **Rule:** The Vision pipeline MUST remain a two-step process: (1) image → raw text, (2) raw text → structured JSON via `parseMealDescription`. Never bypass the user review step or send images directly to the structured JSON endpoint.
+* **Rule:** The Vision pipeline MUST remain a two-step process: (1) image ג†’ raw text, (2) raw text ג†’ structured JSON via `parseMealDescription`. Never bypass the user review step or send images directly to the structured JSON endpoint.
 
 ## 20. UX & Routing
 * **Auto-Navigation & Feedback:** Upon successfully logging any meal, the app MUST automatically navigate the user back to the Home tab and smoothly scroll to the top to provide immediate visual feedback on their daily progress.

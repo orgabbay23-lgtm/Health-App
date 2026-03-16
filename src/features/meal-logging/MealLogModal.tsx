@@ -74,6 +74,7 @@ export function MealLogModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addMealLog = useAppStore((state) => state.addMealLog);
+  const setActiveScreen = useAppStore((state) => state.setActiveScreen);
   const savedMeals = useActiveSavedMeals();
   const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
   const createFavoriteTemplate = useAppStore((state) => state.createFavoriteTemplate);
@@ -139,6 +140,18 @@ export function MealLogModal({
       resetAi();
       resetManual();
       onClose();
+      
+      // Auto-Navigate & Scroll Top (Rule 20)
+      setActiveScreen("home");
+      setTimeout(() => {
+        const scrollCanvas = document.querySelector('.ios-scroll-canvas');
+        if (scrollCanvas) {
+          scrollCanvas.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }, 150);
+
       if (onSuccess) {
         onSuccess();
       }

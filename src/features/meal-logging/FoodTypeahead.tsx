@@ -48,16 +48,13 @@ export function FoodTypeahead({
     return segments[segments.length - 1].trim();
   };
 
-  // Update position coordinates - Always below the input
+  // Update position coordinates - Viewport relative for fixed positioning
   const updateCoords = () => {
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      const scrollY = window.scrollY || window.pageYOffset;
-      const scrollX = window.scrollX || window.pageXOffset;
-      
       setCoords({
-        top: rect.bottom + scrollY,
-        left: rect.left + scrollX,
+        top: rect.bottom,
+        left: rect.left,
         width: rect.width
       });
     }
@@ -66,7 +63,7 @@ export function FoodTypeahead({
   useLayoutEffect(() => {
     if (isOpen) {
       updateCoords();
-      // Use capture phase for scroll to catch it from anywhere
+      // Update on scroll and resize to keep fixed element anchored
       window.addEventListener("scroll", updateCoords, true);
       window.addEventListener("resize", updateCoords);
     }
@@ -225,13 +222,14 @@ export function FoodTypeahead({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
               transition={{ duration: 0.15 }}
-              className="absolute z-[9999] mt-2 py-2 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-soft-2xl rounded-2xl text-right overflow-y-auto overscroll-contain touch-pan-y max-h-[40vh] scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-200/60"
+              className="fixed z-[9999] py-2 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-soft-2xl rounded-2xl text-right overflow-y-auto overscroll-contain touch-pan-y max-h-[40vh] scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-200/60"
               style={{
-                top: coords.top,
-                left: coords.left,
-                width: Math.max(coords.width, 280),
-                minWidth: coords.width,
-                maxWidth: "calc(100vw - 2rem)",
+                top: coords.top + 4,
+                left: window.innerWidth < 640 ? "50%" : "auto",
+                right: window.innerWidth < 640 ? "auto" : (window.innerWidth - (coords.left + coords.width)),
+                transform: window.innerWidth < 640 ? "translateX(-50%)" : "none",
+                width: window.innerWidth < 640 ? "calc(100vw - 2rem)" : Math.max(coords.width, 280),
+                maxWidth: "95vw",
                 WebkitOverflowScrolling: "touch"
               }}
               onPointerDown={(e) => {

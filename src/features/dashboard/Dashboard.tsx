@@ -109,7 +109,8 @@ function getDailySafetyAlerts(
 }
 
 export function Dashboard() {
-  const [activeScreen, setActiveScreen] = useState<DashboardScreen>("home");
+  const activeScreen = useAppStore((state) => state.activeScreen);
+  const setActiveScreen = useAppStore((state) => state.setActiveScreen);
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [periodMode, setPeriodMode] = useState<DashboardPeriod>("daily");
@@ -178,10 +179,6 @@ export function Dashboard() {
     setReferenceDate(dayKeyToDate(dayKey));
   };
 
-  const onSelectScreen = (screen: DashboardScreen) => {
-    setActiveScreen(screen);
-  };
-
   if (!activeUser || !userProfile) {
     return null;
   }
@@ -223,7 +220,7 @@ export function Dashboard() {
                         ? "shadow-lg shadow-slate-200" 
                         : "border-white/70 bg-white/60 backdrop-blur-md hover:bg-white/90"
                     )}
-                    onClick={() => onSelectScreen(item.key)}
+                    onClick={() => setActiveScreen(item.key)}
                   >
                     <Icon size={16} className="ms-2" />
                     <span className="font-bold">{item.label}</span>
@@ -310,24 +307,13 @@ export function Dashboard() {
 
       <BottomNavigation
         activeScreen={activeScreen}
-        onNavigate={onSelectScreen}
+        onNavigate={setActiveScreen}
         onOpenMealModal={() => setIsMealModalOpen(true)}
       />
 
       <MealLogModal
         isOpen={isMealModalOpen}
         onClose={() => setIsMealModalOpen(false)}
-        onSuccess={() => {
-          setActiveScreen("home");
-          setTimeout(() => {
-            const scrollCanvas = document.querySelector('.ios-scroll-canvas');
-            if (scrollCanvas) {
-              scrollCanvas.scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }, 150);
-        }}
         targetDayKey={selectedDayKey}
       />
 
