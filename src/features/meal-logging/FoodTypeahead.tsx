@@ -190,27 +190,26 @@ export function FoodTypeahead({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
               transition={{ duration: 0.15 }}
-              className="absolute z-[9999] mt-2 py-2 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-soft-2xl rounded-2xl text-right overflow-y-auto overscroll-contain touch-pan-y"
+              className="absolute z-[9999] mt-2 py-2 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-soft-2xl rounded-2xl text-right overflow-y-auto overscroll-contain touch-pan-y max-h-[40vh] scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-200/60"
               style={{
                 top: coords.top,
                 left: coords.left,
                 width: coords.width,
-                maxHeight: "220px",
                 WebkitOverflowScrolling: "touch"
+              }}
+              onMouseDown={(e) => {
+                // Prevent input blur on desktop pointer clicks
+                e.preventDefault();
               }}
             >
               {suggestions.map((suggestion, idx) => (
                 <li
                   key={suggestion}
                   className={cn(
-                    "px-6 py-4 text-[15px] font-bold cursor-pointer transition-all flex items-center justify-start border-b border-slate-50 last:border-none active:bg-blue-50/50",
+                    "px-6 py-4 text-[15px] font-bold cursor-pointer transition-all flex items-center justify-start border-b border-slate-50 last:border-none active:bg-blue-50/50 select-none",
                     idx === activeIndex ? "bg-blue-50 text-blue-600" : "text-slate-700"
                   )}
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    selectSuggestion(suggestion);
-                  }}
+                  onClick={() => selectSuggestion(suggestion)}
                   onMouseEnter={() => setActiveIndex(idx)}
                 >
                   <span className="truncate">{suggestion}</span>
