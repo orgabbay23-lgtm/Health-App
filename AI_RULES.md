@@ -13,7 +13,7 @@
 * **3 AM Rollover:** Daily logs reset at 03:00 AM local time.
 * **Nutritional Math:** Clinical formulas (MSJ for BMR, specific UL targets) are immutable.
 * **AI Routing:** All models use `thinkingLevel: "high"`. Meal parsing and vision optimistically attempt `gemini-3-flash-preview`. If ANY error occurs, they seamlessly fallback to `gemini-3.1-flash-lite-preview`. Insights exclusively use the Lite model. Database quota counting is REMOVED.
-* **Timeframe Target Accumulation:** Weekly/Monthly targets ONLY accumulate for "Active Days". An active day is defined as the current day (Today) OR any past day within the timeframe that contains at least one logged meal (`dailyLogs[dayKey]?.meals?.length > 0`). Empty past days are excluded from the target multiplier to prevent artificial target inflation. The minimum multiplier is 1 (for today). This applies to calories, macros, all 24 micronutrients, progress bar percentages, and AI insight generation.
+* **Timeframe Target Accumulation:** Weekly and Monthly periods use a rolling window backward from yesterday (excluding the current day). Weekly = Last 7 days, Monthly = Last 30 days. Targets ONLY accumulate for "Active Days". An active day is defined as any past day within the rolling timeframe that contains at least one logged meal (`dailyLogs[dayKey]?.meals?.length > 0`). Empty past days are completely excluded from both the averages and the target multiplier to prevent artificial target inflation. This applies to calories, macros, all 24 micronutrients, progress bar percentages, and AI insight generation.
 
 ## 3. UI/UX Architecture ($1B Startup Aesthetic)
 * **Visual Identity:** Glassmorphism (backdrop-blur), soft layered shadows, and mesh gradients.

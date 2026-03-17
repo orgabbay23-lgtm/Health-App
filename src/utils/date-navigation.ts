@@ -1,19 +1,13 @@
 import {
   addDays,
-  addMonths,
   eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
   format,
   isAfter,
   isBefore,
-  isSameMonth,
-  isSameWeek,
   parseISO,
-  startOfMonth,
-  startOfWeek,
   subHours,
   subMonths,
+  subDays,
 } from "date-fns";
 import { he } from "date-fns/locale";
 import { EMPTY_MICRONUTRIENTS, MICRONUTRIENT_KEYS } from "./nutrition-utils";
@@ -50,7 +44,6 @@ export interface AggregatedPeriodData {
   totalMeals: number;
 }
 
-const WEEK_STARTS_ON = 0;
 const HISTORY_MONTH_WINDOW = 2;
 
 export function createEmptyAggregations(): DailyAggregations {
@@ -127,7 +120,7 @@ export function shiftReferenceDate(
     return clampToHistoryWindow(addDays(normalizedDate, amount * 7), now);
   }
 
-  return clampToHistoryWindow(addMonths(normalizedDate, amount), now);
+  return clampToHistoryWindow(addDays(normalizedDate, amount * 30), now);
 }
 
 export function canShiftReferenceDate(
@@ -152,17 +145,13 @@ function formatPeriodLabel(
     return format(referenceDate, "EEEE, d בMMMM", { locale: he });
   }
 
-  if (mode === "weekly") {
-    return `${format(startDate, "d MMM", { locale: he })} - ${format(
-      endDate,
-      "d MMM yyyy",
-      {
-        locale: he,
-      },
-    )}`;
-  }
-
-  return format(referenceDate, "MMMM yyyy", { locale: he });
+  return `${format(startDate, "d MMM", { locale: he })} - ${format(
+    endDate,
+    "d MMM yyyy",
+    {
+      locale: he,
+    },
+  )}`;
 }
 
 function formatPeriodCaption(
@@ -177,13 +166,13 @@ function formatPeriodCaption(
 
   if (mode === "weekly") {
     return isCurrentPeriod
-      ? "מהתחלת השבוע ועד היום"
-      : `שבוע מלא בין ${format(startDate, "d/M")} ל-${format(endDate, "d/M")}`;
+      ? "7 ימים אחרונים (לא כולל היום)"
+      : `7 ימים אחרונים`;
   }
 
   return isCurrentPeriod
-    ? "מהתחלת החודש ועד היום"
-    : `חודש מלא עד ${format(endDate, "d/M/yyyy")}`;
+    ? "30 ימים אחרונים (לא כולל היום)"
+    : `30 ימים אחרונים`;
 }
 
 export function getPeriodDetails(
@@ -196,33 +185,25 @@ export function getPeriodDetails(
 
   let startDate = normalizedReferenceDate;
   let endDate = normalizedReferenceDate;
-  let isCurrentPeriod =
+  const isCurrentPeriod =
     formatDayKey(normalizedReferenceDate) === formatDayKey(latest);
 
   if (mode === "weekly") {
-    startDate = startOfWeek(normalizedReferenceDate, {
-      weekStartsOn: WEEK_STARTS_ON,
-    });
-    endDate = endOfWeek(normalizedReferenceDate, {
-      weekStartsOn: WEEK_STARTS_ON,
-    });
-    isCurrentPeriod = isSameWeek(normalizedReferenceDate, latest, {
-      weekStartsOn: WEEK_STARTS_ON,
-    });
+    startDate = subDays(normalizedReferenceDate, 7);
+    endDate = subDays(normalizedReferenceDate, 1);
+  } else if (mode === "monthly") {
+    startDate = subDays(normalizedReferenceDate, 30);
+    endDate = subDays(normalizedReferenceDate, 1);
   }
 
-  if (mode === "monthly") {
-    startDate = startOfMonth(normalizedReferenceDate);
-    endDate = endOfMonth(normalizedReferenceDate);
-    isCurrentPeriod = isSameMonth(normalizedReferenceDate, latest);
-  }
+  if (isBefore(startDate, earliest)) startDate = earliest;
+  if (isAfter(startDate, latest)) startDate = latest;
 
-  if (isBefore(startDate, earliest)) {
-    startDate = earliest;
-  }
+  if (isBefore(endDate, earliest)) endDate = earliest;
+  if (isAfter(endDate, latest)) endDate = latest;
 
-  if (isAfter(endDate, latest) || isCurrentPeriod) {
-    endDate = latest;
+  if (isAfter(startDate, endDate)) {
+    startDate = endDate;
   }
 
   const dayKeys = eachDayOfInterval({
@@ -256,7 +237,7 @@ export function aggregatePeriodLogs(
     const log = dailyLogs[dayKey] ?? null;
     const dayAggregations = log?.aggregations ?? createEmptyAggregations();
 
-    if (log) {
+    if (log && log.meals.length > 0) {
       loggedDays += 1;
       totalMeals += log.meals.length;
       totals.calories += dayAggregations.calories;
