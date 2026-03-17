@@ -121,6 +121,8 @@ export function Dashboard() {
   const activeUser = useActiveUser();
   const removeMealLog = useAppStore((state) => state.removeMealLog);
   const saveMealAsFavorite = useAppStore((state) => state.saveMealAsFavorite);
+  const incrementMealQuantity = useAppStore((state) => state.incrementMealQuantity);
+  const decrementMealQuantity = useAppStore((state) => state.decrementMealQuantity);
   
   // Guard against missing profile/user during state transitions
   const userProfile = activeUser?.profile ?? null;
@@ -284,6 +286,8 @@ export function Dashboard() {
                 onDeleteMeal={removeMealLog}
                 onSaveFavorite={onSaveFavorite}
                 onEditMeal={(dayKey, meal) => setEditingLog({ dayKey, meal })}
+                onIncrementMeal={incrementMealQuantity}
+                onDecrementMeal={decrementMealQuantity}
               />
             ) : null}
 
@@ -303,6 +307,8 @@ export function Dashboard() {
                 onDeleteMeal={removeMealLog}
                 onSaveFavorite={onSaveFavorite}
                 onEditMeal={(dayKey, meal) => setEditingLog({ dayKey, meal })}
+                onIncrementMeal={incrementMealQuantity}
+                onDecrementMeal={decrementMealQuantity}
               />
             ) : null}
 

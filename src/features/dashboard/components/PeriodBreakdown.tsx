@@ -12,6 +12,8 @@ interface PeriodBreakdownProps {
   onSaveFavorite: (meal: MealItem) => void;
   onDeleteMeal?: (dayKey: string, mealId: string) => void;
   onEditMeal?: (dayKey: string, meal: MealItem) => void;
+  onIncrementMeal?: (dayKey: string, mealId: string) => void;
+  onDecrementMeal?: (dayKey: string, mealId: string) => void;
 }
 
 export function PeriodBreakdown({
@@ -20,6 +22,8 @@ export function PeriodBreakdown({
   onSaveFavorite,
   onDeleteMeal,
   onEditMeal,
+  onIncrementMeal,
+  onDecrementMeal,
 }: PeriodBreakdownProps) {
   return (
     <div className="space-y-3">
@@ -31,6 +35,8 @@ export function PeriodBreakdown({
           onSaveFavorite={onSaveFavorite}
           onDeleteMeal={onDeleteMeal}
           onEditMeal={onEditMeal}
+          onIncrementMeal={onIncrementMeal}
+          onDecrementMeal={onDecrementMeal}
         />
       ))}
     </div>
@@ -43,6 +49,8 @@ interface PeriodBreakdownItemProps {
   onSaveFavorite: (meal: MealItem) => void;
   onDeleteMeal?: (dayKey: string, mealId: string) => void;
   onEditMeal?: (dayKey: string, meal: MealItem) => void;
+  onIncrementMeal?: (dayKey: string, mealId: string) => void;
+  onDecrementMeal?: (dayKey: string, mealId: string) => void;
 }
 
 function PeriodBreakdownItem({
@@ -51,6 +59,8 @@ function PeriodBreakdownItem({
   onSaveFavorite,
   onDeleteMeal,
   onEditMeal,
+  onIncrementMeal,
+  onDecrementMeal,
 }: PeriodBreakdownItemProps) {
   const [isOpen, setIsOpen] = useState(Boolean(day.log));
 
@@ -106,6 +116,16 @@ function PeriodBreakdownItem({
                 onEdit={
                   onEditMeal
                     ? (meal) => onEditMeal(day.dayKey, meal)
+                    : undefined
+                }
+                onIncrement={
+                  onIncrementMeal
+                    ? (mealId) => onIncrementMeal(day.dayKey, mealId)
+                    : undefined
+                }
+                onDecrement={
+                  onDecrementMeal
+                    ? (mealId) => onDecrementMeal(day.dayKey, mealId)
                     : undefined
                 }
                 savedSignatures={savedSignatures}

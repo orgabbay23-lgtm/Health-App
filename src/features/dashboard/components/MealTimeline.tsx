@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, ChevronDown, Sparkles, Trash2, Coffee, Utensils, Sandwich, Apple, Moon, Pill, Pencil } from "lucide-react";
+import { Heart, ChevronDown, Sparkles, Trash2, Coffee, Utensils, Sandwich, Apple, Moon, Pill, Pencil, Plus, Minus } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { NUTRIENT_META } from "../../../utils/nutritional-tips";
@@ -13,6 +13,8 @@ interface MealTimelineProps {
   onDelete?: (mealId: string) => void;
   onSaveFavorite?: (meal: MealItem) => void;
   onEdit?: (meal: MealItem) => void;
+  onIncrement?: (mealId: string) => void;
+  onDecrement?: (mealId: string) => void;
   savedSignatures: Set<string>;
   emptyText: string;
 }
@@ -21,7 +23,7 @@ const highlightedMicros = ["fiber", "calcium", "iron", "vitaminC"] as const;
 
 function getMealIcon(mealName: string, sourceType?: string) {
   if (sourceType === "supplement") return Pill;
-  
+
   const name = mealName.toLowerCase();
   if (name.includes("בוקר") || name.includes("breakfast")) return Coffee;
   if (name.includes("צהריים") || name.includes("lunch")) return Utensils;
@@ -35,6 +37,8 @@ export function MealTimeline({
   onDelete,
   onSaveFavorite,
   onEdit,
+  onIncrement,
+  onDecrement,
   savedSignatures,
   emptyText,
 }: MealTimelineProps) {
@@ -68,6 +72,8 @@ export function MealTimeline({
             onDelete={onDelete}
             onSaveFavorite={onSaveFavorite}
             onEdit={onEdit}
+            onIncrement={onIncrement}
+            onDecrement={onDecrement}
             isSaved={savedSignatures.has(createMealSignature(meal))}
           />
         ))}
@@ -83,6 +89,8 @@ interface MealTimelineItemProps {
   onDelete?: (mealId: string) => void;
   onSaveFavorite?: (meal: MealItem) => void;
   onEdit?: (meal: MealItem) => void;
+  onIncrement?: (mealId: string) => void;
+  onDecrement?: (mealId: string) => void;
   isSaved: boolean;
 }
 
@@ -93,6 +101,8 @@ function MealTimelineItem({
   onDelete,
   onSaveFavorite,
   onEdit,
+  onIncrement,
+  onDecrement,
   isSaved,
 }: MealTimelineItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -151,14 +161,51 @@ function MealTimelineItem({
                       {formatMealTime(meal.timestamp)}
                     </span>
                     <span className="w-1 h-1 rounded-full bg-slate-200" />
-                    <span className="text-[13px] font-black text-slate-950">
+                    <motion.span
+                      key={meal.calories}
+                      initial={{ scale: 1.15 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                      className="text-[13px] font-black text-slate-950 inline-block"
+                    >
                       {formatNutritionValue(meal.calories)} קק"ל
-                    </span>
+                    </motion.span>
+                    {(meal.quantity ?? 1) > 1 && (
+                      <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                        x{meal.quantity}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-1">
+                {onDecrement && (meal.quantity ?? 1) > 1 && (
+                  <button
+                    type="button"
+                    className="h-7 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors flex items-center gap-0.5"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDecrement(meal.id);
+                    }}
+                  >
+                    <Minus size={12} />
+                    <span>1</span>
+                  </button>
+                )}
+                {onIncrement && (
+                  <button
+                    type="button"
+                    className="h-7 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center gap-0.5"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onIncrement(meal.id);
+                    }}
+                  >
+                    <Plus size={12} />
+                    <span>1</span>
+                  </button>
+                )}
                 {onSaveFavorite && (
                   <Button
                     type="button"
@@ -224,13 +271,19 @@ function MealTimelineItem({
                 { label: "פחמימות", value: meal.macronutrients.carbs, color: "gradient-carbs text-white", shadow: "shadow-emerald-200/50" },
                 { label: "שומן", value: meal.macronutrients.fat, color: "gradient-fats text-white", shadow: "shadow-amber-200/50" }
               ].map((macro) => (
-                <div key={macro.label} className={cn(
-                  "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-md", 
-                  macro.color,
-                  macro.shadow
-                )}>
+                <motion.div
+                  key={`${macro.label}-${macro.value}`}
+                  initial={{ scale: 1.08 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-md",
+                    macro.color,
+                    macro.shadow
+                  )}
+                >
                   {macro.label}: {formatNutritionValue(macro.value)} ג'
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>

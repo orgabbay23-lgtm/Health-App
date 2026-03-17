@@ -57,6 +57,8 @@ export interface MealItem {
   sourceType?: MealSourceType;
   /** Original text used to generate the meal */
   mealText?: string;
+  /** How many servings this meal represents (default 1) */
+  quantity?: number;
 }
 
 export interface SavedMeal {
@@ -150,6 +152,7 @@ function normalizeMealItem(meal: Partial<MealItem>): MealItem {
     confidence_score: meal.confidence_score === undefined ? undefined : toFiniteNumber(meal.confidence_score, 0),
     sourceType: meal.sourceType === "supplement" ? "supplement" : "food",
     mealText: typeof meal.mealText === "string" ? meal.mealText : undefined,
+    quantity: typeof meal.quantity === "number" && meal.quantity >= 1 ? meal.quantity : undefined,
   };
 }
 
@@ -292,6 +295,8 @@ interface AppState {
   createFavoriteTemplate: (name: string, mealText: string) => Promise<boolean>;
   updateFavoriteTemplate: (id: string, newName: string, newMealText: string) => Promise<boolean>;
   addSavedMealToDay: (dayKey: string, savedMealId: string) => Promise<NutritionSafetyAlert[]>;
+  incrementMealQuantity: (dayKey: string, mealId: string) => Promise<void>;
+  decrementMealQuantity: (dayKey: string, mealId: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()(
@@ -786,6 +791,122 @@ export const useAppStore = create<AppState>()(
 
     toast.success("התבנית עודכנה בהצלחה");
     return true;
+  },
+
+  incrementMealQuantity: async (dayKey, mealId) => {
+    const { dailyLogs, userId } = get();
+    if (!userId) return;
+
+    const currentLog = dailyLogs[dayKey];
+    if (!currentLog) return;
+
+    const mealIndex = currentLog.meals.findIndex(m => m.id === mealId);
+    if (mealIndex === -1) return;
+
+    const meal = currentLog.meals[mealIndex];
+    const currentQty = meal.quantity || 1;
+    const newQty = currentQty + 1;
+
+    // Scale all nutritional values: newValue = (current / currentQty) * newQty
+    const scale = newQty / currentQty;
+    const updatedMeal: MealItem = {
+      ...meal,
+      quantity: newQty,
+      calories: meal.calories * scale,
+      macronutrients: {
+        protein: meal.macronutrients.protein * scale,
+        carbs: meal.macronutrients.carbs * scale,
+        fat: meal.macronutrients.fat * scale,
+      },
+      micronutrients: MICRONUTRIENT_KEYS.reduce((acc, key) => {
+        acc[key] = meal.micronutrients[key] * scale;
+        return acc;
+      }, { ...EMPTY_MICRONUTRIENTS }),
+    };
+
+    const previousLogs = dailyLogs;
+    const nextMeals = [...currentLog.meals];
+    nextMeals[mealIndex] = updatedMeal;
+    const nextAggregations = aggregateMeals(nextMeals);
+    const nextLogs = {
+      ...dailyLogs,
+      [dayKey]: { meals: nextMeals, aggregations: nextAggregations },
+    };
+
+    set({ dailyLogs: nextLogs });
+
+    const logToSave = nextLogs[dayKey];
+    const { error } = await supabase.from('daily_logs').upsert({
+      user_id: userId,
+      date: dayKey,
+      meals: logToSave.meals,
+      aggregations: logToSave.aggregations,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,date' });
+
+    if (error) {
+      console.error("Error incrementing meal quantity", error);
+      set({ dailyLogs: previousLogs });
+      toast.error("שגיאה בעדכון הכמות. השינוי בוטל.");
+    }
+  },
+
+  decrementMealQuantity: async (dayKey, mealId) => {
+    const { dailyLogs, userId } = get();
+    if (!userId) return;
+
+    const currentLog = dailyLogs[dayKey];
+    if (!currentLog) return;
+
+    const mealIndex = currentLog.meals.findIndex(m => m.id === mealId);
+    if (mealIndex === -1) return;
+
+    const meal = currentLog.meals[mealIndex];
+    const currentQty = meal.quantity || 1;
+    if (currentQty <= 1) return;
+
+    const newQty = currentQty - 1;
+    const scale = newQty / currentQty;
+    const updatedMeal: MealItem = {
+      ...meal,
+      quantity: newQty === 1 ? undefined : newQty,
+      calories: meal.calories * scale,
+      macronutrients: {
+        protein: meal.macronutrients.protein * scale,
+        carbs: meal.macronutrients.carbs * scale,
+        fat: meal.macronutrients.fat * scale,
+      },
+      micronutrients: MICRONUTRIENT_KEYS.reduce((acc, key) => {
+        acc[key] = meal.micronutrients[key] * scale;
+        return acc;
+      }, { ...EMPTY_MICRONUTRIENTS }),
+    };
+
+    const previousLogs = dailyLogs;
+    const nextMeals = [...currentLog.meals];
+    nextMeals[mealIndex] = updatedMeal;
+    const nextAggregations = aggregateMeals(nextMeals);
+    const nextLogs = {
+      ...dailyLogs,
+      [dayKey]: { meals: nextMeals, aggregations: nextAggregations },
+    };
+
+    set({ dailyLogs: nextLogs });
+
+    const logToSave = nextLogs[dayKey];
+    const { error } = await supabase.from('daily_logs').upsert({
+      user_id: userId,
+      date: dayKey,
+      meals: logToSave.meals,
+      aggregations: logToSave.aggregations,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,date' });
+
+    if (error) {
+      console.error("Error decrementing meal quantity", error);
+      set({ dailyLogs: previousLogs });
+      toast.error("שגיאה בעדכון הכמות. השינוי בוטל.");
+    }
   },
 
   addSavedMealToDay: async (dayKey, savedMealId) => {
