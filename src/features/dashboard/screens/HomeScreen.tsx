@@ -1,4 +1,6 @@
 import { motion, type Variants } from "framer-motion";
+import { format } from "date-fns";
+import { he } from "date-fns/locale";
 import type {
   AggregatedPeriodData,
   DashboardPeriod,
@@ -78,13 +80,28 @@ export function HomeScreen({
     }
   };
 
+  const periodCaption = periodMode === "weekly"
+    ? `${format(periodDetails.startDate, "EEEE", { locale: he })} – ${format(periodDetails.endDate, "EEEE", { locale: he })} · לא כולל ימים ריקים`
+    : periodMode === "monthly"
+      ? `${format(periodDetails.startDate, "d בMMMM", { locale: he })} – ${format(periodDetails.endDate, "d בMMMM", { locale: he })} · לא כולל ימים ריקים`
+      : null;
+
   return (
-    <motion.div 
+    <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
       className="space-y-10"
     >
+      {periodCaption && (
+        <motion.p
+          variants={itemVariants}
+          className="text-center text-[11px] font-medium text-slate-400 tracking-wide -mb-4"
+        >
+          {periodCaption}
+        </motion.p>
+      )}
+
       {/* Level 1: Hero Section (Calories) */}
       <motion.section variants={itemVariants} className="flex flex-col items-center pt-2">
         <PrimaryNutrientCard

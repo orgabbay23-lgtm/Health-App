@@ -157,11 +157,22 @@ export function Dashboard() {
     }
 
     const baseTargets = buildBaseTargets(userProfile.targets);
-    const targetMultiplier =
-      periodMode === "daily" ? 1 : periodDetails.dayKeys.length;
 
-    return createScaledTargets(baseTargets, targetMultiplier);
-  }, [periodDetails.dayKeys.length, periodMode, userProfile]);
+    if (periodMode === "daily") {
+      return createScaledTargets(baseTargets, 1);
+    }
+
+    // Active Days algorithm: only count days that have logged meals OR are today.
+    // This prevents empty past days from inflating the period target budget.
+    const todayKey = formatDayKey(getLogicalDate());
+    const activeDaysCount = periodDetails.dayKeys.filter((dayKey) => {
+      if (dayKey === todayKey) return true;
+      const log = dailyLogs[dayKey];
+      return log != null && log.meals.length > 0;
+    }).length;
+
+    return createScaledTargets(baseTargets, Math.max(activeDaysCount, 1));
+  }, [periodDetails.dayKeys, periodMode, userProfile, dailyLogs]);
 
   const onSaveFavorite = async (meal: MealItem) => {
     const wasAdded = await saveMealAsFavorite(meal);
