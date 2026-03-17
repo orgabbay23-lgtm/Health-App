@@ -279,8 +279,14 @@ export async function generateNutritionalInsight(
 ): Promise<string> {
   const finalKey = await getApiKey();
 
-  const userPrompt = `תקופה: ${timeframe === 'day' ? 'יום' : timeframe === 'week' ? 'שבוע' : 'חודש'}
+  let timeContext = "";
+  if (timeframe === 'day') {
+    const currentTime = new Date().toLocaleTimeString("he-IL", { timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit" });
+    timeContext = `\nהשעה הנוכחית בישראל היא ${currentTime}. קח זאת בחשבון: חוסר קלורי בבוקר הוא הגיוני, אך בערב הוא דורש השלמה.\n`;
+  }
 
+  const userPrompt = `תקופה: ${timeframe === 'day' ? 'יום' : timeframe === 'week' ? 'שבוע' : 'חודש'}
+${timeContext}
 פרופיל המשתמש:
 ${JSON.stringify(userProfile)}
 

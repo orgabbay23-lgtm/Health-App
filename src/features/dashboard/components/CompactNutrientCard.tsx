@@ -45,7 +45,7 @@ export function CompactNutrientCard({
         stiffness: 260,
         damping: 20
       }}
-      className="flex-1 relative"
+      className="h-full relative"
     >
       {isNearGoal && (
         <div className="absolute -top-2 -right-2 pointer-events-none z-10">
@@ -58,8 +58,8 @@ export function CompactNutrientCard({
         </div>
       )}
 
-      <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-xl rounded-[2rem] border border-white/60">
-        <CardContent className="flex flex-col gap-4 p-5">
+      <Card className="h-full flex flex-col border-none bg-white/40 backdrop-blur-md shadow-soft-xl rounded-[2rem] border border-white/60">
+        <CardContent className="flex-1 flex flex-col justify-between gap-4 p-5">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <p className="text-[13px] font-black text-slate-600 uppercase tracking-[0.15em]">{meta.label}</p>

@@ -16,7 +16,6 @@ import type { NutritionSafetyAlert } from "../../../utils/nutrition-utils";
 import { Card, CardContent } from "../../../components/ui/card";
 import { CompactNutrientCard } from "../components/CompactNutrientCard";
 import { FullNutritionAccordion } from "../components/FullNutritionAccordion";
-import { GuidanceCard } from "../components/GuidanceCard";
 import { MealTimeline } from "../components/MealTimeline";
 import { PeriodBreakdown } from "../components/PeriodBreakdown";
 import { PrimaryNutrientCard } from "../components/PrimaryNutrientCard";
@@ -154,11 +153,7 @@ export function HomeScreen({
         />
       </motion.section>
 
-      {userProfile.targets.guidanceFlags.length > 0 && (
-        <motion.div variants={itemVariants}>
-          <GuidanceCard flags={userProfile.targets.guidanceFlags} />
-        </motion.div>
-      )}
+
 
       {periodMode === "daily" && safetyAlerts.length > 0 && (
         <motion.div variants={itemVariants}>

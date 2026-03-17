@@ -345,6 +345,7 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
     * Regenerating the insight (refresh button) resets the follow-up Q&A, allowing a fresh question.      
 
 * **Integration:**
+    * **Time-Awareness:** Daily insights (	imeframe === 'day') inject the current Israel time into the prompt so the AI accurately judges caloric/nutrient progress relative to the time of day.
     * Placed in `HomeScreen.tsx` between the micronutrient accordion and the meals/period-breakdown card, visible across all period modes (daily/weekly/monthly).
     * Calculates percentage-based nutrition data (current vs. targets for calories, macros, and all 24 micronutrients) before sending to Gemini.
 
