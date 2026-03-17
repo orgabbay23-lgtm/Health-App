@@ -22,6 +22,7 @@ import { PeriodBreakdown } from "../components/PeriodBreakdown";
 import { PrimaryNutrientCard } from "../components/PrimaryNutrientCard";
 import { SafetyAlertsCard } from "../components/SafetyAlertsCard";
 import { SmartInsightGenerator } from "../components/SmartInsightGenerator";
+import { InfoPopover } from "../../../components/ui/info-popover";
 
 interface HomeScreenProps {
   periodMode: DashboardPeriod;
@@ -103,9 +104,16 @@ export function HomeScreen({
               {periodCaption}
             </span>
             <div className="w-1 h-1 rounded-full bg-slate-300" />
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-              לא כולל ימים ריקים
-            </span>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                לא כולל ימים ריקים
+              </span>
+              <InfoPopover 
+                title="מידע על חישוב יעדים"
+                content="כדי למנוע עיוות של ממוצעים, המערכת מחשבת ומשקללת אך ורק ימים שבהם בפועל תיעדת ארוחות. ימים ריקים לחלוטין מנופים מהחישוב כדי לא לפגוע ביעדים שלך בצורה מלאכותית."
+                iconClassName="h-5 w-5 text-slate-400 hover:text-blue-500 bg-white/50 rounded-full p-0.5 shadow-sm"
+              />
+            </div>
           </div>
         </motion.div>
       )}
