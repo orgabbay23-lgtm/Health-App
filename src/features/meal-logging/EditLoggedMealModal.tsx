@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Save, CalendarPlus, WandSparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { WandSparkles } from "lucide-react";
 import { toast } from "sonner";
 import { type MealItem, useAppStore } from "../../store";
 import { Button } from "../../components/ui/button";
