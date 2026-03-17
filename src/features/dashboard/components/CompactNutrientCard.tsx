@@ -28,7 +28,7 @@ export function CompactNutrientCard({
   index = 0,
 }: CompactNutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
-  const appearance = getProgressAppearance(current, target, nutrient);
+  const appearance = getProgressAppearance(current, target, nutrient, nutrient);
   const percentage = Math.min(Math.max(appearance.percentage, 0), 100);
 
   return (

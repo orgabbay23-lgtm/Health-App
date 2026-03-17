@@ -406,3 +406,15 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
     2. **Gallery** (Lucide `Image` icon): Triggers `<input>` WITHOUT `capture` — opens the photo picker/gallery.
     * Both inputs share the same `handleImageCapture` handler and `isAnalyzingImage` loading state.
 * **Rule:** Any future meal-logging AI pipeline MUST use the optimistic primary→fallback pattern. Any future insight/analytics AI pipeline MUST use `FALLBACK_MODEL` exclusively. All AI pipelines require the API Cost Protection confirmation gate (Section 18).
+
+## 22. Clinical 3-Tier Nutrient Progress Color Logic (March 2026)
+
+* **Architecture:** `getNutrientProgressColor(nutrientKey, value, target)` in `nutrition-utils.ts` returns a `NutrientColorTier` (`'blue' | 'green' | 'red'`). `getProgressAppearance()` in `progress-tone.ts` accepts an optional `nutrientKey` parameter and delegates to this helper.
+* **3-Tier Rules:**
+    * **≤100% of target → Blue** (default in-progress state for all nutrients).
+    * **>100% — Strict Limit Nutrients** (`calories`, `carbs`, `fat`, `sodium`) **→ Red** immediately. These nutrients have negative health effects when exceeded.
+    * **>100% — UL-Tracked Nutrients** (`iron`, `calcium`, `vitaminA`, `zinc`, `vitaminD`, `selenium`, `iodine`, `copper`, `vitaminE`, `vitaminK`) **→ Green** (safe excess) UNLESS the percentage exceeds their clinical Tolerable Upper Intake Level (UL) threshold (e.g., iron >250%, vitaminD >500%) **→ Red** (toxicity risk).
+    * **>100% — Goal Nutrients** (`protein`, `fiber`, `vitaminC`, `magnesium`, `potassium`, `vitaminB12`, `folicAcid`, `omega3`, all other B vitamins, `manganese`, `chromium`) **→ Green**. These are "more is generally better from food" nutrients with no strict UL concern from dietary sources.
+* **UL Thresholds (as % of RDA):** `iron: 250`, `calcium: 250`, `vitaminA: 300`, `zinc: 350`, `vitaminD: 500`, `selenium: 700`, `iodine: 700`, `copper: 1000`, `vitaminE: 1000`, `vitaminK: 1000`.
+* **Clinical Rationale:** Fat-soluble vitamins and heavy minerals should NOT turn red upon slightly exceeding 100% — moderate excess is normal and healthy. Only clinical UL breach warrants a warning.
+* **Rule:** Any new nutrient added to the tracker must be classified into one of the three tiers. Default to "goal nutrient" (green) unless clinical evidence supports a strict limit or UL threshold.

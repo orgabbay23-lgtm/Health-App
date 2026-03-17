@@ -27,7 +27,7 @@ export function NutrientCard({
   index = 0,
 }: NutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
-  const appearance = getProgressAppearance(current, target, "micronutrient");
+  const appearance = getProgressAppearance(current, target, "micronutrient", nutrient);
   const percentage = Math.min(Math.max(appearance.percentage, 0), 100);
 
   return (

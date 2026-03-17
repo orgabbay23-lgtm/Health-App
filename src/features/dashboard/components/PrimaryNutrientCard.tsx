@@ -29,7 +29,7 @@ export function PrimaryNutrientCard({
   periodMode,
 }: PrimaryNutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
-  const appearance = getProgressAppearance(current, target, "calories");
+  const appearance = getProgressAppearance(current, target, "calories", "calories");
   
   const radius = 40;
   const circumference = 2 * Math.PI * radius;

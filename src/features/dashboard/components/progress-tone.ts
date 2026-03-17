@@ -1,3 +1,5 @@
+import { getNutrientProgressColor } from "../../../utils/nutrition-utils";
+
 export type NutrientType = "calories" | "protein" | "carbs" | "fat" | "micronutrient";
 
 export interface ProgressAppearance {
@@ -12,7 +14,8 @@ export interface ProgressAppearance {
 export function getProgressAppearance(
   currentValue: number,
   targetValue: number,
-  type: NutrientType = "micronutrient"
+  type: NutrientType = "micronutrient",
+  nutrientKey?: string
 ): ProgressAppearance {
   if (targetValue <= 0) {
     return {
@@ -26,8 +29,13 @@ export function getProgressAppearance(
   }
 
   const percentage = Math.max(0, Math.round((currentValue / targetValue) * 100));
-  const isOverLimit = percentage > 110; // Clinical warning threshold
   const isNearGoal = percentage >= 90 && percentage <= 110;
+
+  // Use the clinical 3-tier color logic to determine over-limit state
+  const resolvedKey = nutrientKey ?? type;
+  const colorTier = getNutrientProgressColor(resolvedKey, currentValue, targetValue);
+  const isOverLimit = colorTier === "red";
+  const isSafeExcess = colorTier === "green"; // >100% but clinically safe
 
   // Base colors based on nutrient type
   const typeColors: Record<NutrientType, { bar: string; badge: string; glow: string }> = {
@@ -60,9 +68,10 @@ export function getProgressAppearance(
 
   const base = typeColors[type];
 
+  // Red: clinical over-limit (strict nutrients or UL exceeded)
   if (isOverLimit) {
     return {
-      barClass: "bg-rose-600", // Sophisticated Warning Red
+      barClass: "bg-rose-600",
       badgeClass: "bg-rose-50 text-rose-700",
       glowClass: "shadow-[0_0_20px_rgba(225,29,72,0.4)]",
       percentage,
@@ -71,6 +80,19 @@ export function getProgressAppearance(
     };
   }
 
+  // Green: safe excess (>100% but within clinical UL or goal nutrient)
+  if (isSafeExcess) {
+    return {
+      barClass: "bg-emerald-500",
+      badgeClass: "bg-emerald-50 text-emerald-700",
+      glowClass: "shadow-[0_0_15px_rgba(16,185,129,0.3)]",
+      percentage,
+      isOverLimit: false,
+      isNearGoal: false,
+    };
+  }
+
+  // Near-goal celebration (90-110%)
   if (isNearGoal) {
     return {
       barClass: base.bar,
@@ -82,6 +104,7 @@ export function getProgressAppearance(
     };
   }
 
+  // Default: blue / in-progress
   return {
     barClass: base.bar,
     badgeClass: base.badge,

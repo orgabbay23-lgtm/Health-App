@@ -710,6 +710,60 @@ export function diffSafetyAlerts(
   return nextAlerts.filter((alert) => !previousIds.has(alert.id));
 }
 
+// ── Clinical 3-Tier Nutrient Color Logic ──────────────────────────────
+// Strict-limit nutrients: turn red immediately when >100% of target
+const STRICT_LIMIT_NUTRIENTS = ['calories', 'carbs', 'fat', 'sodium'];
+
+// Upper Limit thresholds as % of RDA — nutrients stay green until exceeding their clinical UL
+const UPPER_LIMIT_THRESHOLDS: Record<string, number> = {
+  iron: 250,       // UL ~45mg, Target ~18mg
+  calcium: 250,    // UL ~2500mg, Target ~1000mg
+  vitaminA: 300,   // UL 3000mcg, Target ~900mcg
+  zinc: 350,       // UL 40mg, Target ~11mg
+  vitaminD: 500,   // UL 100mcg, Target ~20mcg
+  selenium: 700,   // UL 400mcg, Target ~55mcg
+  iodine: 700,     // UL 1100mcg, Target ~150mcg
+  copper: 1000,    // UL 10mg, Target ~0.9mg
+  vitaminE: 1000,  // UL 1000mg, Target ~15mg
+  vitaminK: 1000,  // No formal UL, very high ceiling
+};
+
+export type NutrientColorTier = 'blue' | 'green' | 'red';
+
+/**
+ * Clinical 3-tier color logic for nutrient progress indicators.
+ *
+ * ≤100%: Blue (default / in-progress)
+ * >100%:
+ *   - Strict-limit nutrients (calories, carbs, fat, sodium) → Red
+ *   - UL-tracked nutrients (iron, calcium, vitaminA, etc.) → Green unless exceeding UL threshold → Red
+ *   - Goal nutrients (protein, fiber, vitaminC, magnesium, etc.) → Green (no upper limit concern from food)
+ */
+export function getNutrientProgressColor(
+  nutrientKey: string,
+  value: number,
+  target: number,
+): NutrientColorTier {
+  const percentage = target > 0 ? (value / target) * 100 : 0;
+
+  if (percentage <= 100) {
+    return 'blue';
+  }
+
+  // >100% — determine tier
+  if (STRICT_LIMIT_NUTRIENTS.includes(nutrientKey)) {
+    return 'red';
+  }
+
+  const ulThreshold = UPPER_LIMIT_THRESHOLDS[nutrientKey];
+  if (ulThreshold !== undefined) {
+    return percentage > ulThreshold ? 'red' : 'green';
+  }
+
+  // Goal nutrients (protein, fiber, vitaminC, magnesium, omega3, B vitamins, etc.)
+  return 'green';
+}
+
 export function formatNutritionValue(value: number): string {
   if (!Number.isFinite(value)) {
     return "0";
