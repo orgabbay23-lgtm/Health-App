@@ -179,4 +179,28 @@
     0% { transform: translateX(100%); }
     100% { transform: translateX(-100%); }
   }
+
+  /* Glass Shimmer — premium loading effect */
+  .glass-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.45) 45%,
+      rgba(255, 255, 255, 0.6) 50%,
+      rgba(255, 255, 255, 0.45) 55%,
+      transparent 100%
+    );
+    animation: glass-shimmer 1.8s ease-in-out infinite;
+  }
+  @keyframes glass-shimmer {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
 }

@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { TipPopover } from "../../../components/ui/tip-popover";
@@ -78,7 +78,18 @@ export function CompactNutrientCard({
                 </motion.span>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-xl font-black text-slate-950">{formatNutritionValue(current)}</span>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={current}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    className="text-xl font-black text-slate-950"
+                  >
+                    {formatNutritionValue(current)}
+                  </motion.span>
+                </AnimatePresence>
                 <span className="text-[11px] font-bold text-slate-500">/ {formatNutritionValue(target)}</span>
               </div>
             </div>

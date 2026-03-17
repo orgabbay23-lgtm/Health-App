@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useFieldArray, useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -59,6 +59,7 @@ export function MealLogModal({
   onSuccess,
   targetDayKey = getLogicalDayKey(),
 }: MealLogModalProps) {
+  const [activeTab, setActiveTab] = useState("ai");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isByokOpen, setIsByokOpen] = useState(false);
   const [pendingDescription, setPendingDescription] = useState<string | null>(null);
@@ -79,6 +80,8 @@ export function MealLogModal({
   const savedMeals = useActiveSavedMeals();
   const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
   const createFavoriteTemplate = useAppStore((state) => state.createFavoriteTemplate);
+
+  const tabIndex = useMemo(() => (activeTab === "ai" ? 0 : activeTab === "manual" ? 1 : 2), [activeTab]);
 
   const aiFormMethods = useForm<AiFormValues>({
     resolver: zodResolver(aiSchema),
@@ -309,17 +312,24 @@ export function MealLogModal({
   return (
     <>
       <ModalShell isOpen={isOpen} onClose={onClose} title="הוספת ארוחה">
-        <Tabs defaultValue="ai" dir="rtl" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-14">
-            <TabsTrigger value="ai" className="gap-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 h-14 relative">
+            <motion.div
+              className="absolute top-1.5 bottom-1.5 rounded-[1.15rem] bg-white shadow-soft-lg ring-1 ring-slate-100 pointer-events-none z-0"
+              style={{ width: "calc((100% - 12px) / 3)", right: "6px" }}
+              initial={false}
+              animate={{ x: `${tabIndex * -100}%` }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            />
+            <TabsTrigger value="ai" className="gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0">
               <WandSparkles size={16} />
               חכם
             </TabsTrigger>
-            <TabsTrigger value="manual" className="gap-2">
+            <TabsTrigger value="manual" className="gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0">
               <Plus size={16} />
               ידני
             </TabsTrigger>
-            <TabsTrigger value="saved" className="gap-2">
+            <TabsTrigger value="saved" className="gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0">
               <Heart size={16} />
               מועדפים
             </TabsTrigger>
@@ -412,7 +422,7 @@ export function MealLogModal({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="flex flex-col items-center gap-4 py-12"
+                    className="flex flex-col items-center gap-4 py-12 rounded-3xl glass-shimmer"
                   >
                     <motion.div
                       animate={{ rotate: 360 }}
@@ -753,7 +763,7 @@ export function MealLogModal({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="p-6 rounded-3xl bg-gradient-to-br from-blue-50/80 to-violet-50/50 border border-blue-200/40 flex flex-col items-center gap-3"
+                      className="p-6 rounded-3xl bg-gradient-to-br from-blue-50/80 to-violet-50/50 border border-blue-200/40 flex flex-col items-center gap-3 glass-shimmer"
                     >
                       <motion.div
                         animate={{ rotate: 360 }}

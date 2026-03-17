@@ -47,9 +47,10 @@ export function HistoryArchive({
               <motion.button
                 key={dayKey}
                 type="button"
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.03, duration: 0.2 }}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.96, transition: { type: "spring", stiffness: 400, damping: 17 } }}
+                transition={{ delay: index * 0.03, type: "spring", stiffness: 260, damping: 20 }}
                 className={cn(
                   "flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-right transition",
                   selectedDayKey === dayKey

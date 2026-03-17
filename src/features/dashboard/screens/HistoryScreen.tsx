@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import type {
   AggregatedPeriodData,
   DashboardPeriod,
@@ -16,6 +17,16 @@ import { HistoryArchive } from "../components/HistoryArchive";
 import { MealTimeline } from "../components/MealTimeline";
 import { PeriodBreakdown } from "../components/PeriodBreakdown";
 import { SafetyAlertsCard } from "../components/SafetyAlertsCard";
+
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.05 } },
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 260, damping: 20 } },
+};
 
 interface HistoryScreenProps {
   dailyLogs: Record<string, DailyLog>;
@@ -55,39 +66,48 @@ export function HistoryScreen({
   onDecrementMeal,
 }: HistoryScreenProps) {
   return (
-    <div className="space-y-8">
-      <div className="pt-2">
+    <motion.div
+      className="space-y-8"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div variants={staggerItem} className="pt-2">
         <DateNavigator
           periodMode={periodMode}
           periodDetails={periodDetails}
           onDateChange={onDateChange}
         />
-      </div>
+      </motion.div>
 
-      <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-lg rounded-[2rem]">
-        <CardContent className="space-y-4 p-6">
-          <div className="flex flex-wrap gap-2 text-sm">
-            <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
-              {periodData.loggedDays} ימים
+      <motion.div variants={staggerItem}>
+        <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-lg rounded-[2rem]">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex flex-wrap gap-2 text-sm">
+              <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
+                {periodData.loggedDays} ימים
+              </div>
+              <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
+                {Math.round(periodData.aggregations.calories)} קק"ל
+              </div>
+              <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
+                {Math.round(periodTargets.protein)}ג חלבון
+              </div>
+              <div className="rounded-full bg-slate-900 px-4 py-2 font-bold text-white uppercase tracking-tighter ms-auto">
+                <span dir="ltr">{formatSelectedDate(selectedDayKey)}</span>
+              </div>
             </div>
-            <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
-              {Math.round(periodData.aggregations.calories)} קק"ל
-            </div>
-            <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
-              {Math.round(periodTargets.protein)}ג חלבון
-            </div>
-            <div className="rounded-full bg-slate-900 px-4 py-2 font-bold text-white uppercase tracking-tighter ms-auto">
-              <span dir="ltr">{formatSelectedDate(selectedDayKey)}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {periodMode === "daily" && safetyAlerts.length > 0 ? (
-        <SafetyAlertsCard alerts={safetyAlerts} />
+        <motion.div variants={staggerItem}>
+          <SafetyAlertsCard alerts={safetyAlerts} />
+        </motion.div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <motion.div variants={staggerItem} className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <HistoryArchive
           dailyLogs={dailyLogs}
           selectedDayKey={selectedDayKey}
@@ -124,8 +144,8 @@ export function HistoryScreen({
             )}
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

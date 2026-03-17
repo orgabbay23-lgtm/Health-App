@@ -93,13 +93,13 @@ export function ModalShell({
           
           <SafeLayoutMotion
             ref={modalRef}
-            initial={{ opacity: 0, scale: 0.93 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.93 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             transition={{
               type: "spring",
-              damping: 28,
-              stiffness: 320,
+              damping: 25,
+              stiffness: 400,
               mass: 0.8
             }}
             className={cn(

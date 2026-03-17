@@ -101,7 +101,8 @@ function PeriodBreakdownItem({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
+            transition={{ type: "spring", stiffness: 200, damping: 25 }}
+            layout
             className="overflow-hidden"
           >
             <CardContent className="pt-0">

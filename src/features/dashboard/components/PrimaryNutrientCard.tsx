@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { TipPopover } from "../../../components/ui/tip-popover";
@@ -108,28 +108,36 @@ export function PrimaryNutrientCard({
               />
             </svg>
             <div className="absolute flex flex-col items-center justify-center text-center">
-              <motion.span 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-5xl font-black tracking-tighter text-slate-950"
-              >
-                {formatNutritionValue(current)}
-              </motion.span>
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={current}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="text-5xl font-black tracking-tighter text-slate-950"
+                >
+                  {formatNutritionValue(current)}
+                </motion.span>
+              </AnimatePresence>
               <span className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400 mt-1">
                 קלוריות
               </span>
-              <motion.div
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className={cn(
-                  "text-sm font-medium mt-1",
-                  percentage > 100 ? "text-red-400" : "text-slate-400 dark:text-slate-500"
-                )}
-              >
-                ({Math.round(percentage)}%)
-              </motion.div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={Math.round(percentage)}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className={cn(
+                    "text-sm font-medium mt-1",
+                    percentage > 100 ? "text-red-400" : "text-slate-400 dark:text-slate-500"
+                  )}
+                >
+                  ({Math.round(percentage)}%)
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
           </div>

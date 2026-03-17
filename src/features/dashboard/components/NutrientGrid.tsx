@@ -48,13 +48,13 @@ const TIER_3: MicronutrientKey[] = [
 const staggerContainer = {
   hidden: {},
   visible: {
-    transition: { staggerChildren: 0.04 },
+    transition: { staggerChildren: 0.05 },
   },
 };
 
 const staggerItem = {
-  hidden: { opacity: 0, y: 12, scale: 0.95 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3 } },
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 260, damping: 20 } },
 };
 
 export function NutrientGrid({

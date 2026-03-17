@@ -35,7 +35,8 @@ export function NutrientCard({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.02, duration: 0.3 }}
+      whileTap={{ scale: 0.96, transition: { type: "spring", stiffness: 400, damping: 17 } }}
+      transition={{ delay: index * 0.02, type: "spring", stiffness: 260, damping: 20 }}
     >
       <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-sm rounded-[1.5rem] border border-white/40">
         <CardContent className="flex flex-col gap-3 p-4">
@@ -73,7 +74,7 @@ export function NutrientCard({
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
-              transition={{ duration: 1, ease: "easeOut", delay: 0.1 + (index * 0.05) }}
+              transition={{ type: "spring", stiffness: 50, damping: 15, delay: 0.1 + (index * 0.05) }}
               className={cn(
                 "h-full rounded-full transition-all duration-500",
                 colors.bg

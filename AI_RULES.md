@@ -404,3 +404,14 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 * **Clinical Rationale:** Fat-soluble vitamins and heavy minerals should NOT turn red upon slightly exceeding 100% ג€” moderate excess is normal and healthy. Only clinical UL breach warrants a warning.
 * **Rule:** Any new nutrient added to the tracker must be classified into one of the three tiers. Default to "goal nutrient" (green) unless clinical evidence supports a strict limit or UL threshold.
 
+## 23. Premium UX & Animation Standards (March 2026)
+
+* **Spring-First Motion:** All transitions MUST use `type: "spring"` with physics-based values (e.g., `stiffness: 400, damping: 25`) for a natural "iOS-like" feel. Strictly avoid `linear`/`ease` durations unless for simple fades or infinite rotations (spinners).
+* **Interactive Haptics:** Every clickable element (Buttons, Cards, Tabs) MUST implement `whileTap={{ scale: 0.96, transition: { type: "spring", stiffness: 400, damping: 17 } }}` to provide tactile visual feedback. Primary action buttons use `whileHover={{ scale: 1.01 }}` for a "magnetic" hover feel.
+* **Staggered Orchestration:** List items and grid elements must never pop in at once; always use `staggerChildren` on the parent variant and a spring-based Y-offset (`y: 20` -> `0`) on children. Recommended stagger interval: `0.05s`.
+* **Shared Layout Tabs:** Tab indicators use Framer Motion `layoutId` or animated transforms to smoothly slide between active tabs, providing a premium "shared layout" effect.
+* **Smart Number Animation:** Nutrient values that change dynamically use `AnimatePresence` with key-based vertical pop transitions (`y: 8` -> `0` on enter, `y: -8` on exit) to avoid number snapping.
+* **Layout Continuity:** Always use the `layout` prop on containers that change size (like expanding cards or accordion sections) to prevent layout shifts and ensure the rest of the UI flows smoothly into place. Exception: Never use `layout`/`layoutId` on modal containers (see Section 6b).
+* **Glass Shimmer Loading:** All loading/processing states use the `.glass-shimmer` CSS class for a premium gradient sweep animation during AI processing.
+* **Zero-Jank Policy:** Animations must strictly use GPU-accelerated properties (`transform`, `opacity`) to maintain 60-120fps on all devices. Never animate `width`, `height`, `top`, or `left` directly — use `scale`, `translate`, and Framer Motion's `height: "auto"` pattern instead.
+

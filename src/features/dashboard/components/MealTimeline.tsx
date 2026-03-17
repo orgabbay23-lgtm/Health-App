@@ -61,7 +61,12 @@ export function MealTimeline({
   }
 
   return (
-    <div className="space-y-5">
+    <motion.div
+      className="space-y-5"
+      initial="hidden"
+      animate="visible"
+      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}
+    >
       <AnimatePresence initial={false}>
         {meals.map((meal, index) => (
           <MealTimelineItem
@@ -78,7 +83,7 @@ export function MealTimeline({
           />
         ))}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
 
@@ -96,7 +101,7 @@ interface MealTimelineItemProps {
 
 function MealTimelineItem({
   meal,
-  index,
+  index: _index,
   canDelete,
   onDelete,
   onSaveFavorite,
@@ -120,17 +125,17 @@ function MealTimelineItem({
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -15 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ 
-        delay: index * 0.05, 
-        duration: 0.4,
+      transition={{
         type: "spring",
         stiffness: 260,
         damping: 20
       }}
-      whileHover={{ x: 4 }}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.96, transition: { type: "spring", stiffness: 400, damping: 17 } }}
+      layout
     >
       <Card className="rounded-[2rem] border border-white/60 bg-white/50 backdrop-blur-md shadow-soft-xl transition-all duration-300">
         <CardContent className="p-0">
@@ -294,7 +299,8 @@ function MealTimelineItem({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, type: "spring", stiffness: 200, damping: 25 }}
+                transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                layout
                 className="overflow-hidden bg-slate-50/50 border-t border-white/50"
               >
                 <div className="p-6 grid grid-cols-2 gap-3">
