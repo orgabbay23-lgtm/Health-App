@@ -459,7 +459,7 @@ export function MealLogModal({
                         <div className="relative group">
                           <FoodTypeahead
                             name="description"
-                            placeholder="למשל: סלט חלילה עם טחינה וביצה קשה"
+                            placeholder="למשל: 100 גרם אורז בסמטי מבושל, 150 גרם חזה עוף צלוי עם כף טחינה"
                             inputClassName="min-h-[4rem] rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-[16px] font-medium px-6 py-4"
                             multiSelect={true}
                             multiLine={true}
