@@ -113,6 +113,17 @@ function MealTimelineItem({
   const [isExpanded, setIsExpanded] = useState(false);
   const Icon = getMealIcon(meal.meal_name, meal.sourceType);
 
+  const scrollToTop = () => {
+    setTimeout(() => {
+      const scrollCanvas = document.querySelector('.ios-scroll-canvas');
+      if (scrollCanvas) {
+        scrollCanvas.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }, 150);
+  };
+
   const getIconStyles = () => {
     const name = meal.meal_name.toLowerCase();
     if (meal.sourceType === "supplement") return "bg-violet-50 text-violet-500 shadow-violet-100";
@@ -192,6 +203,7 @@ function MealTimelineItem({
                     onClick={(e) => {
                       e.stopPropagation();
                       onDecrement(meal.id);
+                      scrollToTop();
                     }}
                   >
                     <Minus size={12} />
@@ -205,6 +217,7 @@ function MealTimelineItem({
                     onClick={(e) => {
                       e.stopPropagation();
                       onIncrement(meal.id);
+                      scrollToTop();
                     }}
                   >
                     <Plus size={12} />
