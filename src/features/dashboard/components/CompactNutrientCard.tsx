@@ -62,7 +62,21 @@ export function CompactNutrientCard({
         <CardContent className="flex-1 flex flex-col justify-between gap-4 p-5">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <p className="text-[13px] font-black text-slate-600 uppercase tracking-[0.15em]">{meta.label}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[13px] font-black text-slate-600 uppercase tracking-[0.15em]">{meta.label}</p>
+                <motion.span 
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={cn(
+                    "text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-full",
+                    percentageRaw > 100 
+                      ? "bg-red-50 text-red-500 dark:bg-red-900/30 dark:text-red-400"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                  )}
+                >
+                  {Math.round(percentageRaw)}%
+                </motion.span>
+              </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-black text-slate-950">{formatNutritionValue(current)}</span>
                 <span className="text-[11px] font-bold text-slate-500">/ {formatNutritionValue(target)}</span>

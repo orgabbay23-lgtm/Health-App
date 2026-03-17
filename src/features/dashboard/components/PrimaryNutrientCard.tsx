@@ -119,6 +119,17 @@ export function PrimaryNutrientCard({
               <span className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400 mt-1">
                 קלוריות
               </span>
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className={cn(
+                  "text-sm font-medium mt-1",
+                  percentage > 100 ? "text-red-400" : "text-slate-400 dark:text-slate-500"
+                )}
+              >
+                ({Math.round(percentage)}%)
+              </motion.div>
             </div>
           </div>
           </div>
