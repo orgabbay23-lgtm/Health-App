@@ -12,7 +12,7 @@
 ## 2. Core Clinical & Business Logic (FIXED - DO NOT ALTER)
 * **3 AM Rollover:** Daily logs reset at 03:00 AM local time.
 * **Nutritional Math:** Clinical formulas (MSJ for BMR, specific UL targets) are immutable.
-* **AI Routing:** First 20 meal requests/day use `gemini-3-flash-preview`; request 21+ or any 429 falls back to `gemini-3.1-flash-lite-preview` (High Thinking). Insights always use Lite Thinking model exclusively.
+* **AI Routing:** All models use `thinkingLevel: "high"`. Meal parsing and vision optimistically attempt `gemini-3-flash-preview`. If ANY error occurs, they seamlessly fallback to `gemini-3.1-flash-lite-preview`. Insights exclusively use the Lite model. Database quota counting is REMOVED.
 
 ## 3. UI/UX Architecture ($1B Startup Aesthetic)
 * **Visual Identity:** Glassmorphism (backdrop-blur), soft layered shadows, and mesh gradients.
@@ -385,29 +385,24 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 ## 20. UX & Routing
 * **Auto-Navigation & Feedback:** Upon successfully logging any meal, the app MUST automatically navigate the user back to the Home tab and smoothly scroll to the top to provide immediate visual feedback on their daily progress.
 
-## 21. AI Architecture — Dynamic Model Routing with Rate Limit Fallback (Updated March 2026)
+## 21. AI Architecture — Optimistic Execution with Fallback (Updated March 2026)
 
-* **Tiered Model Routing:**
-    * `PRIMARY_MODEL` = `gemini-3-flash-preview` — Fast, free-tier execution. NO thinking config. Used for the first 20 meal requests per day.
-    * `FALLBACK_MODEL` = `gemini-3.1-flash-lite-preview` — Configured with `generationConfig: { thinkingConfig: { thinkingLevel: "high" } }`. Used after the 20-request daily limit is reached, OR when PRIMARY returns a 429/Rate Limit/Resource Exhausted error.
-* **Daily Usage Tracking (Supabase):**
-    * The `profiles` table stores `daily_ai_requests` (counter) and `last_ai_request_date` (date string).
-    * `increment_ai_usage(p_user_id)` is an atomic Supabase RPC that increments the counter and handles daily midnight resets.
-    * `getDailyAiUsageCount(userId)` reads both `daily_ai_requests` and `last_ai_request_date`, then compares the date to today's **local** date (`YYYY-MM-DD` via `Date` getters, NOT `toISOString()` which returns UTC). If `last_ai_request_date ≠ today`, the effective count is `0` — this prevents yesterday's maxed-out quota from forcing the first request of a new day into the fallback model (Stale Read fix).
-    * `incrementDailyAiUsage(userId)` is called fire-and-forget on every successful meal AI execution.
-* **Meal Pipelines (Routed — `parseMealDescription`, `analyzeMealImage`):**
-    1. Fetch current daily usage count via `getDailyAiUsageCount(userId)`.
-    2. If `count >= 20`: Execute IMMEDIATELY with `FALLBACK_MODEL` (skip PRIMARY entirely).
-    3. If `count < 20`: Try `PRIMARY_MODEL` first.
-    4. **429 Fallback:** If PRIMARY throws a 429/Resource Exhausted/Rate Limit error, swallow it, log a warning, and re-attempt with `FALLBACK_MODEL`.
-    5. On ANY successful execution, call `incrementDailyAiUsage(userId)` (fire-and-forget).
+* **Global Thinking Config:**
+    * `GLOBAL_THINKING_CONFIG = { thinkingConfig: { thinkingLevel: "high" } }` is applied to ALL models (both PRIMARY and FALLBACK).
+* **Model Routing (Simplified):**
+    * `PRIMARY_MODEL` = `gemini-3-flash-preview` — Optimistic first attempt for meal parsing and vision.
+    * `FALLBACK_MODEL` = `gemini-3.1-flash-lite-preview` — Automatic fallback on ANY primary error, and exclusive model for Insights.
+    * **Database quota counting is REMOVED.** No `getDailyAiUsageCount`, `incrementDailyAiUsage`, or `DAILY_AI_LIMIT`.
+* **Meal Pipelines (Optimistic — `parseMealDescription`, `analyzeMealImage`):**
+    1. ALWAYS attempt `PRIMARY_MODEL` first with `GLOBAL_THINKING_CONFIG`.
+    2. If ANY error occurs (429, 500, timeout, etc.), log a warning and IMMEDIATELY execute with `FALLBACK_MODEL` (also with `GLOBAL_THINKING_CONFIG`).
+    3. Auth errors (`API_KEY_INVALID`, `MISSING_API_KEY`) are re-thrown immediately without fallback.
 * **Insight Pipelines (Exclusive FALLBACK — `generateNutritionalInsight`, `answerInsightFollowUp`):**
-    * These functions completely bypass the 20-request limit logic.
-    * They are hardcoded to ONLY use `FALLBACK_MODEL` (`gemini-3.1-flash-lite-preview` with High Thinking).
-    * They do NOT call `incrementDailyAiUsage` — insight generations are uncounted.
+    * Hardcoded to ONLY use `FALLBACK_MODEL` with `GLOBAL_THINKING_CONFIG`.
+    * No primary/fallback routing for insights.
 * **Thinking Response Handling:** `analyzeMealImage()` explicitly parses response candidates to extract only the final `.text` answer, skipping any `thought`-flagged parts that the thinking model may return. Other pipelines use `result.response.text()` which auto-extracts the final answer.
 * **Dual Camera/Gallery Input:** `MealLogModal.tsx` provides two adjacent circular Glassmorphism icon buttons:
     1. **Camera** (Lucide `Camera` icon): Triggers `<input capture="environment">` — opens device camera directly.
     2. **Gallery** (Lucide `Image` icon): Triggers `<input>` WITHOUT `capture` — opens the photo picker/gallery.
     * Both inputs share the same `handleImageCapture` handler and `isAnalyzingImage` loading state.
-* **Rule:** Any future meal-logging AI pipeline addition MUST participate in the tiered routing system. Any future insight/analytics AI pipeline MUST use `FALLBACK_MODEL` exclusively. All AI pipelines require the API Cost Protection confirmation gate (Section 18).
+* **Rule:** Any future meal-logging AI pipeline MUST use the optimistic primary→fallback pattern. Any future insight/analytics AI pipeline MUST use `FALLBACK_MODEL` exclusively. All AI pipelines require the API Cost Protection confirmation gate (Section 18).

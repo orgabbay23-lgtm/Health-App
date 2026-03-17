@@ -2,19 +2,16 @@
 import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
 import { z } from "zod";
 import { supabase } from "../lib/supabase";
-import { getDailyAiUsageCount, incrementDailyAiUsage } from "../lib/supabase";
 
-// ── Tiered Model Routing ────────────────────────────────────────────
-// PRIMARY: Fast, free tier — used for the first 20 meal requests/day
+// ── Model Routing ───────────────────────────────────────────────────
+// PRIMARY: Optimistic first attempt for meal parsing & vision
 const PRIMARY_MODEL = "gemini-3-flash-preview";
-// FALLBACK: Lite with High Thinking — used after 20 requests, on 429, and exclusively for Insights
+// FALLBACK: Lite — used on any PRIMARY error, and exclusively for Insights
 const FALLBACK_MODEL = "gemini-3.1-flash-lite-preview";
 
-const DAILY_AI_LIMIT = 20;
-
-// High Thinking configuration — applied ONLY to FALLBACK_MODEL
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const FALLBACK_THINKING_CONFIG: any = {
+// Global High Thinking configuration — applied to ALL models
+// @ts-ignore
+const GLOBAL_THINKING_CONFIG: any = {
   thinkingConfig: { thinkingLevel: "high" },
 };
 
@@ -28,17 +25,6 @@ function checkIsAuthError(err: any): boolean {
     err?.message?.toLowerCase?.()?.includes("unauthorized") ||
     err?.message?.toLowerCase?.()?.includes("invalid api key") ||
     err?.message?.toLowerCase?.()?.includes("api key not found")
-  );
-}
-
-function checkIsRateLimitError(err: any): boolean {
-  return (
-    err?.status === 429 ||
-    err?.message?.includes("429") ||
-    err?.message?.toLowerCase?.()?.includes("quota") ||
-    err?.message?.toLowerCase?.()?.includes("too many requests") ||
-    err?.message?.toLowerCase?.()?.includes("resource exhausted") ||
-    err?.message?.toLowerCase?.()?.includes("rate limit")
   );
 }
 
@@ -188,20 +174,19 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
-// ── Meal Image Analysis (with Tiered Routing) ───────────────────────
+// ── Meal Image Analysis (Optimistic Primary → Fallback) ─────────────
 export async function analyzeMealImage(
   base64Image: string,
   mimeType: string,
-  userId?: string,
 ): Promise<string> {
   const finalKey = await getApiKey();
 
-  const performRequest = async (modelName: string, useThinking: boolean) => {
+  const performRequest = async (modelName: string) => {
     const genAI = new GoogleGenerativeAI(finalKey);
     const model = genAI.getGenerativeModel({
       model: modelName,
       generationConfig: {
-        ...(useThinking ? FALLBACK_THINKING_CONFIG : {}),
+        ...GLOBAL_THINKING_CONFIG,
       },
     });
     const result = await model.generateContent([
@@ -224,41 +209,20 @@ export async function analyzeMealImage(
     return text;
   };
 
-  // Fire-and-forget increment on success
-  const onSuccess = (result: string) => {
-    if (userId) incrementDailyAiUsage(userId);
-    return result;
-  };
+  // Optimistic: try PRIMARY first
+  try {
+    return await performRequest(PRIMARY_MODEL);
+  } catch (primaryError: any) {
+    if (checkIsAuthError(primaryError)) throw new Error("API_KEY_INVALID");
 
-  // Determine routing tier
-  const usageCount = userId ? await getDailyAiUsageCount(userId) : 0;
-
-  if (usageCount >= DAILY_AI_LIMIT) {
-    // Over limit → skip PRIMARY, go straight to FALLBACK
+    // Any error → fallback to Lite
+    console.warn('[Gemini] Primary model failed on analyzeMealImage, falling back to Lite...', primaryError);
     try {
-      return onSuccess(await performRequest(FALLBACK_MODEL, true));
-    } catch (apiError: any) {
-      if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
+      return await performRequest(FALLBACK_MODEL);
+    } catch (fallbackError: any) {
+      if (checkIsAuthError(fallbackError)) throw new Error("API_KEY_INVALID");
       throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
     }
-  }
-
-  // Under limit → try PRIMARY first
-  try {
-    return onSuccess(await performRequest(PRIMARY_MODEL, false));
-  } catch (apiError: any) {
-    if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
-
-    if (checkIsRateLimitError(apiError)) {
-      console.warn("[Gemini Router] PRIMARY_MODEL rate limited on analyzeMealImage, falling back");
-      try {
-        return onSuccess(await performRequest(FALLBACK_MODEL, true));
-      } catch {
-        throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
-      }
-    }
-
-    throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
   }
 }
 
@@ -287,7 +251,7 @@ const getApiKey = async (): Promise<string> => {
   return finalKey;
 };
 
-// ── Insight Functions (Exclusive FALLBACK_MODEL — no routing, no counter) ──
+// ── Insight Functions (Exclusive FALLBACK_MODEL — no primary/fallback routing) ──
 
 const INSIGHT_SYSTEM_INSTRUCTION = `You are a friendly, warm, and highly professional Israeli clinical nutritionist. Analyze the provided nutritional data (calories, macros, fiber, and all 24 micronutrients) for the given timeframe.
 
@@ -331,7 +295,7 @@ ${JSON.stringify(nutritionData)}
       model: FALLBACK_MODEL,
       systemInstruction: INSIGHT_SYSTEM_INSTRUCTION,
       generationConfig: {
-        ...FALLBACK_THINKING_CONFIG,
+        ...GLOBAL_THINKING_CONFIG,
       },
     });
     const result = await model.generateContent(userPrompt);
@@ -373,7 +337,7 @@ ${userQuestion}`;
       model: FALLBACK_MODEL,
       systemInstruction: FOLLOWUP_SYSTEM_INSTRUCTION,
       generationConfig: {
-        ...FALLBACK_THINKING_CONFIG,
+        ...GLOBAL_THINKING_CONFIG,
       },
     });
     const result = await model.generateContent(userPrompt);
@@ -386,10 +350,9 @@ ${userQuestion}`;
   }
 }
 
-// ── Meal Text Parsing (with Tiered Routing) ─────────────────────────
+// ── Meal Text Parsing (Optimistic Primary → Fallback) ───────────────
 export async function parseMealDescription(
   description: string,
-  userId?: string,
 ): Promise<ParsedMealDescription> {
   try {
     const finalKey = await getApiKey();
@@ -398,7 +361,7 @@ export async function parseMealDescription(
       throw new Error("MISSING_API_KEY");
     }
 
-    const performRequest = async (modelName: string, useThinking: boolean) => {
+    const performRequest = async (modelName: string) => {
       const genAI = new GoogleGenerativeAI(finalKey);
       const model = genAI.getGenerativeModel({
         model: modelName,
@@ -406,7 +369,7 @@ export async function parseMealDescription(
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: mealResponseSchema,
-          ...(useThinking ? FALLBACK_THINKING_CONFIG : {}),
+          ...GLOBAL_THINKING_CONFIG,
         },
       });
       const result = await model.generateContent(description.trim());
@@ -419,43 +382,22 @@ export async function parseMealDescription(
       return mealResponseParser.parse(JSON.parse(responseText));
     };
 
-    // Fire-and-forget increment on success
-    const onSuccess = (result: ParsedMealDescription) => {
-      if (userId) incrementDailyAiUsage(userId);
-      return result;
-    };
+    // Optimistic: try PRIMARY first
+    try {
+      return await performRequest(PRIMARY_MODEL);
+    } catch (primaryError: any) {
+      if (checkIsAuthError(primaryError)) throw new Error("API_KEY_INVALID");
+      if (checkIsInvalidKeyError(primaryError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
 
-    // Determine routing tier
-    const usageCount = userId ? await getDailyAiUsageCount(userId) : 0;
-
-    if (usageCount >= DAILY_AI_LIMIT) {
-      // Over limit → skip PRIMARY, go straight to FALLBACK
+      // Any error → fallback to Lite
+      console.warn('[Gemini] Primary model failed on parseMealDescription, falling back to Lite...', primaryError);
       try {
-        return onSuccess(await performRequest(FALLBACK_MODEL, true));
-      } catch (apiError: any) {
-        if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
-        if (checkIsInvalidKeyError(apiError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+        return await performRequest(FALLBACK_MODEL);
+      } catch (fallbackError: any) {
+        if (checkIsAuthError(fallbackError)) throw new Error("API_KEY_INVALID");
+        if (checkIsInvalidKeyError(fallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
         throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
       }
-    }
-
-    // Under limit → try PRIMARY first
-    try {
-      return onSuccess(await performRequest(PRIMARY_MODEL, false));
-    } catch (apiError: any) {
-      if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
-      if (checkIsInvalidKeyError(apiError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
-
-      if (checkIsRateLimitError(apiError)) {
-        console.warn("[Gemini Router] PRIMARY_MODEL rate limited on parseMealDescription, falling back");
-        try {
-          return onSuccess(await performRequest(FALLBACK_MODEL, true));
-        } catch {
-          throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
-        }
-      }
-
-      throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
     }
   } catch (error: any) {
     if (error.message === "MISSING_API_KEY" || error.message === "API_KEY_INVALID" || error.message === "INVALID_KEY_FROM_GOOGLE") {

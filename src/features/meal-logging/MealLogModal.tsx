@@ -76,7 +76,6 @@ export function MealLogModal({
 
   const addMealLog = useAppStore((state) => state.addMealLog);
   const setActiveScreen = useAppStore((state) => state.setActiveScreen);
-  const userId = useAppStore((state) => state.userId);
   const savedMeals = useActiveSavedMeals();
   const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
   const createFavoriteTemplate = useAppStore((state) => state.createFavoriteTemplate);
@@ -114,7 +113,7 @@ export function MealLogModal({
     setIsSubmitting(true);
 
     try {
-      const parsedData = await parseMealDescription(description, userId || undefined);
+      const parsedData = await parseMealDescription(description);
       const alerts = await addMealLog(targetDayKey, {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
@@ -250,7 +249,7 @@ export function MealLogModal({
     setIsAnalyzingImage(true);
     try {
       const base64 = await fileToBase64(file);
-      const detectedText = await analyzeMealImage(base64, file.type, userId || undefined);
+      const detectedText = await analyzeMealImage(base64, file.type);
       setImageReviewText(detectedText);
     } catch (error: any) {
       if (error.message === "API_KEY_INVALID" || error.message === "MISSING_API_KEY") {
