@@ -127,6 +127,7 @@ export function MealLogModal({
         micronutrients: parsedData.micronutrients,
         confidence_score: 1,
         sourceType: "food",
+        mealText: description,
       });
 
       toast.success("הארוחה נוספה בהצלחה");
@@ -200,11 +201,41 @@ export function MealLogModal({
     processMealSubmission(description);
   };
 
-  // Execute favorite template through AI flow
+  // Execute favorite template through AI flow OR zero-cost
   const onExecuteFavoriteTemplate = (saved: SavedMeal) => {
-    if (!window.confirm('האם אתה בטוח?')) return;
-    const textToAnalyze = saved.mealText || saved.meal.meal_name;
-    processMealSubmission(textToAnalyze);
+    setEditingMeal(saved);
+  };
+
+  // Zero Cost Logic
+  const handleZeroCostLog = async (saved: SavedMeal) => {
+    const alerts = await addMealLog(targetDayKey, {
+      ...saved.meal,
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      mealText: saved.mealText || saved.meal.meal_name,
+    });
+    
+    toast.success("הארוחה נוספה בהצלחה");
+    alerts.forEach((alert) => {
+      toast.warning(alert.title, {
+        id: `${targetDayKey}-${alert.id}`,
+        description: alert.message,
+        duration: 7000,
+      });
+    });
+
+    onClose();
+    setActiveScreen("home");
+    setTimeout(() => {
+      const scrollCanvas = document.querySelector('.ios-scroll-canvas');
+      if (scrollCanvas) {
+        scrollCanvas.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }, 150);
+
+    if (onSuccess) onSuccess();
   };
 
   // Calculate & log from EditFavoriteModal (one-time, doesn't save template)
@@ -746,6 +777,7 @@ export function MealLogModal({
         onClose={() => setEditingMeal(null)}
         savedMeal={editingMeal}
         onCalculateAndLog={handleCalculateAndLog}
+        onZeroCostLog={handleZeroCostLog}
       />
     </>
   );

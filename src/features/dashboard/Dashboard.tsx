@@ -29,6 +29,7 @@ import {
 } from "../../store";
 import { EditProfileModal } from "../profile/EditProfileModal";
 import { MealLogModal } from "../meal-logging/MealLogModal";
+import { EditLoggedMealModal } from "../meal-logging/EditLoggedMealModal";
 import { BottomNavigation } from "./components/BottomNavigation";
 import { DashboardTopBar } from "./components/DashboardTopBar";
 import { HistoryScreen } from "./screens/HistoryScreen";
@@ -115,6 +116,7 @@ export function Dashboard() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [periodMode, setPeriodMode] = useState<DashboardPeriod>("daily");
   const [referenceDate, setReferenceDate] = useState(() => getLogicalDate());
+  const [editingLog, setEditingLog] = useState<{ dayKey: string; meal: MealItem } | null>(null);
 
   const activeUser = useActiveUser();
   const removeMealLog = useAppStore((state) => state.removeMealLog);
@@ -281,6 +283,7 @@ export function Dashboard() {
                 savedSignatures={savedSignatures}
                 onDeleteMeal={removeMealLog}
                 onSaveFavorite={onSaveFavorite}
+                onEditMeal={(dayKey, meal) => setEditingLog({ dayKey, meal })}
               />
             ) : null}
 
@@ -299,6 +302,7 @@ export function Dashboard() {
                 onSelectDayKey={onSelectArchiveDay}
                 onDeleteMeal={removeMealLog}
                 onSaveFavorite={onSaveFavorite}
+                onEditMeal={(dayKey, meal) => setEditingLog({ dayKey, meal })}
               />
             ) : null}
 
@@ -331,6 +335,13 @@ export function Dashboard() {
       <EditProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
+      />
+
+      <EditLoggedMealModal
+        isOpen={editingLog !== null}
+        onClose={() => setEditingLog(null)}
+        meal={editingLog?.meal ?? null}
+        dayKey={editingLog?.dayKey ?? ""}
       />
     </div>
   );

@@ -272,39 +272,13 @@ The following 15 micronutrient RDA values are strictly enforced based on clinica
 - **Chromium (ן¿½ן¿½ן¿½ן¿½):** 35mcg (Male) | 25mcg (Female)
 - **Omega 3 (EPA+DHA):** 250mg (Male/Female)
 
-## 14. Dynamic AI Templates ג€” Favorites Architecture (Updated March 2026)
+## 14. Dynamic AI Templates & Zero-Cost Architecture (Updated)
 
-* **Paradigm: "Dynamic AI Templates":**
-    * Favorites are **raw text prompts** (not pre-calculated nutritional data). Each `SavedMeal` stores an `id`, `name`, and `mealText` (the raw ingredient/meal description string).
-    * **Creating a Favorite** (`createFavoriteTemplate`) saves the name + text to the store/Supabase IMMEDIATELY, WITHOUT calling Gemini, and WITHOUT adding to the daily timeline.
-    * **Editing a Favorite** (`updateFavoriteTemplate` / `EditFavoriteModal`) modifies only the `name` and `mealText`. No nutritional recalculation occurs at edit time.
-    * **Executing a Favorite** (clicking it in the "Saved" tab): The `mealText` is extracted and sent through the standard Gemini AI calculation flow (identical to typing free text and hitting "Analyze"). A shimmer/loading state is shown while Gemini evaluates fresh nutritional values, and the result is saved to today's timeline.
-
-* **Template vs. Log Separation (CRITICAL):**
-    * Favorites are templates stored in `saved_meals`. They are independent of historical meal logs in `daily_logs`.
-    * AI evaluation ONLY occurs at the moment of logging the meal to a specific day ג€” never at creation or edit time.
-    * Historical `daily_logs` entries created from a template are NEVER retroactively modified when the template is edited.
-
-* **Store Actions:**
-    * `createFavoriteTemplate(name, mealText)`: Saves a text-only template. No Gemini call. Optimistic update with rollback.
-    * `updateFavoriteTemplate(id, newName, newMealText)`: Updates template text. No Gemini call. Optimistic update with rollback.
-    * `saveMealAsFavorite(meal)`: Legacy ג€” saves a fully-evaluated meal as a favorite (preserves backward compatibility for saving from timeline).
-
-* **`EditFavoriteModal` Component:**
-    * Located at `src/features/meal-logging/EditFavoriteModal.tsx`.
-    * Allows renaming and editing the raw `mealText` prompt via a simple textarea.
-    * Follows Glassmorphism aesthetic, RTL logical properties, minimum 13px font labels, and Immutable Shell constraints.
-    * Accessed via "׳¢׳¨׳•׳" button on each favorite card in the MealLogModal's "Saved" tab.
-    * **Two distinct primary actions:**
-        * **"׳©׳׳•׳¨ ׳©׳™׳ ׳•׳™׳™׳ ׳׳×׳‘׳ ׳™׳×"** ג€” Updates the Favorite template in the store permanently. Does NOT trigger any AI calculation.
-        * **"׳—׳©׳‘ ׳•׳”׳•׳¡׳£ ׳׳”׳™׳•׳ (׳—׳“-׳₪׳¢׳׳™)"** ג€” Takes the currently edited text, triggers the Gemini calculation flow to add to today's log, but does NOT overwrite the saved Favorite template. Requires user confirmation (API Cost Protection gate).
-
-* **UI Entry Points:**
-    * "׳¦׳•׳¨ ׳׳¨׳•׳—׳” ׳׳•׳¢׳“׳₪׳× ׳—׳“׳©׳”" button in the Favorites tab opens an inline form for name + text.
-    * Each favorite card displays three explicit action buttons: "׳”׳•׳¡׳£ ׳׳”׳™׳•׳" (Log via AI), "׳¢׳¨׳•׳" (Edit template), "׳׳—׳§" (Delete).
-    * Clicking a favorite card does NOT auto-trigger the API. The user must explicitly click "׳”׳•׳¡׳£ ׳׳”׳™׳•׳".
-
-* **Rule:** Any future feature that modifies Favorites must respect the template/log boundary. AI evaluation happens ONLY at execution (logging) time. Never write to `daily_logs` when updating a Favorite template, and never write to `saved_meals` when editing a historical log.
+* **Paradigm: "Zero-Cost Favorites & Timeline Memory":**
+    * Executing an unmodified Favorite bypasses the AI completely, cloning cached values.
+    * If a favorite's text is tweaked before logging, the user is explicitly prompted to either save the edit as a one-time log or update the Favorite template permanently.
+    * All logged meals now retain their originating `mealText` to support timeline editing and recalculation.
+    * **Creating a Favorite** (`createFavoriteTemplate`) saves the name + text to the store/Supabase.
 
 ## 15. Smart Autocomplete Architecture (Updated March 2026)
 * **Food Database:** The project contains a local static database of 1000 common Israeli food items (src/utils/food-suggestions.ts) to enable rapid offline-first autocompletion without network roundtrips.        

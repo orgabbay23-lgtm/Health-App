@@ -31,6 +31,7 @@ interface HistoryScreenProps {
   onSelectDayKey: (dayKey: string) => void;
   onDeleteMeal: (dayKey: string, mealId: string) => void;
   onSaveFavorite: (meal: MealItem) => void;
+  onEditMeal: (dayKey: string, meal: MealItem) => void;
 }
 
 export function HistoryScreen({
@@ -47,6 +48,7 @@ export function HistoryScreen({
   onSelectDayKey,
   onDeleteMeal,
   onSaveFavorite,
+  onEditMeal,
 }: HistoryScreenProps) {
   return (
     <div className="space-y-8">
@@ -99,6 +101,7 @@ export function HistoryScreen({
                 meals={selectedDailyLog?.meals ?? []}
                 onDelete={(mealId) => onDeleteMeal(selectedDayKey, mealId)}
                 onSaveFavorite={onSaveFavorite}
+                onEdit={(meal) => onEditMeal(selectedDayKey, meal)}
                 savedSignatures={savedSignatures}
                 emptyText="אין תיעוד לתאריך זה."
               />
@@ -108,6 +111,7 @@ export function HistoryScreen({
                 savedSignatures={savedSignatures}
                 onSaveFavorite={onSaveFavorite}
                 onDeleteMeal={onDeleteMeal}
+                onEditMeal={onEditMeal}
               />
             )}
           </CardContent>

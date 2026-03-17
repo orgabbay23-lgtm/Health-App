@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, ChevronDown, Sparkles, Trash2, Coffee, Utensils, Sandwich, Apple, Moon, Pill } from "lucide-react";
+import { Heart, ChevronDown, Sparkles, Trash2, Coffee, Utensils, Sandwich, Apple, Moon, Pill, Pencil } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { NUTRIENT_META } from "../../../utils/nutritional-tips";
@@ -12,6 +12,7 @@ interface MealTimelineProps {
   meals: MealItem[];
   onDelete?: (mealId: string) => void;
   onSaveFavorite?: (meal: MealItem) => void;
+  onEdit?: (meal: MealItem) => void;
   savedSignatures: Set<string>;
   emptyText: string;
 }
@@ -33,6 +34,7 @@ export function MealTimeline({
   meals,
   onDelete,
   onSaveFavorite,
+  onEdit,
   savedSignatures,
   emptyText,
 }: MealTimelineProps) {
@@ -65,6 +67,7 @@ export function MealTimeline({
             canDelete={Boolean(onDelete)}
             onDelete={onDelete}
             onSaveFavorite={onSaveFavorite}
+            onEdit={onEdit}
             isSaved={savedSignatures.has(createMealSignature(meal))}
           />
         ))}
@@ -79,6 +82,7 @@ interface MealTimelineItemProps {
   canDelete: boolean;
   onDelete?: (mealId: string) => void;
   onSaveFavorite?: (meal: MealItem) => void;
+  onEdit?: (meal: MealItem) => void;
   isSaved: boolean;
 }
 
@@ -88,6 +92,7 @@ function MealTimelineItem({
   canDelete,
   onDelete,
   onSaveFavorite,
+  onEdit,
   isSaved,
 }: MealTimelineItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -167,6 +172,18 @@ function MealTimelineItem({
                     disabled={isSaved}
                   >
                     <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
+                  </Button>
+                )}
+                
+                {onEdit && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-xl h-10 w-10 text-slate-300 hover:text-blue-500 hover:bg-blue-50"
+                    onClick={() => onEdit(meal)}
+                  >
+                    <Pencil size={18} />
                   </Button>
                 )}
 

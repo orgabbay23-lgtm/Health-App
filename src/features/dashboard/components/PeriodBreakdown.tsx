@@ -11,6 +11,7 @@ interface PeriodBreakdownProps {
   savedSignatures: Set<string>;
   onSaveFavorite: (meal: MealItem) => void;
   onDeleteMeal?: (dayKey: string, mealId: string) => void;
+  onEditMeal?: (dayKey: string, meal: MealItem) => void;
 }
 
 export function PeriodBreakdown({
@@ -18,6 +19,7 @@ export function PeriodBreakdown({
   savedSignatures,
   onSaveFavorite,
   onDeleteMeal,
+  onEditMeal,
 }: PeriodBreakdownProps) {
   return (
     <div className="space-y-3">
@@ -28,6 +30,7 @@ export function PeriodBreakdown({
           savedSignatures={savedSignatures}
           onSaveFavorite={onSaveFavorite}
           onDeleteMeal={onDeleteMeal}
+          onEditMeal={onEditMeal}
         />
       ))}
     </div>
@@ -39,6 +42,7 @@ interface PeriodBreakdownItemProps {
   savedSignatures: Set<string>;
   onSaveFavorite: (meal: MealItem) => void;
   onDeleteMeal?: (dayKey: string, mealId: string) => void;
+  onEditMeal?: (dayKey: string, meal: MealItem) => void;
 }
 
 function PeriodBreakdownItem({
@@ -46,6 +50,7 @@ function PeriodBreakdownItem({
   savedSignatures,
   onSaveFavorite,
   onDeleteMeal,
+  onEditMeal,
 }: PeriodBreakdownItemProps) {
   const [isOpen, setIsOpen] = useState(Boolean(day.log));
 
@@ -96,6 +101,11 @@ function PeriodBreakdownItem({
                 onDelete={
                   onDeleteMeal
                     ? (mealId) => onDeleteMeal(day.dayKey, mealId)
+                    : undefined
+                }
+                onEdit={
+                  onEditMeal
+                    ? (meal) => onEditMeal(day.dayKey, meal)
                     : undefined
                 }
                 savedSignatures={savedSignatures}

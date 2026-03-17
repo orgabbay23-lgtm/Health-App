@@ -34,6 +34,7 @@ interface HomeScreenProps {
   periodDetails: PeriodDetails;
   onDeleteMeal: (dayKey: string, mealId: string) => void;
   onSaveFavorite: (meal: MealItem) => void;
+  onEditMeal: (dayKey: string, meal: MealItem) => void;
 }
 
 export function HomeScreen({
@@ -47,6 +48,7 @@ export function HomeScreen({
   periodDetails,
   onDeleteMeal,
   onSaveFavorite,
+  onEditMeal,
 }: HomeScreenProps) {
   const meals = selectedDailyLog?.meals ?? [];
 
@@ -199,6 +201,7 @@ export function HomeScreen({
                 meals={meals}
                 onDelete={(mealId) => onDeleteMeal(periodDetails.startKey, mealId)}
                 onSaveFavorite={onSaveFavorite}
+                onEdit={(meal) => onEditMeal(periodDetails.startKey, meal)}
                 savedSignatures={savedSignatures}
                 emptyText="עוד לא רשמת כלום היום..."
               />
@@ -208,6 +211,7 @@ export function HomeScreen({
                 savedSignatures={savedSignatures}
                 onSaveFavorite={onSaveFavorite}
                 onDeleteMeal={onDeleteMeal}
+                onEditMeal={onEditMeal}
               />
             )}
           </CardContent>

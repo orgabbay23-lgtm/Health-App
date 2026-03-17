@@ -55,6 +55,8 @@ export interface MealItem {
   micronutrients: MicronutrientTotals;
   confidence_score?: number;
   sourceType?: MealSourceType;
+  /** Original text used to generate the meal */
+  mealText?: string;
 }
 
 export interface SavedMeal {
@@ -281,6 +283,7 @@ interface AppState {
   setUserProfile: (profile: NutritionProfileInput) => Promise<void>;
   updateProfileDetails: (details: Partial<NutritionProfileInput>) => Promise<void>;
   addMealLog: (dayKey: string, meal: MealItem) => Promise<NutritionSafetyAlert[]>;
+  updateMealLog: (dayKey: string, mealId: string, updatedMeal: MealItem) => Promise<NutritionSafetyAlert[]>;
   removeMealLog: (dayKey: string, mealId: string) => Promise<void>;
   saveMealAsFavorite: (meal: MealItem) => Promise<boolean>;
   removeSavedMeal: (savedMealId: string) => Promise<void>;
@@ -537,6 +540,60 @@ export const useAppStore = create<AppState>()(
       set({ dailyLogs: previousLogs });
       toast.error("שגיאה במחיקת הארוחה מהשרת. השינוי בוטל.");
     }
+  },
+
+  updateMealLog: async (dayKey, mealId, updatedMeal) => {
+    const { dailyLogs, profile, userId } = get();
+    if (!userId) return [];
+
+    const currentLog = dailyLogs[dayKey];
+    if (!currentLog) return [];
+
+    const previousLogs = dailyLogs;
+
+    // Replace the specific meal
+    const nextMeals = currentLog.meals.map(m => m.id === mealId ? normalizeMealItem(updatedMeal) : m);
+    const nextAggregations = aggregateMeals(nextMeals);
+
+    const nextLogs = {
+      ...dailyLogs,
+      [dayKey]: { meals: nextMeals, aggregations: nextAggregations },
+    };
+
+    let alerts: NutritionSafetyAlert[] = [];
+    if (profile) {
+      const previousAlerts = evaluateMicronutrientSafety(
+        currentLog.aggregations.micronutrients,
+        profile,
+        { supplementalMagnesium: getSupplementalMagnesium(currentLog.meals) },
+      );
+      const nextAlerts = evaluateMicronutrientSafety(
+        nextAggregations.micronutrients,
+        profile,
+        { supplementalMagnesium: getSupplementalMagnesium(nextMeals) },
+      );
+      alerts = diffSafetyAlerts(previousAlerts, nextAlerts);
+    }
+
+    set({ dailyLogs: nextLogs });
+
+    const logToSave = nextLogs[dayKey];
+    const { error } = await supabase.from('daily_logs').upsert({
+      user_id: userId,
+      date: dayKey,
+      meals: logToSave.meals,
+      aggregations: logToSave.aggregations,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,date' });
+
+    if (error) {
+      console.error("Error updating meal log", error);
+      set({ dailyLogs: previousLogs });
+      toast.error("שגיאה בעדכון הארוחה בשרת. השינוי בוטל.");
+      return [];
+    }
+
+    return alerts;
   },
 
   saveMealAsFavorite: async (meal) => {
