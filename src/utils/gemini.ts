@@ -158,7 +158,13 @@ Use USDA/clinical-grade reference data. If a micronutrient is truly absent from 
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
-const VISION_PROMPT = `Analyze this image of food. Identify all distinct food items and estimate their quantities in grams, tablespoons, or logical units (e.g., slices). Output ONLY a single, simple, comma-separated string in Hebrew. Do NOT include any formatting, markdown, newlines, conversational text, or prefixes. Example outputs: 'חביתה משתי ביצים, לחם מלא שתי פרוסות, קוטג' 50 גרם, מלפפון אחד' or 'אורז לבן 60 גרם, חזה עוף 210 גרם, טחינה כף'.`;
+const VISION_SYSTEM_INSTRUCTION = `You are an expert culinary image analyst and clinical nutrition assistant. Your sole purpose is to analyze images of food and extract highly detailed, specific food items, including their preparation methods (e.g., roasted, fried), states (e.g., raw, with shell), and precise quantities. You must act as a highly accurate, objective data-extraction tool.`;
+
+const VISION_PROMPT = `Analyze this image of food with extreme precision and maximum detail. Identify all distinct food items and be highly specific about their exact type, preparation method, state, and visual characteristics (e.g., 'cooked', 'raw', 'with shell', 'without bone', 'whole wheat', 'fried', 'roasted'). 
+Estimate their exact quantities accurately in grams, tablespoons, or logical units (e.g., slices, cups). 
+
+Output ONLY a single, simple, comma-separated string in Hebrew. Do NOT include any formatting, markdown, newlines, conversational text, or prefixes. 
+Examples of the required extreme specificity: 'חזה עוף צלוי ללא עור 150 גרם, אורז בסמטי מבושל 100 גרם, שקדים טבעיים עם קליפה 20 גרם, לחם מחמצת כוסמין פרוסה אחת, ביצה קשה חתוכה 1'.`;
 
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -185,6 +191,7 @@ export async function analyzeMealImage(
     const genAI = new GoogleGenerativeAI(finalKey);
     const model = genAI.getGenerativeModel({
       model: modelName,
+      systemInstruction: VISION_SYSTEM_INSTRUCTION,
       generationConfig: {
         ...GLOBAL_THINKING_CONFIG,
       },
