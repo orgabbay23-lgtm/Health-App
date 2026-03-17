@@ -11,6 +11,7 @@ import { formatNutritionValue, getNutrientProgressColor } from "../../../utils/n
 import type { UserProfile } from "../../../store";
 import { type DashboardPeriod } from "../../../utils/date-navigation";
 import { cn } from "../../../utils/utils";
+import { CatPeeker } from "../CatPeeker";
 
 interface PrimaryNutrientCardProps {
   nutrient: Extract<TrackedNutrientKey, "calories">;
@@ -71,8 +72,12 @@ export function PrimaryNutrientCard({
 
       <Card className="border border-white/60 bg-white/40 backdrop-blur-xl shadow-soft-2xl rounded-[3rem]">
         <CardContent className="flex flex-col items-center gap-8 p-10">
-          <div className="relative flex h-56 w-56 items-center justify-center">
-            <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
+          <div className="relative isolate">
+            <div className="relative flex h-56 w-56 items-center justify-center">
+              {periodMode === "daily" && (
+                <CatPeeker caloriePercentage={Math.round(percentage)} />
+              )}
+              <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
               <circle
                 cx="50"
                 cy="50"
@@ -115,6 +120,7 @@ export function PrimaryNutrientCard({
                 קלוריות
               </span>
             </div>
+          </div>
           </div>
 
           <div className="flex w-full items-center justify-between bg-slate-50/50 backdrop-blur-sm rounded-3xl p-5 border border-white/50">

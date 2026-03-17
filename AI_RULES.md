@@ -37,6 +37,8 @@ visibilitychange listeners to trigger global loading states or full-page refresh
     * Use a reserved high Z-index range (e.g., `z-[100]`) for these elements to prevent overlap with "System Messages" or dashboard cards.
     * Ensure overlays have a semi-transparent backdrop or a distinct shadow to separate them from the background.
 
+* **Lottie Micro-interactions:** App utilizes lottie-react. The 'Orange Cat Peeping' animation is rendered absolutely behind the main calorie ring with a negative z-index. It is configured with loop={false} to play once on load and freeze permanently on the final frame.
+
 ## 4. Security (Supabase Vault)
 * **BYOK Logic:** Gemini API keys are stored in Supabase Vault.
 * **Rules:** NEVER use direct `INSERT/UPDATE` on `vault.secrets`. Always use the `set_user_api_key` and `get_user_api_key` RPCs.
