@@ -1,4 +1,5 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { TipPopover } from "../../../components/ui/tip-popover";
@@ -41,7 +42,39 @@ export function PrimaryNutrientCard({
   const remaining = target - current;
   const isOver = remaining < 0;
 
-  const periodLabel = 
+  // Animated calorie counter — counts up from 0 on mount, springs to new values
+  const calorieMotion = useMotionValue(0);
+  const calorieSpring = useSpring(calorieMotion, { stiffness: 40, damping: 20 });
+  const [displayCalories, setDisplayCalories] = useState("0");
+
+  useEffect(() => {
+    calorieMotion.set(current);
+  }, [current, calorieMotion]);
+
+  useEffect(() => {
+    const unsubscribe = calorieSpring.on("change", (v) => {
+      setDisplayCalories(formatNutritionValue(Math.round(v)));
+    });
+    return unsubscribe;
+  }, [calorieSpring]);
+
+  // Animated percentage counter
+  const percentMotion = useMotionValue(0);
+  const percentSpring = useSpring(percentMotion, { stiffness: 40, damping: 20 });
+  const [displayPercent, setDisplayPercent] = useState(0);
+
+  useEffect(() => {
+    percentMotion.set(Math.round(percentage));
+  }, [percentage, percentMotion]);
+
+  useEffect(() => {
+    const unsubscribe = percentSpring.on("change", (v) => {
+      setDisplayPercent(Math.round(v));
+    });
+    return unsubscribe;
+  }, [percentSpring]);
+
+  const periodLabel =
     periodMode === "daily" ? "יעד יומי" : 
     periodMode === "weekly" ? "יעד שבועי" : 
     "יעד חודשי";
@@ -97,11 +130,10 @@ export function PrimaryNutrientCard({
                 strokeDasharray={circumference}
                 initial={{ strokeDashoffset: circumference }}
                 animate={{ strokeDashoffset }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 50, 
-                  damping: 15,
-                  duration: 1.5 
+                transition={{
+                  type: "spring",
+                  stiffness: 40,
+                  damping: 20
                 }}
                 strokeLinecap="round"
                 className={cn("drop-shadow-sm transition-colors duration-500")}
@@ -110,14 +142,13 @@ export function PrimaryNutrientCard({
             <div className="absolute flex flex-col items-center justify-center text-center">
               <AnimatePresence mode="wait">
                 <motion.span
-                  key={current}
-                  initial={{ opacity: 0, y: 8 }}
+                  key="calories"
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  transition={{ type: "spring", stiffness: 100, damping: 15 }}
                   className="text-5xl font-black tracking-tighter text-slate-950"
                 >
-                  {formatNutritionValue(current)}
+                  {displayCalories}
                 </motion.span>
               </AnimatePresence>
               <span className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400 mt-1">
@@ -125,17 +156,16 @@ export function PrimaryNutrientCard({
               </span>
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={Math.round(percentage)}
-                  initial={{ opacity: 0, y: 5 }}
+                  key="percentage"
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  transition={{ type: "spring", stiffness: 100, damping: 15 }}
                   className={cn(
                     "text-sm font-medium mt-1",
                     percentage > 100 ? "text-red-400" : "text-slate-400 dark:text-slate-500"
                   )}
                 >
-                  ({Math.round(percentage)}%)
+                  ({displayPercent}%)
                 </motion.div>
               </AnimatePresence>
             </div>
