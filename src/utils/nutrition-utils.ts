@@ -728,40 +728,64 @@ const UPPER_LIMIT_THRESHOLDS: Record<string, number> = {
   vitaminK: 1000,  // No formal UL, very high ceiling
 };
 
-export type NutrientColorTier = 'blue' | 'green' | 'red';
+export interface NutrientColors {
+  bg: string;
+  text: string;
+  stroke: string;
+}
 
 /**
  * Clinical 3-tier color logic for nutrient progress indicators.
  *
- * ≤100%: Blue (default / in-progress)
- * >100%:
- *   - Strict-limit nutrients (calories, carbs, fat, sodium) → Red
- *   - UL-tracked nutrients (iron, calcium, vitaminA, etc.) → Green unless exceeding UL threshold → Red
- *   - Goal nutrients (protein, fiber, vitaminC, magnesium, etc.) → Green (no upper limit concern from food)
+ * Category A: Strict Limit Nutrients
+ *   - < 50%: Blue
+ *   - 50% - 99%: Orange
+ *   - ≥ 100%: Red
+ * Category B: Upper Limit Nutrients
+ *   - < 50%: Blue
+ *   - 50% - 99%: Teal
+ *   - 100% - UL: Green
+ *   - ≥ UL: Red
+ * Category C: Goal Nutrients
+ *   - < 50%: Blue
+ *   - 50% - 99%: Teal
+ *   - ≥ 100%: Green
  */
 export function getNutrientProgressColor(
   nutrientKey: string,
   value: number,
   target: number,
-): NutrientColorTier {
+): NutrientColors {
   const percentage = target > 0 ? (value / target) * 100 : 0;
 
-  if (percentage <= 100) {
-    return 'blue';
-  }
+  const colors = {
+    blue: { bg: 'bg-blue-500', text: 'text-blue-500', stroke: '#3b82f6' },
+    orange: { bg: 'bg-orange-500', text: 'text-orange-500', stroke: '#f97316' },
+    red: { bg: 'bg-rose-500', text: 'text-rose-500', stroke: '#f43f5e' },
+    teal: { bg: 'bg-teal-400', text: 'text-teal-400', stroke: '#2dd4bf' },
+    green: { bg: 'bg-emerald-500', text: 'text-emerald-500', stroke: '#10b981' }
+  };
 
-  // >100% — determine tier
+  // Category A: Strict Limit Nutrients
   if (STRICT_LIMIT_NUTRIENTS.includes(nutrientKey)) {
-    return 'red';
+    if (percentage < 50) return colors.blue;
+    if (percentage < 100) return colors.orange;
+    return colors.red;
   }
 
+  // Category B: Upper Limit Nutrients
   const ulThreshold = UPPER_LIMIT_THRESHOLDS[nutrientKey];
   if (ulThreshold !== undefined) {
-    return percentage > ulThreshold ? 'red' : 'green';
+    if (percentage < 50) return colors.blue;
+    if (percentage < 100) return colors.teal;
+    if (percentage < ulThreshold) return colors.green;
+    return colors.red;
   }
 
-  // Goal nutrients (protein, fiber, vitaminC, magnesium, omega3, B vitamins, etc.)
-  return 'green';
+  // Category C: Goal Nutrients (everything else)
+  if (percentage < 50) return colors.blue;
+  if (percentage < 100) return colors.teal;
+  return colors.green;
 }
 
 export function formatNutritionValue(value: number): string {

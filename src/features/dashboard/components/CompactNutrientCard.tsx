@@ -7,9 +7,8 @@ import {
   generateNutritionalTip,
   type TrackedNutrientKey,
 } from "../../../utils/nutritional-tips";
-import { formatNutritionValue } from "../../../utils/nutrition-utils";
+import { formatNutritionValue, getNutrientProgressColor } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
-import { getProgressAppearance } from "./progress-tone";
 import { cn } from "../../../utils/utils";
 
 interface CompactNutrientCardProps {
@@ -28,8 +27,10 @@ export function CompactNutrientCard({
   index = 0,
 }: CompactNutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
-  const appearance = getProgressAppearance(current, target, nutrient, nutrient);
-  const percentage = Math.min(Math.max(appearance.percentage, 0), 100);
+  const percentageRaw = target > 0 ? (current / target) * 100 : 0;
+  const isNearGoal = percentageRaw >= 90 && percentageRaw <= 110;
+  const percentage = Math.min(Math.max(Math.round(percentageRaw), 0), 100);
+  const colors = getNutrientProgressColor(nutrient, current, target);
 
   return (
     <motion.div
@@ -46,7 +47,7 @@ export function CompactNutrientCard({
       }}
       className="flex-1 relative"
     >
-      {appearance.isNearGoal && (
+      {isNearGoal && (
         <div className="absolute -top-2 -right-2 pointer-events-none z-10">
           <motion.div
             animate={{ scale: [0, 1, 0], opacity: [0, 1, 0] }}
@@ -93,8 +94,7 @@ export function CompactNutrientCard({
               }}
               className={cn(
                 "h-full rounded-full transition-all duration-500", 
-                appearance.barClass,
-                appearance.glowClass
+                colors.bg
               )}
             />
           </div>

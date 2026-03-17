@@ -7,9 +7,8 @@ import {
   generateNutritionalTip,
   type TrackedNutrientKey,
 } from "../../../utils/nutritional-tips";
-import { formatNutritionValue } from "../../../utils/nutrition-utils";
+import { formatNutritionValue, getNutrientProgressColor } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
-import { getProgressAppearance } from "./progress-tone";
 import { type DashboardPeriod } from "../../../utils/date-navigation";
 import { cn } from "../../../utils/utils";
 
@@ -29,11 +28,13 @@ export function PrimaryNutrientCard({
   periodMode,
 }: PrimaryNutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
-  const appearance = getProgressAppearance(current, target, "calories", "calories");
+  const percentage = target > 0 ? (current / target) * 100 : 0;
+  const isNearGoal = percentage >= 90 && percentage <= 110;
+  const nutrientColors = getNutrientProgressColor(nutrient, current, target);
   
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
-  const safePercentage = Math.min(Math.max(appearance.percentage, 0), 100);
+  const safePercentage = Math.min(Math.max(percentage, 0), 100);
   const strokeDashoffset = circumference - (safePercentage / 100) * circumference;
 
   const remaining = target - current;
@@ -57,7 +58,7 @@ export function PrimaryNutrientCard({
       whileHover={{ scale: 1.01 }}
       className="w-full relative"
     >
-      {appearance.isNearGoal && (
+      {isNearGoal && (
         <div className="absolute -top-4 -right-4 pointer-events-none">
           <motion.div
             animate={{ scale: [0, 1.2, 0], rotate: [0, 180, 360] }}
@@ -72,18 +73,6 @@ export function PrimaryNutrientCard({
         <CardContent className="flex flex-col items-center gap-8 p-10">
           <div className="relative flex h-56 w-56 items-center justify-center">
             <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
-              <defs>
-                <linearGradient id="caloriesGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#38bdf8" />
-                  <stop offset="100%" stopColor="#2dd4bf" />
-                </linearGradient>
-                {appearance.isOverLimit && (
-                  <linearGradient id="warningGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#e11d48" />
-                    <stop offset="100%" stopColor="#be123c" />
-                  </linearGradient>
-                )}
-              </defs>
               <circle
                 cx="50"
                 cy="50"
@@ -97,7 +86,7 @@ export function PrimaryNutrientCard({
                 cx="50"
                 cy="50"
                 r={radius}
-                stroke={appearance.isOverLimit ? "url(#warningGradient)" : "url(#caloriesGradient)"}
+                stroke={nutrientColors.stroke}
                 strokeWidth="7"
                 fill="transparent"
                 strokeDasharray={circumference}
@@ -110,7 +99,7 @@ export function PrimaryNutrientCard({
                   duration: 1.5 
                 }}
                 strokeLinecap="round"
-                className={appearance.glowClass}
+                className={cn("drop-shadow-sm transition-colors duration-500")}
               />
             </svg>
             <div className="absolute flex flex-col items-center justify-center text-center">

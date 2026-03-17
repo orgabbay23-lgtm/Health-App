@@ -17,6 +17,7 @@
 
 ## 3. UI/UX Architecture ($1B Startup Aesthetic)
 * **Visual Identity:** Glassmorphism (backdrop-blur), soft layered shadows, and mesh gradients.
+* **Color Rule (3-Stage Color Status Quo):** ALL bars start Blue (<50%). Between 50%-100%: Limit Nutrients turn Orange, Goal/UL Nutrients turn Turquoise. Above 100%: Limit Nutrients turn Red, Goal/UL Nutrients turn Green. UL Nutrients ONLY turn Red if exceeding their extreme UL threshold.
 * **Hierarchy:** 1. Calories (Massive Ring) -> 2. Macros (Clean Grid) -> 3. Micros (Expandable).
 * **Navigation:** Floating Bottom Navigation Bar with "Safe Area" support for mobile.
 * **Motion:** Staggered entry animations and haptic-like scale effects (`whileTap`) on all buttons.       

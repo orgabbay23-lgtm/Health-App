@@ -6,9 +6,8 @@ import {
   generateNutritionalTip,
 } from "../../../utils/nutritional-tips";
 import type { MicronutrientKey } from "../../../utils/nutrition-utils";
-import { formatNutritionValue } from "../../../utils/nutrition-utils";
+import { formatNutritionValue, getNutrientProgressColor } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
-import { getProgressAppearance } from "./progress-tone";
 import { cn } from "../../../utils/utils";
 
 interface NutrientCardProps {
@@ -27,8 +26,10 @@ export function NutrientCard({
   index = 0,
 }: NutrientCardProps) {
   const meta = NUTRIENT_META[nutrient];
-  const appearance = getProgressAppearance(current, target, "micronutrient", nutrient);
-  const percentage = Math.min(Math.max(appearance.percentage, 0), 100);
+  const percentageRaw = target > 0 ? (current / target) * 100 : 0;
+  const percentageDisplay = Math.round(percentageRaw);
+  const percentage = Math.min(Math.max(percentageDisplay, 0), 100);
+  const colors = getNutrientProgressColor(nutrient, current, target);
 
   return (
     <motion.div
@@ -61,10 +62,10 @@ export function NutrientCard({
             </div>
 
             <span className={cn(
-              "text-[11px] font-black px-2 py-0.5 rounded-full",
-              appearance.badgeClass
+              "text-[11px] font-black px-2 py-0.5 rounded-full bg-slate-50/80",
+              colors.text
             )}>
-              {appearance.percentage}%
+              {percentageDisplay}%
             </span>
           </div>
 
@@ -75,8 +76,7 @@ export function NutrientCard({
               transition={{ duration: 1, ease: "easeOut", delay: 0.1 + (index * 0.05) }}
               className={cn(
                 "h-full rounded-full transition-all duration-500",
-                appearance.barClass,
-                appearance.glowClass
+                colors.bg
               )}
             />
           </div>
