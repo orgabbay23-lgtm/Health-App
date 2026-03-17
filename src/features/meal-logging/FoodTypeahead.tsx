@@ -11,7 +11,7 @@ import { cn } from "../../utils/utils";
  * Delimiters: newline, comma, standalone "עם" (with surrounding spaces or at start).
  */
 function extractActiveQuery(text: string): { baseText: string; activeQuery: string } {
-  const delimiterRegex = /\n|,|\sעם\s|^עם\s/g;
+  const delimiterRegex = /\n|,|\sעם\s|^עם\s|\sו|^ו/g;
 
   let lastMatch: { index: number; length: number } | null = null;
   let match;
@@ -175,8 +175,28 @@ export function FoodTypeahead({
   };
 
   const selectSuggestion = (suggestion: string) => {
-    const { baseText } = extractActiveQuery(value);
-    setValue(name, `${baseText}${suggestion} `, { shouldValidate: true });
+    const { baseText, activeQuery } = extractActiveQuery(value);
+    const tokens = activeQuery.split(/(\s+)/);
+    const matchIndex = tokens.findIndex(
+      (token) => token.trim() && scoreSuggestion(suggestion, token) > 0
+    );
+
+    let prefix: string;
+    let insertedValue: string;
+
+    if (matchIndex >= 0) {
+      prefix = tokens.slice(0, matchIndex).join('');
+      insertedValue = suggestion;
+      const matchedToken = tokens[matchIndex];
+      if (matchedToken.startsWith('ו') && !suggestion.startsWith('ו')) {
+        insertedValue = 'ו' + insertedValue;
+      }
+    } else {
+      prefix = '';
+      insertedValue = suggestion;
+    }
+
+    setValue(name, baseText + prefix + insertedValue + ' ', { shouldValidate: true });
     setIsOpen(false);
     setSuggestions([]);
   };
