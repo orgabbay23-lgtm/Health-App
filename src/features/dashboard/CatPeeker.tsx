@@ -19,6 +19,7 @@ function getQuoteForPercentage(pct: number): string {
 
 export function CatPeeker({ caloriePercentage }: CatPeekerProps) {
   const [animationData, setAnimationData] = useState<any>(null);
+  const [sessionQuote] = useState(() => getQuoteForPercentage(caloriePercentage));
   const [activeQuote, setActiveQuote] = useState<string | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -26,7 +27,7 @@ export function CatPeeker({ caloriePercentage }: CatPeekerProps) {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    setActiveQuote(getQuoteForPercentage(caloriePercentage));
+    setActiveQuote(sessionQuote);
     timeoutRef.current = setTimeout(() => {
       setActiveQuote(null);
     }, 4000);
