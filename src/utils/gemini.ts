@@ -154,7 +154,9 @@ Units: fiber (g), sodium/potassium/magnesium/calcium (mg), iron (mg), vitaminA (
 
 For omega3, calculate the estimated total of EPA + DHA in milligrams (mg). Only count EPA and DHA forms (not ALA). Rich sources include fatty fish (salmon, sardines, mackerel), fish oil, and algae-based supplements.
 
-Use USDA/clinical-grade reference data. If a micronutrient is truly absent from the meal, return 0. Never omit a key.`;
+Use USDA/clinical-grade reference data. If a micronutrient is truly absent from the meal, return 0. Never omit a key.
+
+Handle common Israeli food slang, colloquialisms, typos, and commercial brand names (e.g., Osem, Tnuva, Strauss) intelligently to accurately fetch their specific nutritional values.`;
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
@@ -275,7 +277,7 @@ Rules for your response:
 - Structure:
   1. A short, encouraging opening sentence (max 1 sentence).
   2. נקודות לשימור - What went well (2-3 short bullets, max 1-2 sentences each).
-  3. נקודות לשיפור - What is missing/over the limit, and suggest 2-3 specific, common Israeli foods to fix it (2-3 short bullets, max 1-2 sentences each).
+  3. נקודות לשיפור - What is missing/over the limit, and suggest 2-3 specific, common Israeli foods to fix it. IMPORTANT: Provide practical, everyday portion sizes (e.g., 'חצי גביע קוטג 5%', 'כף טחינה גולמית') rather than just naming the ingredient (2-3 short bullets, max 1-2 sentences each).
 - Use relevant and fun emojis natively within the text (e.g., 💪, 🥑, 🔥, ✨, 🥗, 💧, 🌟) to make the tone vibrant and engaging.
 - Keep it extremely concise, punchy, and actionable. No long explanations.`;
 
@@ -326,7 +328,8 @@ Rules:
 - Language: Hebrew.
 - Answer directly, concisely (max 2-3 sentences), in a warm and friendly tone.
 - Use relevant emojis to keep the tone vibrant.
-- DO NOT use markdown asterisks (**) for bolding. Use standard plain text only.`;
+- DO NOT use markdown asterisks (**) for bolding. Use standard plain text only.
+- If the user asks for medical advice, medication instructions, or diagnostic information beyond basic nutrition, gently remind them to consult a doctor.`;
 
 export async function answerInsightFollowUp(
   originalInsight: string,
