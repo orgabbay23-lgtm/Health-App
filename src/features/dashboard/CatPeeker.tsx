@@ -19,15 +19,15 @@ function getQuoteForPercentage(pct: number): string {
 
 export function CatPeeker({ caloriePercentage }: CatPeekerProps) {
   const [animationData, setAnimationData] = useState<any>(null);
-  const [sessionQuote] = useState(() => getQuoteForPercentage(caloriePercentage));
+  const [sessionQuote, setSessionQuote] = useState(() => getQuoteForPercentage(caloriePercentage));
   const [activeQuote, setActiveQuote] = useState<string | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showQuote = () => {
+  const showQuote = (quote: string) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    setActiveQuote(sessionQuote);
+    setActiveQuote(quote);
     timeoutRef.current = setTimeout(() => {
       setActiveQuote(null);
     }, 4000);
@@ -44,14 +44,16 @@ export function CatPeeker({ caloriePercentage }: CatPeekerProps) {
   }, []);
 
   useEffect(() => {
-    showQuote();
+    const newQuote = getQuoteForPercentage(caloriePercentage);
+    setSessionQuote(newQuote);
+    showQuote(newQuote);
+
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [caloriePercentage]);
 
   if (!animationData) return null;
 
@@ -60,7 +62,7 @@ export function CatPeeker({ caloriePercentage }: CatPeekerProps) {
       className="absolute -top-[25%] -left-[52%] -rotate-[60deg] -z-10 w-40 h-40 bg-transparent pointer-events-auto cursor-pointer overflow-visible"
       onClick={(e) => {
         e.stopPropagation();
-        showQuote();
+        showQuote(sessionQuote);
       }}
     >
       <Lottie
