@@ -156,8 +156,8 @@ function formatPeriodLabel(
 
 function formatPeriodCaption(
   mode: DashboardPeriod,
-  startDate: Date,
-  endDate: Date,
+  _startDate: Date,
+  _endDate: Date,
   isCurrentPeriod: boolean,
 ): string {
   if (mode === "daily") {
@@ -165,14 +165,10 @@ function formatPeriodCaption(
   }
 
   if (mode === "weekly") {
-    return isCurrentPeriod
-      ? "7 ימים אחרונים (לא כולל היום)"
-      : `7 ימים אחרונים`;
+    return `7 ימים אחרונים`;
   }
 
-  return isCurrentPeriod
-    ? "30 ימים אחרונים (לא כולל היום)"
-    : `30 ימים אחרונים`;
+  return `30 ימים אחרונים`;
 }
 
 export function getPeriodDetails(

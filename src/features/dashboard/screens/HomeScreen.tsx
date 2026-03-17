@@ -81,9 +81,9 @@ export function HomeScreen({
   };
 
   const periodCaption = periodMode === "weekly"
-    ? `${format(periodDetails.startDate, "EEEE", { locale: he })} – ${format(periodDetails.endDate, "EEEE", { locale: he })} · לא כולל ימים ריקים`
+    ? `${format(periodDetails.startDate, "EEEE", { locale: he })} – ${format(periodDetails.endDate, "EEEE", { locale: he })}`
     : periodMode === "monthly"
-      ? `${format(periodDetails.startDate, "d בMMMM", { locale: he })} – ${format(periodDetails.endDate, "d בMMMM", { locale: he })} · לא כולל ימים ריקים`
+      ? `${format(periodDetails.startDate, "d בMMMM", { locale: he })} – ${format(periodDetails.endDate, "d בMMMM", { locale: he })}`
       : null;
 
   return (
@@ -94,12 +94,20 @@ export function HomeScreen({
       className="space-y-10"
     >
       {periodCaption && (
-        <motion.p
-          variants={itemVariants}
-          className="text-center text-[11px] font-medium text-slate-400 tracking-wide -mb-4"
+        <motion.div 
+          variants={itemVariants} 
+          className="flex justify-center -mb-2 px-4"
         >
-          {periodCaption}
-        </motion.p>
+          <div className="inline-flex items-center gap-2.5 bg-white/50 backdrop-blur-xl shadow-soft-sm border border-white/60 rounded-full px-4 py-2">
+            <span className="text-[13px] font-black text-slate-700 tracking-tight">
+              {periodCaption}
+            </span>
+            <div className="w-1 h-1 rounded-full bg-slate-300" />
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+              לא כולל ימים ריקים
+            </span>
+          </div>
+        </motion.div>
       )}
 
       {/* Level 1: Hero Section (Calories) */}
