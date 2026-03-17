@@ -184,7 +184,7 @@ function MealTimelineItem({
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                 {onDecrement && (meal.quantity ?? 1) > 1 && (
                   <button
                     type="button"
@@ -217,25 +217,24 @@ function MealTimelineItem({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "rounded-xl h-10 w-10 transition-all",
+                      "rounded-xl h-9 w-9 transition-all",
                       isSaved ? "text-rose-500 bg-rose-50" : "text-slate-300 hover:text-rose-400 hover:bg-rose-50/50"
                     )}
                     onClick={() => onSaveFavorite(meal)}
-                    disabled={isSaved}
                   >
-                    <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
+                    <Heart size={16} fill={isSaved ? "currentColor" : "none"} />
                   </Button>
                 )}
-                
+
                 {onEdit && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="rounded-xl h-10 w-10 text-slate-300 hover:text-blue-500 hover:bg-blue-50"
+                    className="rounded-xl h-9 w-9 text-slate-300 hover:text-blue-500 hover:bg-blue-50"
                     onClick={() => onEdit(meal)}
                   >
-                    <Pencil size={18} />
+                    <Pencil size={16} />
                   </Button>
                 )}
 
@@ -243,53 +242,54 @@ function MealTimelineItem({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="rounded-xl h-10 w-10 text-slate-300 hover:text-slate-600 hover:bg-slate-50"
+                  className="rounded-xl h-9 w-9 text-slate-300 hover:text-slate-600 hover:bg-slate-50"
                   onClick={() => setIsExpanded((current) => !current)}
                 >
                   <ChevronDown
-                    size={18}
+                    size={16}
                     className={cn("transition-transform duration-300", isExpanded && "rotate-180")}
                   />
                 </Button>
-
-                {canDelete && onDelete && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-xl h-10 w-10 text-slate-200 hover:text-rose-500 hover:bg-rose-50"
-                    onClick={() => {
-                      if (window.confirm("האם אתה בטוח שברצונך למחוק את הארוחה מההיסטוריה?")) {
-                        onDelete(meal.id);
-                      }
-                    }}
-                  >
-                    <Trash2 size={18} />
-                  </Button>
-                )}
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {[
-                { label: "חלבון", value: meal.macronutrients.protein, color: "gradient-protein text-white", shadow: "shadow-orange-200/50" },
-                { label: "פחמימות", value: meal.macronutrients.carbs, color: "gradient-carbs text-white", shadow: "shadow-emerald-200/50" },
-                { label: "שומן", value: meal.macronutrients.fat, color: "gradient-fats text-white", shadow: "shadow-amber-200/50" }
-              ].map((macro) => (
-                <motion.div
-                  key={`${macro.label}-${macro.value}`}
-                  initial={{ scale: 1.08 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-md",
-                    macro.color,
-                    macro.shadow
-                  )}
+            <div className="mt-4 flex items-center gap-2">
+              <div className="flex flex-wrap gap-2 flex-1">
+                {[
+                  { label: "חלבון", value: meal.macronutrients.protein, color: "gradient-protein text-white", shadow: "shadow-orange-200/50" },
+                  { label: "פחמימות", value: meal.macronutrients.carbs, color: "gradient-carbs text-white", shadow: "shadow-emerald-200/50" },
+                  { label: "שומן", value: meal.macronutrients.fat, color: "gradient-fats text-white", shadow: "shadow-amber-200/50" }
+                ].map((macro) => (
+                  <motion.div
+                    key={`${macro.label}-${macro.value}`}
+                    initial={{ scale: 1.08 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-md",
+                      macro.color,
+                      macro.shadow
+                    )}
+                  >
+                    {macro.label}: {formatNutritionValue(macro.value)} ג'
+                  </motion.div>
+                ))}
+              </div>
+
+              {canDelete && onDelete && (
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200/60 text-rose-500 hover:bg-rose-100 hover:text-rose-600 active:scale-95 transition-all text-[11px] font-bold shrink-0"
+                  onClick={() => {
+                    if (window.confirm("האם אתה בטוח שברצונך למחוק את הארוחה מההיסטוריה?")) {
+                      onDelete(meal.id);
+                    }
+                  }}
                 >
-                  {macro.label}: {formatNutritionValue(macro.value)} ג'
-                </motion.div>
-              ))}
+                  <Trash2 size={13} />
+                  <span>מחיקה</span>
+                </button>
+              )}
             </div>
           </div>
 

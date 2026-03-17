@@ -86,24 +86,24 @@ export function ModalShell({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
             onClick={onClose}
           />
-          
+
           <SafeLayoutMotion
             ref={modalRef}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 10 }}
             transition={{
               type: "spring",
-              damping: 25,
-              stiffness: 400,
-              mass: 0.8
+              damping: 30,
+              stiffness: 350,
+              mass: 0.6
             }}
             className={cn(
-              "relative w-[95vw] bg-white/80 backdrop-blur-2xl text-right shadow-soft-2xl border border-white/60 overscroll-contain",
+              "relative w-[95vw] bg-white/80 backdrop-blur-2xl text-right shadow-soft-2xl border border-white/60 overscroll-contain will-change-transform",
               // Centered modal on all screen sizes
               "max-h-[85dvh] rounded-[2rem] sm:max-w-md md:max-w-2xl",
               className,

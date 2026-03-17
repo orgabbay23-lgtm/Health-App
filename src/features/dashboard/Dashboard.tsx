@@ -22,6 +22,7 @@ import {
 import {
   useActiveUser,
   useAppStore,
+  createMealSignature,
   type DailyAggregations,
   type DailyLog,
   type MealItem,
@@ -121,6 +122,7 @@ export function Dashboard() {
   const activeUser = useActiveUser();
   const removeMealLog = useAppStore((state) => state.removeMealLog);
   const saveMealAsFavorite = useAppStore((state) => state.saveMealAsFavorite);
+  const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
   const incrementMealQuantity = useAppStore((state) => state.incrementMealQuantity);
   const decrementMealQuantity = useAppStore((state) => state.decrementMealQuantity);
   
@@ -179,6 +181,15 @@ export function Dashboard() {
   }, [periodDetails.dayKeys, periodMode, userProfile, dailyLogs]);
 
   const onSaveFavorite = async (meal: MealItem) => {
+    const signature = createMealSignature(meal);
+    const existing = savedMeals.find((sm) => sm.signature === signature);
+
+    if (existing) {
+      await removeSavedMeal(existing.id);
+      toast.success("הארוחה הוסרה מהמועדפים");
+      return;
+    }
+
     const wasAdded = await saveMealAsFavorite(meal);
 
     if (wasAdded) {
@@ -187,6 +198,27 @@ export function Dashboard() {
     }
 
     toast.message("הארוחה כבר קיימת במועדפים");
+  };
+
+  const scrollToTop = () => {
+    const scrollCanvas = document.querySelector('.ios-scroll-canvas');
+    if (scrollCanvas) {
+      scrollCanvas.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const onHistoryIncrement = (dayKey: string, mealId: string) => {
+    incrementMealQuantity(dayKey, mealId);
+    setActiveScreen("home");
+    requestAnimationFrame(scrollToTop);
+  };
+
+  const onHistoryDecrement = (dayKey: string, mealId: string) => {
+    decrementMealQuantity(dayKey, mealId);
+    setActiveScreen("home");
+    requestAnimationFrame(scrollToTop);
   };
 
   const onSelectArchiveDay = (dayKey: string) => {
@@ -307,8 +339,8 @@ export function Dashboard() {
                 onDeleteMeal={removeMealLog}
                 onSaveFavorite={onSaveFavorite}
                 onEditMeal={(dayKey, meal) => setEditingLog({ dayKey, meal })}
-                onIncrementMeal={incrementMealQuantity}
-                onDecrementMeal={decrementMealQuantity}
+                onIncrementMeal={onHistoryIncrement}
+                onDecrementMeal={onHistoryDecrement}
               />
             ) : null}
 
