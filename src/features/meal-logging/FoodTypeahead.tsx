@@ -6,6 +6,66 @@ import { foodSuggestions } from "../../utils/food-suggestions";
 import { useAppStore } from "../../store";
 import { cn } from "../../utils/utils";
 
+/**
+ * Splits input into baseText (before last delimiter) and activeQuery (after).
+ * Delimiters: newline, comma, standalone "עם" (with surrounding spaces or at start).
+ */
+function extractActiveQuery(text: string): { baseText: string; activeQuery: string } {
+  const delimiterRegex = /\n|,|\sעם\s|^עם\s/g;
+
+  let lastMatch: { index: number; length: number } | null = null;
+  let match;
+
+  while ((match = delimiterRegex.exec(text)) !== null) {
+    lastMatch = { index: match.index, length: match[0].length };
+  }
+
+  if (!lastMatch) {
+    return { baseText: '', activeQuery: text.trim() };
+  }
+
+  const splitPoint = lastMatch.index + lastMatch.length;
+  return {
+    baseText: text.substring(0, splitPoint),
+    activeQuery: text.substring(splitPoint).trim(),
+  };
+}
+
+/**
+ * Weighted scoring engine: ranks suggestions by match quality, not just presence.
+ * Exact > starts-with > word-exact > word-starts-with > contains.
+ * Hebrew vav prefix: "וX" also matches "X".
+ */
+function scoreSuggestion(suggestion: string, query: string): number {
+  const cleaned = query.replace(/,/g, '').replace(/\s+/g, ' ').trim();
+  if (!cleaned) return 0;
+
+  const words = cleaned.split(' ').filter(Boolean);
+  const lowerSuggestion = suggestion.toLowerCase();
+  const suggestionWords = lowerSuggestion.split(' ');
+
+  let matchScore = 0;
+  for (const word of words) {
+    const lowerWord = word.toLowerCase();
+    const withoutVav = lowerWord.startsWith('ו') ? lowerWord.substring(1) : lowerWord;
+
+    let score = 0;
+    for (const qWord of [lowerWord, withoutVav]) {
+      if (!qWord) continue;
+      let currentScore = 0;
+      if (lowerSuggestion === qWord) currentScore = 100;
+      else if (lowerSuggestion.startsWith(qWord)) currentScore = 50;
+      else if (suggestionWords.some(w => w === qWord)) currentScore = 30;
+      else if (suggestionWords.some(w => w.startsWith(qWord))) currentScore = 20;
+      else if (lowerSuggestion.includes(qWord)) currentScore = 5;
+
+      if (currentScore > score) score = currentScore;
+    }
+    matchScore += score;
+  }
+  return matchScore;
+}
+
 interface FoodTypeaheadProps {
   name: string;
   placeholder?: string;
@@ -23,7 +83,6 @@ export function FoodTypeahead({
   placeholder = "שם המאכל",
   className,
   inputClassName,
-  multiSelect = false,
   multiLine = false,
   rows = 2,
 }: FoodTypeaheadProps) {
@@ -40,45 +99,38 @@ export function FoodTypeahead({
 
   const dailyLogs = useAppStore((state) => state.dailyLogs);
 
-  const getCurrentSegment = (val: string) => {
-    if (!multiSelect) return val;
-    const segments = val.split(",");
-    return segments[segments.length - 1].trim();
-  };
-
   useEffect(() => {
-    const currentSearch = getCurrentSegment(value);
+    const { activeQuery } = extractActiveQuery(value);
 
-    if (currentSearch.length >= 2 && isOpen) {
+    if (activeQuery.length >= 2 && isOpen) {
       const historySet = new Set<string>();
+      const scored: { name: string; score: number }[] = [];
+
       Object.values(dailyLogs).forEach((log) => {
         log.meals.forEach((m) => {
-          if (m.meal_name.toLowerCase().includes(currentSearch.toLowerCase())) {
+          const score = scoreSuggestion(m.meal_name, activeQuery);
+          if (score > 0 && !historySet.has(m.meal_name)) {
             historySet.add(m.meal_name);
+            scored.push({ name: m.meal_name, score });
           }
         });
       });
-      const historyMatches = Array.from(historySet);
 
-      const dbMatches = foodSuggestions.filter((item) =>
-        item.toLowerCase().includes(currentSearch.toLowerCase()) && !historySet.has(item)
-      );
+      for (const item of foodSuggestions) {
+        if (historySet.has(item)) continue;
+        const score = scoreSuggestion(item, activeQuery);
+        if (score > 0) {
+          scored.push({ name: item, score });
+        }
+      }
 
-      dbMatches.sort((a, b) => {
-        const aStarts = a.toLowerCase().startsWith(currentSearch.toLowerCase());
-        const bStarts = b.toLowerCase().startsWith(currentSearch.toLowerCase());
-        if (aStarts && !bStarts) return -1;
-        if (!aStarts && bStarts) return 1;
-        return 0;
-      });
-
-      const combined = [...historyMatches, ...dbMatches].slice(0, 15);
-      setSuggestions(combined);
+      scored.sort((a, b) => b.score - a.score || a.name.length - b.name.length);
+      setSuggestions(scored.slice(0, 15).map((s) => s.name));
       setActiveIndex(-1);
     } else {
       setSuggestions([]);
     }
-  }, [value, isOpen, dailyLogs, multiSelect]);
+  }, [value, isOpen, dailyLogs]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
@@ -123,19 +175,10 @@ export function FoodTypeahead({
   };
 
   const selectSuggestion = (suggestion: string) => {
-    if (multiSelect) {
-      const segments = value.split(",");
-      segments[segments.length - 1] = ` ${suggestion}`;
-      const newValue = segments.join(",").trim();
-      setValue(name, newValue, { shouldValidate: true });
-    } else {
-      setValue(name, suggestion, { shouldValidate: true });
-    }
+    const { baseText } = extractActiveQuery(value);
+    setValue(name, `${baseText}${suggestion} `, { shouldValidate: true });
     setIsOpen(false);
-    // Note: Do NOT re-focus the input here.
-    // On desktop, blur is already prevented by onPointerDown on the dropdown.
-    // On iOS, re-focusing triggers a keyboard dismiss→reappear cycle that
-    // causes a violent viewport jump. The user taps the input to continue.
+    setSuggestions([]);
   };
 
   const { ref: formRef, ...rest } = register(name);
