@@ -149,6 +149,7 @@ function normalizeMealItem(meal: Partial<MealItem>): MealItem {
     micronutrients: normalizeMicronutrients(meal.micronutrients),
     confidence_score: meal.confidence_score === undefined ? undefined : toFiniteNumber(meal.confidence_score, 0),
     sourceType: meal.sourceType === "supplement" ? "supplement" : "food",
+    mealText: typeof meal.mealText === "string" ? meal.mealText : undefined,
   };
 }
 
@@ -612,6 +613,7 @@ export const useAppStore = create<AppState>()(
       savedAt: new Date().toISOString(),
       signature,
       meal: normalizedMeal,
+      mealText: normalizedMeal.mealText,
     };
 
     // Snapshot for rollback
@@ -673,6 +675,7 @@ export const useAppStore = create<AppState>()(
       ...savedMeals[index],
       signature: newSignature,
       meal: { ...normalizedMeal, meal_name: updates.meal_name },
+      mealText: normalizedMeal.mealText,
     };
 
     const nextSavedMeals = [...savedMeals];
@@ -708,6 +711,7 @@ export const useAppStore = create<AppState>()(
       macronutrients: { protein: 0, carbs: 0, fat: 0 },
       micronutrients: { ...EMPTY_MICRONUTRIENTS },
       sourceType: "food",
+      mealText,
     });
 
     const newSavedMeal: SavedMeal = {
@@ -725,7 +729,7 @@ export const useAppStore = create<AppState>()(
       id: newSavedMeal.id,
       user_id: userId,
       name,
-      ingredients: [{ ...placeholderMeal, mealText }],
+      ingredients: [placeholderMeal],
       created_at: newSavedMeal.savedAt,
       updated_at: newSavedMeal.savedAt,
     });
@@ -751,19 +755,25 @@ export const useAppStore = create<AppState>()(
     const previousSavedMeals = savedMeals;
     const existing = savedMeals[index];
 
-    const updatedMeal: SavedMeal = {
+    const updatedMealData = normalizeMealItem({
+      ...existing.meal,
+      meal_name: newName,
+      mealText: newMealText,
+    });
+
+    const updatedSavedMeal: SavedMeal = {
       ...existing,
-      meal: { ...existing.meal, meal_name: newName },
+      meal: updatedMealData,
       mealText: newMealText,
     };
 
     const nextSavedMeals = [...savedMeals];
-    nextSavedMeals[index] = updatedMeal;
+    nextSavedMeals[index] = updatedSavedMeal;
     set({ savedMeals: nextSavedMeals });
 
     const { error } = await supabase.from('saved_meals').update({
       name: newName,
-      ingredients: [{ ...updatedMeal.meal, mealText: newMealText }],
+      ingredients: [updatedMealData],
       updated_at: new Date().toISOString(),
     }).eq('id', id).eq('user_id', userId);
 
@@ -785,6 +795,7 @@ export const useAppStore = create<AppState>()(
 
     return get().addMealLog(dayKey, {
       ...savedMeal.meal,
+      mealText: savedMeal.mealText || savedMeal.meal.mealText,
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
     });

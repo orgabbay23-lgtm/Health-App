@@ -206,7 +206,11 @@ function MealTimelineItem({
                     variant="ghost"
                     size="icon"
                     className="rounded-xl h-10 w-10 text-slate-200 hover:text-rose-500 hover:bg-rose-50"
-                    onClick={() => onDelete(meal.id)}
+                    onClick={() => {
+                      if (window.confirm("האם אתה בטוח שברצונך למחוק את הארוחה מההיסטוריה?")) {
+                        onDelete(meal.id);
+                      }
+                    }}
                   >
                     <Trash2 size={18} />
                   </Button>

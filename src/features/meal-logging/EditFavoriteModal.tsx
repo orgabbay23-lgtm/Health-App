@@ -26,7 +26,8 @@ export function EditFavoriteModal({ isOpen, onClose, savedMeal, onCalculateAndLo
   useEffect(() => {
     if (savedMeal && isOpen) {
       setName(savedMeal.meal.meal_name);
-      setMealText(savedMeal.mealText || savedMeal.meal.meal_name);
+      // Deep fallback chain to ensure we find the original prompt
+      setMealText(savedMeal.mealText || savedMeal.meal.mealText || savedMeal.meal.meal_name);
     }
   }, [savedMeal, isOpen]);
 

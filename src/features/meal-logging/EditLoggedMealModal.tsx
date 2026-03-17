@@ -26,6 +26,7 @@ export function EditLoggedMealModal({ isOpen, onClose, meal, dayKey }: EditLogge
 
   useEffect(() => {
     if (meal && isOpen) {
+      // Prefer the original text if available
       setMealText(meal.mealText || meal.meal_name);
     }
   }, [meal, isOpen]);

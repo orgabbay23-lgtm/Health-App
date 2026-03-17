@@ -731,7 +731,11 @@ export function MealLogModal({
                             variant="outline"
                             size="sm"
                             className="h-9 rounded-xl text-[13px] gap-1.5 text-rose-600 border-rose-200 hover:bg-rose-50"
-                            onClick={() => removeSavedMeal(saved.id)}
+                            onClick={() => {
+                              if (window.confirm("האם אתה בטוח שברצונך למחוק את הארוחה מהמועדפים?")) {
+                                removeSavedMeal(saved.id);
+                              }
+                            }}
                           >
                             <Trash2 size={14} />
                             מחק
