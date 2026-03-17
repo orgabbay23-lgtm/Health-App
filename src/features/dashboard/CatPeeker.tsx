@@ -21,16 +21,31 @@ export function CatPeeker({ caloriePercentage }: CatPeekerProps) {
   const [animationData, setAnimationData] = useState<any>(null);
   const [sessionQuote, setSessionQuote] = useState(() => getQuoteForPercentage(caloriePercentage));
   const [activeQuote, setActiveQuote] = useState<string | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const disappearanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appearanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showQuote = (quote: string) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    setActiveQuote(quote);
-    timeoutRef.current = setTimeout(() => {
+  const clearTimeouts = () => {
+    if (appearanceTimeoutRef.current) clearTimeout(appearanceTimeoutRef.current);
+    if (disappearanceTimeoutRef.current) clearTimeout(disappearanceTimeoutRef.current);
+  };
+
+  const showQuote = (quote: string, delayMs: number = 0) => {
+    clearTimeouts();
+    
+    if (delayMs > 0) {
       setActiveQuote(null);
-    }, 4000);
+      appearanceTimeoutRef.current = setTimeout(() => {
+        setActiveQuote(quote);
+        disappearanceTimeoutRef.current = setTimeout(() => {
+          setActiveQuote(null);
+        }, 10000);
+      }, delayMs);
+    } else {
+      setActiveQuote(quote);
+      disappearanceTimeoutRef.current = setTimeout(() => {
+        setActiveQuote(null);
+      }, 10000);
+    }
   };
 
   useEffect(() => {
@@ -46,12 +61,10 @@ export function CatPeeker({ caloriePercentage }: CatPeekerProps) {
   useEffect(() => {
     const newQuote = getQuoteForPercentage(caloriePercentage);
     setSessionQuote(newQuote);
-    showQuote(newQuote);
+    showQuote(newQuote, 1000);
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      clearTimeouts();
     };
   }, [caloriePercentage]);
 
