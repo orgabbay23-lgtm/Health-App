@@ -38,13 +38,13 @@ export function CatPeeker({ caloriePercentage }: CatPeekerProps) {
         setActiveQuote(quote);
         disappearanceTimeoutRef.current = setTimeout(() => {
           setActiveQuote(null);
-        }, 8000);
+        }, 10000);
       }, delayMs);
     } else {
       setActiveQuote(quote);
       disappearanceTimeoutRef.current = setTimeout(() => {
         setActiveQuote(null);
-      }, 8000);
+      }, 10000);
     }
   };
 
