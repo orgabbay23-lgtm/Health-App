@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useFieldArray, useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera, Image as ImageIcon, CalendarPlus, ChevronDown } from "lucide-react";
+import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera, Image as ImageIcon, CalendarPlus, ChevronDown, Calculator } from "lucide-react";
 import { cn } from "../../utils/utils";
 import { toast } from "sonner";
 import { useActiveSavedMeals, useAppStore } from "../../store";
@@ -23,6 +23,7 @@ import {
 } from "../../components/ui/tabs";
 import { EditFavoriteModal } from "./EditFavoriteModal";
 import { FoodTypeahead } from "./FoodTypeahead";
+import { FastCalorieCalculator } from "./FastCalorieCalculator";
 import type { SavedMeal } from "../../store";
 
 const aiSchema = z.object({
@@ -84,7 +85,15 @@ export function MealLogModal({
   const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
   const createFavoriteTemplate = useAppStore((state) => state.createFavoriteTemplate);
 
-  const tabIndex = useMemo(() => (activeTab === "ai" ? 0 : activeTab === "manual" ? 1 : 2), [activeTab]);
+  const tabIndex = useMemo(() => {
+    switch (activeTab) {
+      case "ai": return 0;
+      case "manual": return 1;
+      case "saved": return 2;
+      case "calculator": return 3;
+      default: return 0;
+    }
+  }, [activeTab]);
   const maxTargetDate = getLogicalDayKey();
   const minTargetDate = useMemo(() => {
     const cutoffDate = new Date();
@@ -375,10 +384,10 @@ export function MealLogModal({
             </label>
           </div>
 
-          <TabsList className="grid w-full grid-cols-3 h-14 relative">
+          <TabsList className="grid w-full grid-cols-4 h-14 relative">
             <motion.div
               className="absolute top-1.5 bottom-1.5 rounded-[1.15rem] bg-white shadow-soft-lg ring-1 ring-slate-100 pointer-events-none z-0"
-              style={{ width: "calc((100% - 12px) / 3)", right: "6px" }}
+              style={{ width: "calc((100% - 12px) / 4)", right: "6px" }}
               initial={false}
               animate={{ x: `${tabIndex * -100}%` }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -394,6 +403,10 @@ export function MealLogModal({
             <TabsTrigger value="saved" className="gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0">
               <Heart size={16} />
               מועדפים
+            </TabsTrigger>
+            <TabsTrigger value="calculator" className="gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0">
+              <Calculator size={16} />
+              מחשבון מהיר
             </TabsTrigger>
           </TabsList>
 
@@ -843,6 +856,10 @@ export function MealLogModal({
                   )}
                 </AnimatePresence>
               </motion.div>
+            </TabsContent>
+
+            <TabsContent value="calculator" className="mt-8">
+              <FastCalorieCalculator />
             </TabsContent>
           </AnimatePresence>
         </Tabs>
