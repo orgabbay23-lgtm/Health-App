@@ -12,11 +12,19 @@ interface EditFavoriteModalProps {
   isOpen: boolean;
   onClose: () => void;
   savedMeal: SavedMeal | null;
+  targetDateLabel?: string;
   onCalculateAndLog?: (text: string) => void;
   onZeroCostLog?: (meal: SavedMeal) => void;
 }
 
-export function EditFavoriteModal({ isOpen, onClose, savedMeal, onCalculateAndLog, onZeroCostLog }: EditFavoriteModalProps) {
+export function EditFavoriteModal({ 
+  isOpen, 
+  onClose, 
+  savedMeal, 
+  targetDateLabel = "היום",
+  onCalculateAndLog, 
+  onZeroCostLog 
+}: EditFavoriteModalProps) {
   const updateFavoriteTemplate = useAppStore((state) => state.updateFavoriteTemplate);
 
   const [name, setName] = useState("");
@@ -146,7 +154,7 @@ export function EditFavoriteModal({ isOpen, onClose, savedMeal, onCalculateAndLo
               >
                 <span className="flex items-center gap-2">
                   <Zap size={18} fill="currentColor" />
-                  הוסף להיום
+                  הוסף ל{targetDateLabel}
                 </span>
               </Button>
               <Button
@@ -190,7 +198,7 @@ export function EditFavoriteModal({ isOpen, onClose, savedMeal, onCalculateAndLo
               >
                 <span className="flex items-center gap-2">
                   <CalendarPlus size={18} />
-                  הוסף להיום בלבד (חד פעמי)
+                  הוסף ל{targetDateLabel} בלבד (חד פעמי)
                 </span>
               </Button>
               <Button
@@ -203,7 +211,7 @@ export function EditFavoriteModal({ isOpen, onClose, savedMeal, onCalculateAndLo
                 {isSaving ? "שומר..." : (
                   <span className="flex items-center gap-2">
                     <Save size={18} />
-                    עדכן מועדף והוסף להיום
+                    עדכן מועדף והוסף ל{targetDateLabel}
                   </span>
                 )}
               </Button>

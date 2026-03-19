@@ -1,9 +1,9 @@
-import { useState, useRef, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useFieldArray, useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera, Image as ImageIcon, CalendarPlus } from "lucide-react";
+import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera, Image as ImageIcon, CalendarPlus, ChevronDown } from "lucide-react";
 import { cn } from "../../utils/utils";
 import { toast } from "sonner";
 import { useActiveSavedMeals, useAppStore } from "../../store";
@@ -60,7 +60,9 @@ export function MealLogModal({
   targetDayKey = getLogicalDayKey(),
 }: MealLogModalProps) {
   const [activeTab, setActiveTab] = useState("ai");
+  const [targetDate, setTargetDate] = useState<string>(getLogicalDayKey());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAiCalculating, setIsAiCalculating] = useState(false);
   const [isByokOpen, setIsByokOpen] = useState(false);
   const [pendingDescription, setPendingDescription] = useState<string | null>(null);
   const [editingMeal, setEditingMeal] = useState<SavedMeal | null>(null);
@@ -76,12 +78,37 @@ export function MealLogModal({
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const addMealLog = useAppStore((state) => state.addMealLog);
+  const addSavedMealToDay = useAppStore((state) => state.addSavedMealToDay);
   const setActiveScreen = useAppStore((state) => state.setActiveScreen);
   const savedMeals = useActiveSavedMeals();
   const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
   const createFavoriteTemplate = useAppStore((state) => state.createFavoriteTemplate);
 
   const tabIndex = useMemo(() => (activeTab === "ai" ? 0 : activeTab === "manual" ? 1 : 2), [activeTab]);
+  const maxTargetDate = getLogicalDayKey();
+  const minTargetDate = useMemo(() => {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 60);
+    return getLogicalDayKey(cutoffDate);
+  }, [maxTargetDate]);
+
+  const displayTargetDate = useMemo(() => {
+    if (targetDate === maxTargetDate) {
+      return "היום";
+    }
+
+    return new Intl.DateTimeFormat("he-IL", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }).format(new Date(`${targetDate}T12:00:00`));
+  }, [maxTargetDate, targetDate]);
+
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setTargetDate(targetDayKey || maxTargetDate);
+  }, [isOpen, maxTargetDate, targetDayKey]);
 
   const aiFormMethods = useForm<AiFormValues>({
     resolver: zodResolver(aiSchema),
@@ -114,10 +141,11 @@ export function MealLogModal({
 
   const processMealSubmission = async (description: string) => {
     setIsSubmitting(true);
+    setIsAiCalculating(true);
 
     try {
       const parsedData = await parseMealDescription(description);
-      const alerts = await addMealLog(targetDayKey, {
+      const alerts = await addMealLog(targetDate, {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         meal_name: parsedData.meal_name,
@@ -136,7 +164,7 @@ export function MealLogModal({
       toast.success("הארוחה נוספה בהצלחה");
       alerts.forEach((alert) => {
         toast.warning(alert.title, {
-          id: `${targetDayKey}-${alert.id}`,
+          id: `${targetDate}-${alert.id}`,
           description: alert.message,
           duration: 7000,
         });
@@ -177,6 +205,7 @@ export function MealLogModal({
       }
     } finally {
       setIsSubmitting(false);
+      setIsAiCalculating(false);
     }
   };
 
@@ -206,22 +235,20 @@ export function MealLogModal({
 
   // Execute favorite template through AI flow OR zero-cost
   const onExecuteFavoriteTemplate = (saved: SavedMeal) => {
-    setEditingMeal(saved);
+    void handleZeroCostLog(saved);
   };
 
   // Zero Cost Logic
   const handleZeroCostLog = async (saved: SavedMeal) => {
-    const alerts = await addMealLog(targetDayKey, {
-      ...saved.meal,
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      mealText: saved.mealText || saved.meal.meal_name,
-    });
+    setIsSubmitting(true);
+    setIsAiCalculating(false);
+    try {
+    const alerts = await addSavedMealToDay(targetDate, saved.id);
     
     toast.success("הארוחה נוספה בהצלחה");
     alerts.forEach((alert) => {
       toast.warning(alert.title, {
-        id: `${targetDayKey}-${alert.id}`,
+        id: `${targetDate}-${alert.id}`,
         description: alert.message,
         duration: 7000,
       });
@@ -239,6 +266,12 @@ export function MealLogModal({
     }, 150);
 
     if (onSuccess) onSuccess();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.message || "שגיאה בהוספת הארוחה מהמועדפים");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Calculate & log from EditFavoriteModal (one-time, doesn't save template)
@@ -313,6 +346,35 @@ export function MealLogModal({
     <>
       <ModalShell isOpen={isOpen} onClose={onClose} title="הוספת ארוחה">
         <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl" className="w-full">
+          <div className="mb-3 flex justify-start">
+            <label className="group relative inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-white cursor-pointer active:scale-[0.98]">
+              <CalendarPlus size={16} className="text-slate-400 transition group-hover:text-slate-600" />
+              <div className="flex flex-col items-start leading-none">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">תאריך רישום</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[14px] font-black tracking-tight text-slate-800">
+                    {displayTargetDate}
+                  </span>
+                  <ChevronDown size={14} className="text-slate-400" />
+                </div>
+              </div>
+              <input
+                id="meal-target-date"
+                type="date"
+                value={targetDate}
+                min={minTargetDate}
+                max={maxTargetDate}
+                onChange={(event) => {
+                  if (event.target.value) {
+                    setTargetDate(event.target.value);
+                  }
+                }}
+                className="absolute inset-0 cursor-pointer opacity-0 text-[16px]"
+                dir="ltr"
+              />
+            </label>
+          </div>
+
           <TabsList className="grid w-full grid-cols-3 h-14 relative">
             <motion.div
               className="absolute top-1.5 bottom-1.5 rounded-[1.15rem] bg-white shadow-soft-lg ring-1 ring-slate-100 pointer-events-none z-0"
@@ -728,7 +790,7 @@ export function MealLogModal({
                             onClick={() => onExecuteFavoriteTemplate(saved)}
                           >
                             <CalendarPlus size={14} />
-                            הוסף להיום
+                            הוסף ל{displayTargetDate}
                           </Button>
                           <Button
                             type="button"
@@ -774,7 +836,9 @@ export function MealLogModal({
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                         className="w-8 h-8 border-3 border-blue-200 border-t-blue-500 rounded-full"
                       />
-                      <p className="text-[14px] font-bold text-blue-600">מחשב ערכים תזונתיים עם AI...</p>
+                      <p className="text-[14px] font-bold text-blue-600">
+                        {isAiCalculating ? "מחשב ערכים תזונתיים עם AI..." : "שומר ארוחה..."}
+                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -794,6 +858,7 @@ export function MealLogModal({
         isOpen={editingMeal !== null}
         onClose={() => setEditingMeal(null)}
         savedMeal={editingMeal}
+        targetDateLabel={displayTargetDate}
         onCalculateAndLog={handleCalculateAndLog}
         onZeroCostLog={handleZeroCostLog}
       />

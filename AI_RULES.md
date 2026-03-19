@@ -415,3 +415,13 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 * **Glass Shimmer Loading:** All loading/processing states use the `.glass-shimmer` CSS class for a premium gradient sweep animation during AI processing.
 * **Zero-Jank Policy:** Animations must strictly use GPU-accelerated properties (`transform`, `opacity`) to maintain 60-120fps on all devices. Never animate `width`, `height`, `top`, or `left` directly — use `scale`, `translate`, and Framer Motion's `height: "auto"` pattern instead.
 
+## 24. Retroactive Logging & 60-Day Retention Boundary (March 2026)
+
+* **Meal Logging Date Source:** `MealLogModal.tsx` owns a dedicated `targetDate` state for retroactive logging. ALL submit paths (AI text, manual entry, image review confirmation, zero-cost favorite logging) MUST write to this selected date. Never call `getLogicalDayKey()` at submit time inside a handler if the modal already exposes a user-selected logging date.
+* **Date Picker Window:** The modal's native `<input type="date" />` must stay bounded to the active retention window: max = current logical day, min = 60 logical days back. If the calendar/dashboard opens the modal on an out-of-window day, clamp the modal's `targetDate` back into the valid range before submit.
+* **Retention Cleanup Scope (CRITICAL):** `cleanupOldLogs(logs)` in `src/store/index.ts` is allowed to inspect ONLY the `dailyLogs` record it receives. Iterate over `Object.keys(logs)` and each day's own `meals` only. The function MUST NOT read, derive from, or mutate `savedMeals`.
+* **Favorite Preservation Boundary:** Retention cleanup removes a day only when `(current logical day - log day) > 60 days` AND that day's logged meals contain no `meal.isFavorite === true` marker. Favorite templates in `savedMeals` are always preserved forever; cleanup must never delete or rewrite them.
+* **Favorite-to-Log Contract:** When cloning a saved favorite into `dailyLogs` (`addSavedMealToDay` / direct-add from favorites), the logged `MealItem` MUST be stamped with `isFavorite: true` so retention can preserve that historical log without consulting `savedMeals`.
+* **Retroactive Logging Default:** Opening `MealLogModal` should reset `targetDate` to the current logical day by default, not inherit a previously browsed historical dashboard day. Retroactive logging is an explicit user action via the date control.
+* **Date Picker Presentation:** The logging date control must stay visually lightweight: use a compact inline chip/pill above the tabs, with the native date input overlaid invisibly for picker behavior. Do NOT render a large standalone date card above the modal content.
+

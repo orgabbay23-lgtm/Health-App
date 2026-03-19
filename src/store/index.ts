@@ -14,6 +14,7 @@ import {
   calculateNutritionTargets,
   diffSafetyAlerts,
   evaluateMicronutrientSafety,
+  getLogicalDayKey,
   normalizeMicronutrients,
 } from "../utils/nutrition-utils";
 
@@ -59,6 +60,8 @@ export interface MealItem {
   mealText?: string;
   /** How many servings this meal represents (default 1) */
   quantity?: number;
+  /** Hard boundary for retention cleanup: favorite-logged meals are preserved */
+  isFavorite?: boolean;
 }
 
 export interface SavedMeal {
@@ -82,6 +85,8 @@ export interface DailyLog {
   meals: MealItem[];
   aggregations: DailyAggregations;
 }
+
+const LOG_RETENTION_DAYS = 60;
 
 const VALID_ACTIVITY_LEVELS: ActivityLevel[] = [
   "sedentary",
@@ -153,6 +158,7 @@ function normalizeMealItem(meal: Partial<MealItem>): MealItem {
     sourceType: meal.sourceType === "supplement" ? "supplement" : "food",
     mealText: typeof meal.mealText === "string" ? meal.mealText : undefined,
     quantity: typeof meal.quantity === "number" && meal.quantity >= 1 ? meal.quantity : undefined,
+    isFavorite: meal.isFavorite === true,
   };
 }
 
@@ -199,6 +205,50 @@ function aggregateMeals(meals: MealItem[]): DailyAggregations {
       micronutrients: { ...EMPTY_MICRONUTRIENTS },
     }
   );
+}
+
+function getLogRetentionCutoffDayKey(): string {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - LOG_RETENTION_DAYS);
+  return getLogicalDayKey(cutoffDate);
+}
+
+function getPrunableLogKeys(logs: Record<string, DailyLog>): string[] {
+  const cutoffDayKey = getLogRetentionCutoffDayKey();
+
+  return Object.keys(logs).filter((dayKey) => {
+    const dailyLog = logs[dayKey];
+    if (!dailyLog) return false;
+
+    return dayKey < cutoffDayKey;
+  });
+}
+
+export function cleanupOldLogs(logs: Record<string, DailyLog>): Record<string, DailyLog> {
+  // Retention cleanup is intentionally scoped to dailyLogs only.
+  // It must never inspect or mutate savedMeals.
+  const prunableKeys = new Set(getPrunableLogKeys(logs));
+
+  return Object.keys(logs).reduce<Record<string, DailyLog>>((nextLogs, dayKey) => {
+    if (!prunableKeys.has(dayKey)) {
+      nextLogs[dayKey] = logs[dayKey];
+    }
+    return nextLogs;
+  }, {});
+}
+
+async function pruneDailyLogRows(userId: string, dayKeys: string[]): Promise<void> {
+  if (dayKeys.length === 0) return;
+
+  const { error } = await supabase
+    .from("daily_logs")
+    .delete()
+    .eq("user_id", userId)
+    .in("date", dayKeys);
+
+  if (error) {
+    console.error("Error pruning old meal logs", error);
+  }
 }
 
 function getSupplementalMagnesium(meals: MealItem[]): number {
@@ -399,6 +449,8 @@ export const useAppStore = create<AppState>()(
               };
             });
           }
+          const prunableLogKeys = getPrunableLogKeys(dailyLogs);
+          const cleanedDailyLogs = cleanupOldLogs(dailyLogs);
 
           // FIX: Merge optimistic saved meals with server data instead of wholesale overwrite
           let savedMeals = [...get().savedMeals];
@@ -419,7 +471,8 @@ export const useAppStore = create<AppState>()(
             savedMeals = [...localOnly, ...serverMeals];
           }
 
-          set({ name, profile, dailyLogs, savedMeals });
+          set({ name, profile, dailyLogs: cleanedDailyLogs, savedMeals });
+          await pruneDailyLogRows(userId, prunableLogKeys);
         } catch (error) {
           console.error("Error fetching user data", error);
         } finally {
@@ -492,24 +545,32 @@ export const useAppStore = create<AppState>()(
     const previousLogs = dailyLogs;
 
     const { dailyLogs: nextLogs, alerts } = appendMealToDailyLogs(dailyLogs, profile, dayKey, meal);
-    set({ dailyLogs: nextLogs });
+    const prunableLogKeys = getPrunableLogKeys(nextLogs);
+    const cleanedLogs = cleanupOldLogs(nextLogs);
+    set({ dailyLogs: cleanedLogs });
 
     // FIX: Check Supabase error and roll back optimistic update on failure
-    const logToSave = nextLogs[dayKey];
-    const { error } = await supabase.from('daily_logs').upsert({
-      user_id: userId,
-      date: dayKey,
-      meals: logToSave.meals,
-      aggregations: logToSave.aggregations,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,date' });
+    const logToSave = cleanedLogs[dayKey];
+    let error = null;
+    if (logToSave) {
+      const res = await supabase.from('daily_logs').upsert({
+        user_id: userId,
+        date: dayKey,
+        meals: logToSave.meals,
+        aggregations: logToSave.aggregations,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,date' });
+      error = res.error;
+    }
 
     if (error) {
       console.error("Error saving meal log", error);
       set({ dailyLogs: previousLogs });
       toast.error("שגיאה בשמירת הארוחה בשרת. השינוי בוטל.");
-      return [];
+      throw new Error("שגיאה בשמירת הארוחה");
     }
+
+    await pruneDailyLogRows(userId, prunableLogKeys);
 
     return alerts;
   },
@@ -912,13 +973,16 @@ export const useAppStore = create<AppState>()(
   addSavedMealToDay: async (dayKey, savedMealId) => {
     const { savedMeals } = get();
     const savedMeal = savedMeals.find((sm) => sm.id === savedMealId);
-    if (!savedMeal) return [];
+    if (!savedMeal) {
+      throw new Error("הארוחה השמורה לא נמצאה");
+    }
 
     return get().addMealLog(dayKey, {
       ...savedMeal.meal,
       mealText: savedMeal.mealText || savedMeal.meal.mealText,
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
+      isFavorite: true,
     });
   }
 }),
