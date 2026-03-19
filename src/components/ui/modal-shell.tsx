@@ -12,6 +12,7 @@ interface ModalShellProps {
   description?: string;
   children: ReactNode;
   className?: string;
+  position?: "center" | "top";
 }
 
 export function ModalShell({
@@ -21,6 +22,7 @@ export function ModalShell({
   description,
   children,
   className,
+  position = "center",
 }: ModalShellProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -78,10 +80,15 @@ export function ModalShell({
     };
   }, [isOpen, onClose]);
 
+  const isTop = position === "top";
+
   return (
     <AnimatePresence mode="wait">
       {isOpen ? (
-        <div className="fixed inset-0 h-[100dvh] z-[60] flex items-center justify-center overflow-hidden" dir="rtl">
+        <div className={cn(
+          "fixed inset-0 h-[100dvh] z-[60] flex justify-center overflow-hidden",
+          isTop ? "items-start pt-[max(1.5rem,env(safe-area-inset-top))] sm:items-center sm:pt-0" : "items-center",
+        )} dir="rtl">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -93,9 +100,9 @@ export function ModalShell({
 
           <SafeLayoutMotion
             ref={modalRef}
-            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+            initial={{ opacity: 0, scale: 0.97, y: isTop ? -20 : 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 10 }}
+            exit={{ opacity: 0, scale: 0.97, y: isTop ? -20 : 10 }}
             transition={{
               type: "spring",
               damping: 30,

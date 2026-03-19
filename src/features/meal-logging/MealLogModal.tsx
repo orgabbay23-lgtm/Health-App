@@ -344,7 +344,7 @@ export function MealLogModal({
 
   return (
     <>
-      <ModalShell isOpen={isOpen} onClose={onClose} title="הוספת ארוחה">
+      <ModalShell isOpen={isOpen} onClose={onClose} title="הוספת ארוחה" position="top">
         <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl" className="w-full">
           <div className="mb-3 flex justify-start">
             <label className="group relative inline-flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/50 px-4 py-2.5 text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-white cursor-pointer active:scale-[0.98]">

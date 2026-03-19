@@ -85,7 +85,7 @@ export function EditFavoriteModal({
   if (!savedMeal) return null;
 
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} title="הוספת ארוחה מועדפת" description="אשר או ערוך את הארוחה לפני ההוספה">
+    <ModalShell isOpen={isOpen} onClose={onClose} title="הוספת ארוחה מועדפת" description="אשר או ערוך את הארוחה לפני ההוספה" position="top">
       <div className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="fav-name" className="text-[13px] font-black text-slate-500 uppercase tracking-widest px-1">

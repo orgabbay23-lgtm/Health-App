@@ -103,7 +103,7 @@ export function EditLoggedMealModal({ isOpen, onClose, meal, dayKey }: EditLogge
 
   return (
     <>
-      <ModalShell isOpen={isOpen} onClose={onClose} title="עריכת ארוחה" description="ערוך את תיאור הארוחה לחישוב מחדש של הערכים התזונתיים">
+      <ModalShell isOpen={isOpen} onClose={onClose} title="עריכת ארוחה" description="ערוך את תיאור הארוחה לחישוב מחדש של הערכים התזונתיים" position="top">
         <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="edit-log-text" className="text-[13px] font-black text-slate-500 uppercase tracking-widest px-1">
