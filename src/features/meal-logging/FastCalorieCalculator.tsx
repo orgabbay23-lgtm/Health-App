@@ -1,8 +1,10 @@
 import { useState, useMemo } from "react";
-import { Search, Calculator, Scale, Flame, X } from "lucide-react";
+import { Search, Calculator, Scale, Flame, X, WandSparkles, Loader2, ArrowRight } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { fastCalorieDatabase, FastCalorieItem } from "../../data/fast-calorie-database";
+import { fetchFastCalorieFromAI } from "../../utils/gemini";
+import { toast } from "sonner";
 import { cn } from "../../utils/utils";
 
 export function FastCalorieCalculator() {
@@ -11,7 +13,12 @@ export function FastCalorieCalculator() {
   const [quantity, setQuantity] = useState<number>(1);
   const [useCommonUnit, setUseCommonUnit] = useState<boolean>(true);
 
-  // Smart, flexible multi-word scoring engine
+  // AI Fallback States
+  const [isAiMode, setIsAiMode] = useState(false);
+  const [aiQuery, setAiQuery] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  // Smart, flexible multi-word scoring engine for local DB
   const searchResults = useMemo(() => {
     const cleanedTerm = searchTerm.trim().toLowerCase();
     if (!cleanedTerm) return [];
@@ -26,12 +33,10 @@ export function FastCalorieCalculator() {
       
       for (const qWord of queryWords) {
         let wordScore = 0;
-        // Handle Hebrew 'ו' (and) prefix
         const withoutVav = qWord.startsWith('ו') ? qWord.substring(1) : qWord;
         
         for (const variant of [qWord, withoutVav]) {
           if (!variant) continue;
-          
           let currentScore = 0;
           if (itemName === variant) currentScore = 100;
           else if (itemName.startsWith(variant)) currentScore = 50;
@@ -41,18 +46,15 @@ export function FastCalorieCalculator() {
           
           if (currentScore > wordScore) wordScore = currentScore;
         }
-        
         if (wordScore > 0) {
           totalScore += wordScore;
           matchedWordsCount++;
         }
       }
       
-      // Massive boost if ALL words from the search query found a match
       if (matchedWordsCount === queryWords.length && queryWords.length > 0) {
         totalScore += 1000;
       }
-      
       return { item, score: totalScore };
     });
 
@@ -66,7 +68,8 @@ export function FastCalorieCalculator() {
   const handleSelect = (item: FastCalorieItem) => {
     setSelectedItem(item);
     setSearchTerm("");
-    // Default to common unit if available, else grams
+    setIsAiMode(false);
+    setAiQuery("");
     setUseCommonUnit(!!item.commonUnit);
     setQuantity(item.commonUnit ? 1 : 100);
   };
@@ -74,17 +77,29 @@ export function FastCalorieCalculator() {
   const clearSelection = () => {
     setSelectedItem(null);
     setSearchTerm("");
+    setIsAiMode(false);
+  };
+
+  const handleAiSubmit = async () => {
+    if (!aiQuery.trim()) return;
+    setIsAiLoading(true);
+    try {
+      const aiResult = await fetchFastCalorieFromAI(aiQuery);
+      handleSelect(aiResult);
+    } catch (error) {
+      toast.error("לא הצלחנו לפענח את המאכל, נסה לנסח אחרת.");
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   // Real-time calculation
   const totalCalories = useMemo(() => {
     if (!selectedItem) return 0;
     let weightInGrams = quantity;
-    
     if (useCommonUnit && selectedItem.commonUnit) {
       weightInGrams = quantity * selectedItem.commonUnit.weightInGrams;
     }
-    
     return Math.round((weightInGrams / 100) * selectedItem.caloriesPer100g);
   }, [selectedItem, quantity, useCommonUnit]);
 
@@ -92,42 +107,85 @@ export function FastCalorieCalculator() {
     <div className="flex flex-col gap-4 w-full animate-in fade-in duration-300" dir="rtl">
       {!selectedItem ? (
         <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-            <Input
-              type="text"
-              placeholder="חפש מאכל כדי לבדוק קלוריות... (למשל: במבה, שווארמה)"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10 h-12 text-base shadow-sm border-slate-200 rounded-xl"
-            />
-          </div>
+          {!isAiMode ? (
+            <>
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                <Input
+                  type="text"
+                  placeholder='חפש במאגר... (למשל: "במבה", "אורז")'
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pr-10 h-12 text-base shadow-sm border-slate-200 rounded-xl"
+                />
+              </div>
 
-          {searchResults.length > 0 && (
-            <div className="bg-white border border-slate-100 rounded-xl shadow-md overflow-hidden flex flex-col">
-              {searchResults.map((item, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSelect(item)}
-                  className="flex items-center justify-between p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors text-right"
+              {searchResults.length > 0 && (
+                <div className="bg-white border border-slate-100 rounded-xl shadow-md overflow-hidden flex flex-col">
+                  {searchResults.map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSelect(item)}
+                      className="flex items-center justify-between p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors text-right"
+                    >
+                      <div>
+                        <span className="font-medium text-slate-800 block">{item.name}</span>
+                        <span className="text-xs text-slate-500">
+                          {item.caloriesPer100g} קק"ל ל-100 גרם
+                        </span>
+                      </div>
+                      <Calculator className="w-4 h-4 text-blue-400 opacity-50" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="pt-2 text-center">
+                <button 
+                  onClick={() => setIsAiMode(true)} 
+                  className="inline-flex items-center justify-center gap-1.5 text-sm font-medium text-indigo-500 hover:text-indigo-600 transition-colors py-2 px-4 bg-indigo-50 hover:bg-indigo-100 rounded-full"
                 >
-                  <div>
-                    <span className="font-medium text-slate-800 block">{item.name}</span>
-                    <span className="text-xs text-slate-500">
-                      {item.caloriesPer100g} קק"ל ל-100 גרם
-                    </span>
-                  </div>
-                  <Calculator className="w-4 h-4 text-blue-400 opacity-50" />
+                  <WandSparkles className="w-4 h-4" />
+                  לא מצאת במאגר? שאל את ה-AI
                 </button>
-              ))}
-            </div>
-          )}
+              </div>
+            </>
+          ) : (
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-1 rounded-2xl animate-in fade-in slide-in-from-bottom-2">
+              <div className="bg-white p-5 rounded-xl space-y-4 shadow-sm">
+                <div className="flex items-center gap-2 text-indigo-600 mb-2">
+                  <WandSparkles className="w-5 h-5" />
+                  <h3 className="font-bold">חיפוש חכם ב-AI</h3>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  הקלד כל מאכל שתרצה וה-AI ימצא את הערכים שלו מיד.
+                  <br/>
+                  <span className="font-medium text-slate-700">לדוגמה: "כף ממרח נוטלה" או "100 גרם אורז לבן מבושל"</span>
+                </p>
+                
+                <div className="flex gap-2">
+                  <Input
+                    autoFocus
+                    placeholder="מה תרצה לחשב?"
+                    value={aiQuery}
+                    onChange={(e) => setAiQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
+                    disabled={isAiLoading}
+                    className="flex-1 border-indigo-100 focus-visible:ring-indigo-500"
+                  />
+                  <Button 
+                    onClick={handleAiSubmit} 
+                    disabled={isAiLoading || !aiQuery.trim()}
+                    className="bg-indigo-600 hover:bg-indigo-700 w-12 shrink-0 p-0"
+                  >
+                    {isAiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
+                  </Button>
+                </div>
 
-          {!searchTerm && (
-            <div className="flex flex-col items-center justify-center p-8 text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-              <Calculator className="w-10 h-10 mb-3 opacity-20" />
-              <p className="text-sm font-medium">המחשבון המהיר</p>
-              <p className="text-xs opacity-70 mt-1 text-center">בדוק קלוריות בשנייה, ללא צורך לשמור ביומן.</p>
+                <Button variant="ghost" size="sm" onClick={() => setIsAiMode(false)} className="w-full text-slate-400 hover:text-slate-600 h-8 text-xs">
+                  חזור לחיפוש רגיל
+                </Button>
+              </div>
             </div>
           )}
         </div>

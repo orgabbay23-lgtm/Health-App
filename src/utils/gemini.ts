@@ -2,6 +2,7 @@
 import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
 import { z } from "zod";
 import { supabase } from "../lib/supabase";
+import type { FastCalorieItem } from "../data/fast-calorie-database";
 
 // ── Model Routing ───────────────────────────────────────────────────
 // PRIMARY: Optimistic first attempt for meal parsing & vision
@@ -429,5 +430,40 @@ export async function parseMealDescription(
       throw error;
     }
     throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
+  }
+}
+
+export async function fetchFastCalorieFromAI(query: string): Promise<FastCalorieItem> {
+  try {
+    const key = await getApiKey();
+    const genAI = new GoogleGenerativeAI(key);
+    // Using flash-lite for instantaneous response
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-3.1-flash-lite-preview",
+      generationConfig: { responseMimeType: "application/json" }
+    });
+
+    const prompt = `
+      Act as an Israeli clinical dietitian. The user is asking for the caloric value of: "${query}".
+      Identify the core food item, its calories per 100g, and a logical serving unit (like "כף", "כוס", "יחידה", "פרוסה").
+      If the user mentioned a specific unit in their query (e.g., "כף"), make sure to use that as the commonUnit.
+      
+      Return ONLY a valid JSON object matching this TypeScript interface exactly:
+      {
+        "name": string, // Clean Hebrew name of the food
+        "caloriesPer100g": number,
+        "commonUnit": {
+          "name": string, // Hebrew name of the unit
+          "weightInGrams": number // Weight of this unit in grams
+        }
+      }
+    `;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    return JSON.parse(text) as FastCalorieItem;
+  } catch (error) {
+    console.error("[Gemini] Fast Calorie fetch failed:", error);
+    throw new Error("Failed to fetch calorie data from AI.");
   }
 }
