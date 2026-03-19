@@ -11,12 +11,55 @@ export function FastCalorieCalculator() {
   const [quantity, setQuantity] = useState<number>(1);
   const [useCommonUnit, setUseCommonUnit] = useState<boolean>(true);
 
-  // Filter top 8 results based on search
+  // Smart, flexible multi-word scoring engine
   const searchResults = useMemo(() => {
-    if (!searchTerm.trim()) return [];
-    const lowerQuery = searchTerm.toLowerCase();
-    return fastCalorieDatabase
-      .filter((item) => item.name.toLowerCase().includes(lowerQuery))
+    const cleanedTerm = searchTerm.trim().toLowerCase();
+    if (!cleanedTerm) return [];
+    
+    const queryWords = cleanedTerm.split(/\s+/).filter(Boolean);
+    
+    const scoredItems = fastCalorieDatabase.map(item => {
+      let totalScore = 0;
+      let matchedWordsCount = 0;
+      const itemName = item.name.toLowerCase();
+      const itemWords = itemName.split(/\s+/);
+      
+      for (const qWord of queryWords) {
+        let wordScore = 0;
+        // Handle Hebrew 'ו' (and) prefix
+        const withoutVav = qWord.startsWith('ו') ? qWord.substring(1) : qWord;
+        
+        for (const variant of [qWord, withoutVav]) {
+          if (!variant) continue;
+          
+          let currentScore = 0;
+          if (itemName === variant) currentScore = 100;
+          else if (itemName.startsWith(variant)) currentScore = 50;
+          else if (itemWords.includes(variant)) currentScore = 30;
+          else if (itemWords.some(w => w.startsWith(variant))) currentScore = 20;
+          else if (itemName.includes(variant)) currentScore = 5;
+          
+          if (currentScore > wordScore) wordScore = currentScore;
+        }
+        
+        if (wordScore > 0) {
+          totalScore += wordScore;
+          matchedWordsCount++;
+        }
+      }
+      
+      // Massive boost if ALL words from the search query found a match
+      if (matchedWordsCount === queryWords.length && queryWords.length > 0) {
+        totalScore += 1000;
+      }
+      
+      return { item, score: totalScore };
+    });
+
+    return scoredItems
+      .filter(scored => scored.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(scored => scored.item)
       .slice(0, 8);
   }, [searchTerm]);
 
