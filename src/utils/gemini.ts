@@ -160,13 +160,20 @@ Handle common Israeli food slang, colloquialisms, typos, and commercial brand na
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
-const VISION_SYSTEM_INSTRUCTION = `You are an expert culinary image analyst and clinical nutrition assistant. Your sole purpose is to analyze images of food and extract highly detailed, specific food items, including their preparation methods (e.g., roasted, fried), states (e.g., raw, with shell), and precise quantities. You must act as a highly accurate, objective data-extraction tool.`;
+const VISION_SYSTEM_INSTRUCTION = `You are an expert clinical nutritionist. Analyze food images and describe the items as a human would for a food diary. Be concise, prioritize natural units (slices, tablespoons, units) over raw grams where logical, but maintain extreme accuracy for caloric estimation.`;
 
-const VISION_PROMPT = `Analyze this image of food with extreme precision and maximum detail. Identify all distinct food items and be highly specific about their exact type, preparation method, state, and visual characteristics (e.g., 'cooked', 'raw', 'with shell', 'without bone', 'whole wheat', 'fried', 'roasted'). 
-Estimate their exact quantities accurately in grams, tablespoons, or logical units (e.g., slices, cups). 
+const VISION_PROMPT = `Identify the food items in this image and describe them in a simple, comma-separated Hebrew string.
+  
+  Guidelines for units and state:
+  - Meat/Chicken/Fish/Fries: Use 'גרם' (e.g., 'חזה עוף צלוי 150 גרם', '100 גרם צ'יפס').
+  - Bread/Toast/Pastries: Use 'פרוסות' or 'יחידות' (e.g., '2 פרוסות לחם מלא', 'בורקס אחד').
+  - Rice/Pasta/Salad/Grains: Use 'כפות' (e.g., '5 כפות אורז מבושל', '3 כפות סלט ירקות').
+  - Fruits/Vegetables: Use 'יחידות' or size (e.g., 'מלפפון אחד', 'תפוח בינוני').
+  - State Matters: Always specify 'עם קליפה'/'ללא קליפה' for nuts/seeds and 'עם עצם'/'ללא עצם' for meat.
+  - Be Concise: Do not describe colors or minor visual details. Focus on the core item and its cooking method (fried, roasted, etc.).
 
-Output ONLY a single, simple, comma-separated string in Hebrew. Do NOT include any formatting, markdown, newlines, conversational text, or prefixes. 
-Examples of the required extreme specificity: 'חזה עוף צלוי ללא עור 150 גרם, אורז בסמטי מבושל 100 גרם, שקדים טבעיים עם קליפה 20 גרם, לחם מחמצת כוסמין פרוסה אחת, ביצה קשה חתוכה 1'.`;
+  Output ONLY the Hebrew string. No markdown, no conversational text.
+  Example: 'המבורגר בלחמניה, 150 גרם קציצת בקר, 100 גרם צ'יפס, מלפפון חמוץ יחידה אחת'.`;
 
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -239,7 +246,7 @@ export function clearCachedApiKey() {
   // No-op: Cache killed to guarantee fresh key on every request
 }
 
-const getApiKey = async (): Promise<string> => {
+export const getApiKey = async (): Promise<string> => {
   const { data: vaultData, error: vaultError } = await supabase.rpc('get_user_api_key');
 
   if (vaultError) {
