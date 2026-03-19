@@ -367,7 +367,7 @@ export function MealLogModal({
                   >
                     <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border border-emerald-200/50 space-y-4">
                       <p className="text-[13px] font-black text-emerald-600 uppercase tracking-widest">
-                      זה מה שזיהינו. אפשר לתקן כמויות:
+                      זה מה שזיהיתי. רצוי לדייק אותי:
                       <br />
                       <span className="text-[11px] font-medium text-emerald-600/60 block mt-1">
                         (דוגמא כללית: יש להזין קוטג' 9% במקום רק קוטג' ו/או מיונז לייט במקום מיונז)
