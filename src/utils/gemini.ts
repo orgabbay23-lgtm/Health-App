@@ -160,20 +160,22 @@ Handle common Israeli food slang, colloquialisms, typos, and commercial brand na
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
-const VISION_SYSTEM_INSTRUCTION = `You are an expert clinical nutritionist. Analyze food images and describe the items as a human would for a food diary. Be concise, prioritize natural units (slices, tablespoons, units) over raw grams where logical, but maintain extreme accuracy for caloric estimation.`;
+const VISION_SYSTEM_INSTRUCTION = `You are a clinical nutritionist. Your goal is to identify food items in images and describe them in natural Hebrew, optimized for a calorie tracking diary. Think like a person logging their food: be concise, accurate, and use logical units.`;
 
-const VISION_PROMPT = `Identify the food items in this image and describe them in a simple, comma-separated Hebrew string.
-  
-  Guidelines for units and state:
-  - Meat/Chicken/Fish/Fries: Use 'גרם' (e.g., 'חזה עוף צלוי 150 גרם', '100 גרם צ'יפס').
-  - Bread/Toast/Pastries: Use 'פרוסות' or 'יחידות' (e.g., '2 פרוסות לחם מלא', 'בורקס אחד').
-  - Rice/Pasta/Salad/Grains: Use 'כפות' (e.g., '5 כפות אורז מבושל', '3 כפות סלט ירקות').
-  - Fruits/Vegetables: Use 'יחידות' or size (e.g., 'מלפפון אחד', 'תפוח בינוני').
-  - State Matters: Always specify 'עם קליפה'/'ללא קליפה' for nuts/seeds and 'עם עצם'/'ללא עצם' for meat.
-  - Be Concise: Do not describe colors or minor visual details. Focus on the core item and its cooking method (fried, roasted, etc.).
+const VISION_PROMPT = `Analyze this image and list every food item as a simple, comma-separated Hebrew string. 
 
-  Output ONLY the Hebrew string. No markdown, no conversational text.
-  Example: 'המבורגר בלחמניה, 150 גרם קציצת בקר, 100 גרם צ'יפס, מלפפון חמוץ יחידה אחת'.`;
+Apply these universal principles:
+1. IDENTIFICATION: Identify the dish as a whole if it's a known composite meal (e.g., Sushi, Burger, Pizza, Shakshuka). Do not deconstruct complex meals into their raw base ingredients (like rice, flour, or water) unless they are distinct side dishes.
+2. QUANTIFICATION: Use the most logical Israeli unit for each item:
+   - Discrete pieces: Use 'יחידות' or 'פרוסות' (e.g., for sushi, nuggets, bread, fruit, pastries).
+   - Bulk/Grain-based sides: Use 'כפות' or 'כוסות' (e.g., for rice, pasta, salads, spreads).
+   - Solid Protein & Fried sides: Use 'גרם' (e.g., for meat, chicken, fish, fries) as weight is the only accurate way to measure these.
+3. NUTRITIONAL STATE: Only include details that affect calories (e.g., 'fried', 'roasted', 'with/without shell', 'with/without bone').
+4. NO FLUFF: Strictly avoid visual or sensory descriptions (e.g., 'fresh', 'round', 'tasty', 'red').
+
+Output ONLY the Hebrew string. No conversational text or markdown.
+
+Example logic: If you see 24 pieces of sushi, identify it as '24 יחידות סושי מאקי' with its main filling, not as piles of rice and fish.`;
 
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
