@@ -374,53 +374,35 @@ export function FastCalorieCalculator() {
             </div>
 
             <div className="space-y-2">
-
               <label className="text-xs font-semibold text-slate-500">מידה</label>
-
               <div className="flex bg-slate-100 p-1 rounded-xl h-11 relative">
-
                 <button
-
-                  onClick={() => setUseCommonUnit(false)}
-
+                  onClick={() => {
+                    setUseCommonUnit(false);
+                    setQuantity(100);
+                  }}
                   className={cn(
-
                     "flex-1 flex items-center justify-center text-sm font-medium rounded-lg transition-all z-10",
-
                     !useCommonUnit ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-
                   )}
-
                 >
-
                   <Scale className="w-4 h-4 ml-1" /> גרם
-
                 </button>
-
                 {selectedItem.commonUnit && (
-
                   <button
-
-                    onClick={() => setUseCommonUnit(true)}
-
+                    onClick={() => {
+                      setUseCommonUnit(true);
+                      setQuantity(1);
+                    }}
                     className={cn(
-
                       "flex-1 flex items-center justify-center text-sm font-medium rounded-lg transition-all z-10",
-
                       useCommonUnit ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-
                     )}
-
                   >
-
                     {selectedItem.commonUnit.name}
-
                   </button>
-
                 )}
-
               </div>
-
             </div>
 
           </div>
