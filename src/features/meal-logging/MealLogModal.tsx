@@ -784,13 +784,14 @@ export function MealLogModal({
                           disabled={isCreatingFav}
                           onClick={handleCreateFavorite}
                         >
-                          {isCreatingFav ? "שומר..." : "שמור תבנית"}
+                          {isCreatingFav ? "מחשב ערכים (AI)..." : "שמור תבנית"}
                         </Button>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           className="h-11 rounded-xl"
+                          disabled={isCreatingFav}
                           onClick={() => {
                             setShowCreateFavorite(false);
                             setNewFavName("");

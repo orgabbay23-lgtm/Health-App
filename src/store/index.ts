@@ -774,74 +774,55 @@ export const useAppStore = create<AppState>()(
     const { savedMeals, userId } = get();
     if (!userId) return false;
 
-    const placeholderMeal = normalizeMealItem({
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      meal_name: name,
-      calories: 0,
-      macronutrients: { protein: 0, carbs: 0, fat: 0 },
-      micronutrients: { ...EMPTY_MICRONUTRIENTS },
-      sourceType: "food",
-      mealText,
-    });
+    try {
+      // 1. Calculate nutritional values via AI before creating the favorite
+      const parsed = await parseMealDescription(mealText);
+      const completeMeal = normalizeMealItem({
+        ...parsed,
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        meal_name: name,
+        mealText,
+      });
 
-    const newSavedMeal: SavedMeal = {
-      id: crypto.randomUUID(),
-      savedAt: new Date().toISOString(),
-      signature: createMealSignature(placeholderMeal),
-      meal: placeholderMeal,
-      mealText,
-    };
+      const newSavedMeal: SavedMeal = {
+        id: crypto.randomUUID(),
+        savedAt: new Date().toISOString(),
+        signature: createMealSignature(completeMeal),
+        meal: completeMeal,
+        mealText,
+      };
 
-    const previousSavedMeals = savedMeals;
-    set({ savedMeals: [newSavedMeal, ...savedMeals] });
+      const previousSavedMeals = savedMeals;
+      set({ savedMeals: [newSavedMeal, ...savedMeals] });
 
-    const { error } = await supabase.from('saved_meals').insert({
-      id: newSavedMeal.id,
-      user_id: userId,
-      name,
-      ingredients: [placeholderMeal],
-      created_at: newSavedMeal.savedAt,
-      updated_at: newSavedMeal.savedAt,
-    });
+      const { error } = await supabase.from('saved_meals').insert({
+        id: newSavedMeal.id,
+        user_id: userId,
+        name,
+        ingredients: [completeMeal],
+        created_at: newSavedMeal.savedAt,
+        updated_at: newSavedMeal.savedAt,
+      });
 
-    if (error) {
-      console.error("Error saving favorite template", error);
-      set({ savedMeals: previousSavedMeals });
-      toast.error("שגיאה בשמירת התבנית. השינוי בוטל.");
+      if (error) {
+        console.error("Error saving favorite template", error);
+        set({ savedMeals: previousSavedMeals });
+        toast.error("שגיאה בשמירת התבנית. השינוי בוטל.");
+        return false;
+      }
+
+      toast.success("תבנית מועדפת נשמרה בהצלחה");
+      return true;
+    } catch (error: any) {
+      console.error("[AI] Failed to parse favorite meal:", error);
+      if (error.message === "BYOK_REQUIRED" || error.message === "API_KEY_INVALID" || error.message === "MISSING_API_KEY" || error.message === "INVALID_KEY_FROM_GOOGLE") {
+        toast.error("יש להזין מפתח API תקין בהגדרות כדי להשתמש ב-AI");
+      } else {
+        toast.error(error.message || "שגיאה בניתוח הארוחה, אנא נסו שוב.");
+      }
       return false;
     }
-
-    // Fire and forget background AI parsing to populate nutrients
-    (async () => {
-      try {
-        const parsed = await parseMealDescription(mealText);
-        const completeMeal = normalizeMealItem({
-          ...parsed,
-          id: placeholderMeal.id,
-          timestamp: placeholderMeal.timestamp,
-          meal_name: name,
-          mealText: mealText
-        });
-        
-        set(state => ({
-          savedMeals: state.savedMeals.map(m => 
-            m.id === newSavedMeal.id 
-              ? { ...m, meal: completeMeal, signature: createMealSignature(completeMeal) } 
-              : m
-          )
-        }));
-
-        await supabase.from('saved_meals').update({
-          ingredients: [completeMeal]
-        }).eq('id', newSavedMeal.id);
-      } catch (error) {
-        console.error("[Background AI] Failed to parse favorite meal:", error);
-      }
-    })();
-
-    toast.success("תבנית מועדפת נשמרה בהצלחה");
-    return true;
   },
 
   updateFavoriteTemplate: async (id, newName, newMealText) => {
@@ -854,68 +835,63 @@ export const useAppStore = create<AppState>()(
     const previousSavedMeals = savedMeals;
     const existing = savedMeals[index];
 
-    const updatedMealData = normalizeMealItem({
-      ...existing.meal,
-      meal_name: newName,
-      mealText: newMealText,
-    });
+    try {
+      let updatedMealData: MealItem;
 
-    const updatedSavedMeal: SavedMeal = {
-      ...existing,
-      meal: updatedMealData,
-      mealText: newMealText,
-    };
+      // If the meal text changed, trigger AI re-parsing synchronously
+      const textChanged = newMealText !== (existing.mealText || existing.meal.mealText);
+      
+      if (textChanged) {
+        const parsed = await parseMealDescription(newMealText);
+        updatedMealData = normalizeMealItem({
+          ...parsed,
+          id: existing.meal.id,
+          timestamp: existing.meal.timestamp,
+          meal_name: newName,
+          mealText: newMealText,
+        });
+      } else {
+        updatedMealData = normalizeMealItem({
+          ...existing.meal,
+          meal_name: newName,
+        });
+      }
 
-    const nextSavedMeals = [...savedMeals];
-    nextSavedMeals[index] = updatedSavedMeal;
-    set({ savedMeals: nextSavedMeals });
+      const updatedSavedMeal: SavedMeal = {
+        ...existing,
+        meal: updatedMealData,
+        mealText: newMealText,
+        signature: createMealSignature(updatedMealData),
+      };
 
-    const { error } = await supabase.from('saved_meals').update({
-      name: newName,
-      ingredients: [updatedMealData],
-      updated_at: new Date().toISOString(),
-    }).eq('id', id).eq('user_id', userId);
+      const nextSavedMeals = [...savedMeals];
+      nextSavedMeals[index] = updatedSavedMeal;
+      set({ savedMeals: nextSavedMeals });
 
-    if (error) {
-      console.error("Error updating favorite template", error);
-      set({ savedMeals: previousSavedMeals });
-      toast.error("שגיאה בעדכון התבנית. השינוי בוטל.");
+      const { error } = await supabase.from('saved_meals').update({
+        name: newName,
+        ingredients: [updatedMealData],
+        updated_at: new Date().toISOString(),
+      }).eq('id', id).eq('user_id', userId);
+
+      if (error) {
+        console.error("Error updating favorite template", error);
+        set({ savedMeals: previousSavedMeals });
+        toast.error("שגיאה בעדכון התבנית. השינוי בוטל.");
+        return false;
+      }
+
+      toast.success("התבנית עודכנה בהצלחה");
+      return true;
+    } catch (error: any) {
+      console.error("[AI] Failed to update favorite meal:", error);
+      if (error.message === "BYOK_REQUIRED" || error.message === "API_KEY_INVALID" || error.message === "MISSING_API_KEY" || error.message === "INVALID_KEY_FROM_GOOGLE") {
+        toast.error("יש להזין מפתח API תקין בהגדרות כדי להשתמש ב-AI");
+      } else {
+        toast.error(error.message || "שגיאה בניתוח הארוחה, אנא נסו שוב.");
+      }
       return false;
     }
-
-    // If the meal text changed, trigger background AI re-parsing
-    const textChanged = newMealText !== existing.mealText;
-    if (textChanged) {
-      (async () => {
-        try {
-          const parsed = await parseMealDescription(newMealText);
-          const completeMeal = normalizeMealItem({
-            ...parsed,
-            id: updatedMealData.id,
-            timestamp: updatedMealData.timestamp,
-            meal_name: newName,
-            mealText: newMealText
-          });
-          
-          set(state => ({
-            savedMeals: state.savedMeals.map(m => 
-              m.id === id 
-                ? { ...m, meal: completeMeal, signature: createMealSignature(completeMeal) } 
-                : m
-            )
-          }));
-
-          await supabase.from('saved_meals').update({
-            ingredients: [completeMeal]
-          }).eq('id', id);
-        } catch (error) {
-          console.error("[Background AI] Failed to update favorite meal:", error);
-        }
-      })();
-    }
-
-    toast.success("התבנית עודכנה בהצלחה");
-    return true;
   },
 
   incrementMealQuantity: async (dayKey, mealId) => {

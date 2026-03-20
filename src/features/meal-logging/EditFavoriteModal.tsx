@@ -81,6 +81,8 @@ export function EditFavoriteModal({
     }
   };
 
+  const textChanged = mealText.trim() !== originalText.trim();
+  const loadingText = textChanged ? "מחשב ערכים (AI)..." : "שומר...";
 
   if (!savedMeal) return null;
 
@@ -162,12 +164,15 @@ export function EditFavoriteModal({
                 variant="outline"
                 size="lg"
                 className="w-full h-14 rounded-2xl text-lg"
+                disabled={isSaving}
                 onClick={handleUpdateOnly}
               >
-                <span className="flex items-center gap-2">
-                  <Save size={18} />
-                  שמור שינויים לתבנית בלבד
-                </span>
+                {isSaving ? "שומר..." : (
+                  <span className="flex items-center gap-2">
+                    <Save size={18} />
+                    שמור שינויים לתבנית בלבד
+                  </span>
+                )}
               </Button>
             </motion.div>
           ) : (
@@ -208,7 +213,7 @@ export function EditFavoriteModal({
                 disabled={isSaving}
                 onClick={handleUpdateAndLog}
               >
-                {isSaving ? "שומר..." : (
+                {isSaving ? loadingText : (
                   <span className="flex items-center gap-2">
                     <Save size={18} />
                     עדכן מועדף והוסף ל{targetDateLabel}
@@ -220,9 +225,10 @@ export function EditFavoriteModal({
                 variant="ghost"
                 size="lg"
                 className="w-full h-14 rounded-2xl text-[16px] text-slate-500"
+                disabled={isSaving}
                 onClick={handleUpdateOnly}
               >
-                שמור שינויים לתבנית בלבד (ללא הוספה)
+                {isSaving ? loadingText : "שמור שינויים לתבנית בלבד (ללא הוספה)"}
               </Button>
             </motion.div>
           )}
