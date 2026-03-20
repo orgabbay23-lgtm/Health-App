@@ -384,29 +384,29 @@ export function MealLogModal({
             </label>
           </div>
 
-          <TabsList className="grid w-full grid-cols-4 h-14 relative">
+          <TabsList className="grid w-full grid-cols-4 h-[68px] sm:h-14 relative p-1 bg-slate-100/50 rounded-[1.35rem]">
             <motion.div
-              className="absolute top-1.5 bottom-1.5 rounded-[1.15rem] bg-white shadow-soft-lg ring-1 ring-slate-100 pointer-events-none z-0"
-              style={{ width: "calc((100% - 12px) / 4)", right: "6px" }}
+              className="absolute top-1 bottom-1 rounded-2xl bg-white shadow-soft-lg ring-1 ring-slate-100 pointer-events-none z-0"
+              style={{ width: "calc((100% - 8px) / 4)", right: "4px" }}
               initial={false}
               animate={{ x: `${tabIndex * -100}%` }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
             />
-            <TabsTrigger value="ai" className="gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0">
-              <WandSparkles size={16} />
-              חכם
+            <TabsTrigger value="ai" className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0 text-[13px] font-semibold text-slate-500 data-[state=active]:text-slate-900 transition-colors">
+              <WandSparkles className="w-4 h-4" />
+              <span>חכם</span>
             </TabsTrigger>
-            <TabsTrigger value="manual" className="gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0">
-              <Plus size={16} />
-              ידני
+            <TabsTrigger value="manual" className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0 text-[13px] font-semibold text-slate-500 data-[state=active]:text-slate-900 transition-colors">
+              <Plus className="w-4 h-4" />
+              <span>ידני</span>
             </TabsTrigger>
-            <TabsTrigger value="saved" className="gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0">
-              <Heart size={16} />
-              מועדפים
+            <TabsTrigger value="saved" className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0 text-[13px] font-semibold text-slate-500 data-[state=active]:text-slate-900 transition-colors">
+              <Heart className="w-4 h-4" />
+              <span>מועדפים</span>
             </TabsTrigger>
-            <TabsTrigger value="calculator" className="gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0">
-              <Calculator size={16} />
-              מחשבון מהיר
+            <TabsTrigger value="calculator" className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0 text-[13px] font-semibold text-slate-500 data-[state=active]:text-blue-600 transition-colors">
+              <Calculator className="w-4 h-4" />
+              <span>מחשבון</span>
             </TabsTrigger>
           </TabsList>
 
