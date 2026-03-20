@@ -52,7 +52,9 @@ export function AuthScreen() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/auth/callback` }
+        // Redirecting to root prevents 404s on static hosts. 
+        // AuthProvider will automatically catch the session from the URL hash.
+        options: { redirectTo: `${window.location.origin}/` }
       });
       if (error) throw error;
     } catch (err: any) {
