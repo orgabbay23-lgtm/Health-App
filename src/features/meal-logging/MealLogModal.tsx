@@ -3,7 +3,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useFieldArray, useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera, Image as ImageIcon, CalendarPlus, ChevronDown, Calculator } from "lucide-react";
+import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera, Image as ImageIcon, CalendarPlus, ChevronDown, Calculator, Loader2, Scale, Check, X } from "lucide-react";
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '../../utils/cropImage';
 import { cn } from "../../utils/utils";
 import { toast } from "sonner";
 import { useActiveSavedMeals, useAppStore } from "../../store";
@@ -71,12 +73,20 @@ export function MealLogModal({
   const [newFavName, setNewFavName] = useState("");
   const [newFavText, setNewFavText] = useState("");
   const [isCreatingFav, setIsCreatingFav] = useState(false);
+  const [uploadingMealId, setUploadingMealId] = useState<string | null>(null);
+
+  // Image Crop states
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   // Vision-to-Text states
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [imageReviewText, setImageReviewText] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const mealImageInputRef = useRef<HTMLInputElement>(null);
 
   const addMealLog = useAppStore((state) => state.addMealLog);
   const addSavedMealToDay = useAppStore((state) => state.addSavedMealToDay);
@@ -84,6 +94,8 @@ export function MealLogModal({
   const savedMeals = useActiveSavedMeals();
   const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
   const createFavoriteTemplate = useAppStore((state) => state.createFavoriteTemplate);
+  const uploadMealImage = useAppStore((state) => state.uploadMealImage);
+  const deleteMealImage = useAppStore((state) => state.deleteMealImage);
 
   const tabIndex = useMemo(() => {
     switch (activeTab) {
@@ -351,6 +363,38 @@ export function MealLogModal({
     setImageReviewText(null);
   };
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>, savedMealId: string) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadingMealId(savedMealId); // Track which meal we are editing
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setImageToCrop(reader.result as string);
+        toast.info("מומלץ לצלם לרוחב לקבלת התוצאה הטובה ביותר", { duration: 4000 });
+      });
+      reader.readAsDataURL(file);
+    }
+    if (mealImageInputRef.current) mealImageInputRef.current.value = "";
+  };
+
+  const confirmCrop = async () => {
+    if (!imageToCrop || !croppedAreaPixels || !uploadingMealId) return;
+    try {
+      const croppedImageBlob = await getCroppedImg(imageToCrop, croppedAreaPixels);
+      if (!croppedImageBlob) throw new Error("Cropping failed");
+      
+      const croppedFile = new File([croppedImageBlob], `meal_image_${Date.now()}.jpg`, { type: "image/jpeg" });
+      void uploadMealImage(uploadingMealId, croppedFile);
+      
+      setImageToCrop(null);
+      setCroppedAreaPixels(null);
+    } catch (e) {
+      console.error(e);
+      toast.error("נכשלנו בחיתוך התמונה, נסה שוב.");
+      setUploadingMealId(null);
+    }
+  };
+
   return (
     <>
       <ModalShell isOpen={isOpen} onClose={onClose} title="הוספת ארוחה" position="top">
@@ -417,7 +461,6 @@ export function MealLogModal({
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 className="hidden"
                 onChange={handleImageCapture}
               />
@@ -678,6 +721,17 @@ export function MealLogModal({
                 exit={{ opacity: 0, y: -10 }}
                 className="space-y-3"
               >
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={mealImageInputRef}
+                  onChange={(e) => {
+                    const savedMealId = (e.target as any).dataset.savedMealId;
+                    if (savedMealId) handleFileChange(e, savedMealId);
+                  }}
+                  className="hidden"
+                />
+
                 {/* Create New Favorite Template Button / Form */}
                 <AnimatePresence mode="wait">
                   {showCreateFavorite ? (
@@ -762,7 +816,7 @@ export function MealLogModal({
                 </AnimatePresence>
 
                 {/* Favorites List */}
-                <div className="max-h-[350px] overflow-y-auto pe-1 space-y-3">
+                <div className="max-h-[450px] overflow-y-auto pe-1 space-y-4">
                   {savedMeals.length === 0 && !showCreateFavorite ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                       <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
@@ -778,57 +832,97 @@ export function MealLogModal({
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.04 }}
                         className={cn(
-                          "p-4 rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-slate-200 transition-all",
+                          "rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-slate-200 transition-all overflow-hidden",
                           isSubmitting && "opacity-50 pointer-events-none"
                         )}
                       >
-                        <div className="flex gap-4 items-center mb-3">
-                          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
-                            <Heart size={20} fill="currentColor" />
+                        {/* Personal Image Display */}
+                        {saved.custom_image_url && (
+                          <div className="relative w-full h-40 rounded-t-2xl overflow-hidden group animate-in fade-in duration-500">
+                            <img src={saved.custom_image_url} alt={saved.meal.meal_name} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => deleteMealImage(saved.id)}
+                              className="absolute top-2 left-2 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-black text-slate-950 truncate">
-                              {saved.meal.meal_name}
-                            </p>
-                            <p className="text-[13px] font-bold text-slate-400 truncate">
-                              {saved.mealText || `${saved.meal.calories} קלוריות · ${saved.meal.macronutrients.protein}ג' חלבון`}
-                            </p>
+                        )}
+
+                        <div className="p-4">
+                          <div className="flex gap-4 items-center mb-3">
+                            {!saved.custom_image_url && (
+                              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+                                <Heart size={20} fill="currentColor" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="font-black text-slate-950 truncate">
+                                {saved.meal.meal_name}
+                              </p>
+                              <p className="text-[13px] font-bold text-slate-400 truncate">
+                                {saved.mealText || `${saved.meal.calories} קלוריות · ${saved.meal.macronutrients.protein}ג' חלבון`}
+                              </p>
+                            </div>
+                            <div className="flex shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-full text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all"
+                                onClick={() => {
+                                  if (mealImageInputRef.current) {
+                                    (mealImageInputRef.current as any).dataset.savedMealId = saved.id;
+                                    mealImageInputRef.current.click();
+                                  }
+                                }}
+                                disabled={uploadingMealId === saved.id}
+                              >
+                                {uploadingMealId === saved.id ? (
+                                  <Loader2 className="h-5 w-5 animate-spin" />
+                                ) : (
+                                  <Camera className="h-5 w-5" />
+                                )}
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="flex-1 h-9 rounded-xl text-[13px] gap-1.5"
-                            onClick={() => onExecuteFavoriteTemplate(saved)}
-                          >
-                            <CalendarPlus size={14} />
-                            הוסף ל{displayTargetDate}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-9 rounded-xl text-[13px] gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
-                            onClick={() => setEditingMeal(saved)}
-                          >
-                            <Pencil size={14} />
-                            ערוך
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-9 rounded-xl text-[13px] gap-1.5 text-rose-600 border-rose-200 hover:bg-rose-50"
-                            onClick={() => {
-                              if (window.confirm("האם אתה בטוח שברצונך למחוק את הארוחה מהמועדפים?")) {
-                                removeSavedMeal(saved.id);
-                              }
-                            }}
-                          >
-                            <Trash2 size={14} />
-                            מחק
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="flex-1 h-9 rounded-xl text-[13px] gap-1.5"
+                              onClick={() => onExecuteFavoriteTemplate(saved)}
+                            >
+                              <CalendarPlus size={14} />
+                              הוסף ל{displayTargetDate}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-9 rounded-xl text-[13px] gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
+                              onClick={() => setEditingMeal(saved)}
+                            >
+                              <Pencil size={14} />
+                              ערוך
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-9 rounded-xl text-[13px] gap-1.5 text-rose-600 border-rose-200 hover:bg-rose-50"
+                              onClick={() => {
+                                if (window.confirm("האם אתה בטוח שברצונך למחוק את הארוחה מהמועדפים?")) {
+                                  removeSavedMeal(saved.id);
+                                }
+                              }}
+                            >
+                              <Trash2 size={14} />
+                              מחק
+                            </Button>
+                          </div>
                         </div>
                       </motion.div>
                     ))
@@ -863,6 +957,48 @@ export function MealLogModal({
             </TabsContent>
           </AnimatePresence>
         </Tabs>
+
+        {/* Image Cropper Overlay */}
+        {imageToCrop && (
+          <div className="absolute inset-0 z-[100] bg-slate-900/95 backdrop-blur-sm p-4 flex flex-col animate-in fade-in zoom-in-95 duration-200 rounded-2xl" dir="rtl">
+            <div className="flex items-center justify-between mb-4 mt-2 px-2">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Camera className="w-5 h-5 text-blue-400" />
+                התאמת תמונה
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => { setImageToCrop(null); setUploadingMealId(null); }} className="text-slate-400 hover:text-white rounded-full hover:bg-white/10">
+                <X className="w-6 h-6" />
+              </Button>
+            </div>
+
+            <div className="relative flex-1 bg-black rounded-3xl overflow-hidden border border-slate-700 shadow-2xl">
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={2.14} // Perfect match for w-full h-40 on mobile
+                onCropChange={setCrop}
+                onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
+                onZoomChange={setZoom}
+                classes={{ containerClassName: "bg-black" }}
+              />
+            </div>
+
+            <div className="bg-slate-800/80 p-5 rounded-3xl mt-4 border border-slate-700 flex items-center gap-4 shadow-xl">
+              <div className="flex-1 space-y-2">
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Scale className="w-4 h-4" /> התקרבות
+                </label>
+                <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(parseFloat(e.target.value))} className="w-full h-2 bg-slate-600 rounded-full appearance-none cursor-pointer accent-blue-500" />
+              </div>
+              
+              <Button onClick={confirmCrop} className="bg-blue-600 hover:bg-blue-700 h-12 px-6 rounded-xl font-bold gap-2 text-base shrink-0 shadow-lg shadow-blue-900/20 text-white">
+                <Check className="w-5 h-5" />
+                אשר ושמור
+              </Button>
+            </div>
+          </div>
+        )}
       </ModalShell>
 
       <ByokModal

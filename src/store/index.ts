@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
+import { parseMealDescription } from "../utils/gemini";
 import {
   ActivityLevel,
   EMPTY_MICRONUTRIENTS,
@@ -71,6 +72,7 @@ export interface SavedMeal {
   meal: MealItem;
   /** Raw text template for Dynamic AI Templates — the prompt sent to Gemini at log time */
   mealText?: string;
+  custom_image_url?: string | null;
 }
 
 export interface DailyAggregations {
@@ -347,6 +349,8 @@ interface AppState {
   addSavedMealToDay: (dayKey: string, savedMealId: string) => Promise<NutritionSafetyAlert[]>;
   incrementMealQuantity: (dayKey: string, mealId: string) => Promise<void>;
   decrementMealQuantity: (dayKey: string, mealId: string) => Promise<void>;
+  uploadMealImage: (savedMealId: string, file: File) => Promise<void>;
+  deleteMealImage: (savedMealId: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()(
@@ -463,6 +467,7 @@ export const useAppStore = create<AppState>()(
                 signature: createMealSignature(raw),
                 meal: normalizeMealItem(raw),
                 mealText: raw.mealText as string | undefined,
+                custom_image_url: sm.custom_image_url,
               };
             });
             const serverIds = new Set(serverMeals.map(sm => sm.id));
@@ -807,6 +812,34 @@ export const useAppStore = create<AppState>()(
       return false;
     }
 
+    // Fire and forget background AI parsing to populate nutrients
+    (async () => {
+      try {
+        const parsed = await parseMealDescription(mealText);
+        const completeMeal = normalizeMealItem({
+          ...parsed,
+          id: placeholderMeal.id,
+          timestamp: placeholderMeal.timestamp,
+          meal_name: name,
+          mealText: mealText
+        });
+        
+        set(state => ({
+          savedMeals: state.savedMeals.map(m => 
+            m.id === newSavedMeal.id 
+              ? { ...m, meal: completeMeal, signature: createMealSignature(completeMeal) } 
+              : m
+          )
+        }));
+
+        await supabase.from('saved_meals').update({
+          ingredients: [completeMeal]
+        }).eq('id', newSavedMeal.id);
+      } catch (error) {
+        console.error("[Background AI] Failed to parse favorite meal:", error);
+      }
+    })();
+
     toast.success("תבנית מועדפת נשמרה בהצלחה");
     return true;
   },
@@ -848,6 +881,37 @@ export const useAppStore = create<AppState>()(
       set({ savedMeals: previousSavedMeals });
       toast.error("שגיאה בעדכון התבנית. השינוי בוטל.");
       return false;
+    }
+
+    // If the meal text changed, trigger background AI re-parsing
+    const textChanged = newMealText !== existing.mealText;
+    if (textChanged) {
+      (async () => {
+        try {
+          const parsed = await parseMealDescription(newMealText);
+          const completeMeal = normalizeMealItem({
+            ...parsed,
+            id: updatedMealData.id,
+            timestamp: updatedMealData.timestamp,
+            meal_name: newName,
+            mealText: newMealText
+          });
+          
+          set(state => ({
+            savedMeals: state.savedMeals.map(m => 
+              m.id === id 
+                ? { ...m, meal: completeMeal, signature: createMealSignature(completeMeal) } 
+                : m
+            )
+          }));
+
+          await supabase.from('saved_meals').update({
+            ingredients: [completeMeal]
+          }).eq('id', id);
+        } catch (error) {
+          console.error("[Background AI] Failed to update favorite meal:", error);
+        }
+      })();
     }
 
     toast.success("התבנית עודכנה בהצלחה");
@@ -984,6 +1048,85 @@ export const useAppStore = create<AppState>()(
       timestamp: new Date().toISOString(),
       isFavorite: true,
     });
+  },
+
+  uploadMealImage: async (savedMealId, file) => {
+    const { userId, savedMeals } = get();
+    if (!userId) return;
+
+    const savedMeal = savedMeals.find((sm) => sm.id === savedMealId);
+    if (!savedMeal) return;
+
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${userId}/${savedMealId}_${Date.now()}.${fileExt}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('meal-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('meal-images')
+        .getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase
+        .from('saved_meals')
+        .update({ custom_image_url: publicUrl })
+        .eq('id', savedMealId);
+
+      if (dbError) throw dbError;
+
+      set((state) => ({
+        savedMeals: state.savedMeals.map((sm) =>
+          sm.id === savedMealId ? { ...sm, custom_image_url: publicUrl } : sm
+        ),
+      }));
+
+      toast.success("התמונה הועלתה בהצלחה");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("שגיאה בהעלאת התמונה");
+    }
+  },
+
+  deleteMealImage: async (savedMealId) => {
+    const { userId, savedMeals } = get();
+    if (!userId) return;
+
+    const savedMeal = savedMeals.find((sm) => sm.id === savedMealId);
+    if (!savedMeal || !savedMeal.custom_image_url) return;
+
+    try {
+      const url = new URL(savedMeal.custom_image_url);
+      const pathParts = url.pathname.split('/');
+      const filePath = pathParts.slice(pathParts.indexOf('meal-images') + 1).join('/');
+
+      const { error: deleteError } = await supabase.storage
+        .from('meal-images')
+        .remove([filePath]);
+
+      if (deleteError) throw deleteError;
+
+      const { error: dbError } = await supabase
+        .from('saved_meals')
+        .update({ custom_image_url: null })
+        .eq('id', savedMealId);
+
+      if (dbError) throw dbError;
+
+      set((state) => ({
+        savedMeals: state.savedMeals.map((sm) =>
+          sm.id === savedMealId ? { ...sm, custom_image_url: null } : sm
+        ),
+      }));
+
+      toast.success("התמונה נמחקה בהצלחה");
+    } catch (error) {
+      console.error("Error deleting image:", error);
+      toast.error("שגיאה במחיקת התמונה");
+    }
   }
 }),
 {
