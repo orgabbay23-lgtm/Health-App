@@ -74,7 +74,6 @@ export function MealLogModal({
   const [newFavText, setNewFavText] = useState("");
   const [isCreatingFav, setIsCreatingFav] = useState(false);
   const [uploadingMealId, setUploadingMealId] = useState<string | null>(null);
-  const [copySuccessMealName, setCopySuccessMealName] = useState<string | null>(null);
 
   // Image Crop states
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
@@ -393,37 +392,6 @@ export function MealLogModal({
       console.error(e);
       toast.error("נכשלנו בחיתוך התמונה, נסה שוב.");
       setUploadingMealId(null);
-    }
-  };
-
-  const enhanceWithGemini = (mealName: string) => {
-    const prompt = `Redraw this beautifully and aesthetically using Nano Banana 2. The title is: "${mealName}"`;
-    
-    const textArea = document.createElement("textarea");
-    textArea.value = prompt;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-9999px";
-    textArea.style.top = "0";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    let copied = false;
-    try {
-      copied = document.execCommand('copy');
-    } catch (err) {
-      copied = false;
-    }
-    document.body.removeChild(textArea);
-
-    if (copied) {
-      setCopySuccessMealName(mealName);
-    } else {
-      navigator.clipboard.writeText(prompt).then(() => {
-        setCopySuccessMealName(mealName);
-      }).catch(() => {
-        toast.error("שגיאה בהעתקת הפרומפט.");
-      });
     }
   };
 
@@ -747,60 +715,14 @@ export function MealLogModal({
             </TabsContent>
 
             <TabsContent value="saved" className="mt-8 relative min-h-[400px]">
-              <AnimatePresence mode="wait">
-                {copySuccessMealName ? (
-                  <motion.div
-                    key="gemini-instructions"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute inset-0 z-50 flex flex-col items-center justify-center text-center p-6 bg-white/95 backdrop-blur-md rounded-3xl border border-indigo-100 shadow-xl"
-                  >
-                    <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mb-6 text-indigo-500">
-                      <WandSparkles size={32} />
-                    </div>
-                    <h3 className="text-xl font-black text-slate-900 mb-2">הפרומפט הועתק בהצלחה!</h3>
-                    <div className="space-y-4 mb-8">
-                      <p className="text-[15px] font-medium text-slate-600 leading-relaxed">
-                        עבור כעת לאפליקציית <span className="font-bold text-indigo-600">Gemini</span>,
-                        <br />
-                        הדבק את הפרומפט שמוכן בלוח שלך
-                        <br />
-                        וצרף את התמונה של <span className="font-bold text-slate-900">"{copySuccessMealName}"</span>.
-                      </p>
-                      <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100">
-                        <p className="text-[12px] font-bold text-amber-700">
-                          טיפ: אם האפליקציה לא נפתחת אוטומטית, תוכל להשתמש בקישור למטה.
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col w-full gap-3">
-                      <Button
-                        size="lg"
-                        className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-lg shadow-indigo-200"
-                        onClick={() => window.open("https://gemini.google.com/app", "_blank")}
-                      >
-                        עבור ל-Gemini
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full h-12 rounded-2xl text-slate-400 font-bold"
-                        onClick={() => setCopySuccessMealName(null)}
-                      >
-                        חזרה לרשימה
-                      </Button>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="favorites-list"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="space-y-3"
-                  >
-                    <input
+              <motion.div
+                key="favorites-list"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-3"
+              >
+                <input
                   type="file"
                   accept="image/*"
                   ref={mealImageInputRef}
@@ -895,7 +817,7 @@ export function MealLogModal({
                 </AnimatePresence>
 
                 {/* Favorites List */}
-                <div className="max-h-[450px] overflow-y-auto pe-1 space-y-4">
+                <div className="pe-1 space-y-4">
                   {savedMeals.length === 0 && !showCreateFavorite ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                       <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
@@ -920,14 +842,6 @@ export function MealLogModal({
                           <div className="relative w-full h-40 rounded-t-2xl overflow-hidden group animate-in fade-in duration-500">
                             <img src={saved.custom_image_url} alt={saved.meal.meal_name} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <Button
-                              variant="secondary"
-                              onClick={() => enhanceWithGemini(saved.meal.meal_name)}
-                              className="absolute top-2 right-2 h-8 rounded-full opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity gap-1.5 text-[11px] font-bold bg-white/95 hover:bg-white text-indigo-600 shadow-sm"
-                            >
-                              <WandSparkles className="h-3.5 w-3.5" />
-                              שפר באמצעות Gemini
-                            </Button>
                             <Button
                               variant="destructive"
                               size="icon"
@@ -1036,9 +950,7 @@ export function MealLogModal({
                     </motion.div>
                   )}
                 </AnimatePresence>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              </motion.div>
             </TabsContent>
 
             <TabsContent value="calculator" className="mt-8">
