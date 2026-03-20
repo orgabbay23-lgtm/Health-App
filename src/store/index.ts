@@ -323,6 +323,7 @@ interface AppState {
   aiInsights: Record<string, { insight: string; followUpQuestion?: string; followUpAnswer?: string }>;
   isLoadingData: boolean;
   isAppReady: boolean;
+  isRecoveringPassword: boolean;
   _hasHydrated: boolean;
   userId: string | null;
   _lastFetchTime: number;
@@ -334,6 +335,7 @@ interface AppState {
   clearInsight: (key: string) => void;
   fetchUserData: (userId: string, isSilent?: boolean) => Promise<void>;
   setAppReady: (ready: boolean) => void;
+  setIsRecoveringPassword: (isRecovering: boolean) => void;
   setHasHydrated: (hydrated: boolean) => void;
   clearUserData: () => void;
   setUserProfile: (profile: NutritionProfileInput) => Promise<void>;
@@ -363,6 +365,7 @@ export const useAppStore = create<AppState>()(
       aiInsights: {},
       isLoadingData: false,
       isAppReady: false,
+      isRecoveringPassword: false,
       _hasHydrated: false,
       userId: null,
       _lastFetchTime: 0,
@@ -490,6 +493,10 @@ export const useAppStore = create<AppState>()(
         if (ready) {
           set({ isAppReady: true });
         }
+      },
+
+      setIsRecoveringPassword: (isRecovering: boolean) => {
+        set({ isRecoveringPassword: isRecovering });
       },
 
       setHasHydrated: (hydrated: boolean) => {

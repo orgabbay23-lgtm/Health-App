@@ -39,6 +39,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
 
+      if (event === 'PASSWORD_RECOVERY') {
+        useAppStore.getState().setIsRecoveringPassword(true);
+      }
+
       const sessionUser = session?.user ?? null;
       setUser(sessionUser);
 
@@ -56,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fetchUserData(sessionUser.id, !!existingProfile);
         }
       } else if (event === 'SIGNED_OUT') {
+        useAppStore.getState().setIsRecoveringPassword(false);
         clearUserData();
       }
     });

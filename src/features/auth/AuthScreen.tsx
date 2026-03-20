@@ -12,6 +12,7 @@ export function AuthScreen() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -19,7 +20,14 @@ export function AuthScreen() {
     setLoading(true);
     setError(null);
     try {
-      if (isSignUp) {
+      if (isForgotPassword) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        });
+        if (error) throw error;
+        toast.success("שלחנו לך למייל קישור לאיפוס הסיסמה!");
+        setIsForgotPassword(false);
+      } else if (isSignUp) {
         if (!termsAccepted) {
           throw new Error("עליך להסכים לתנאי השימוש כדי להירשם.");
         }
@@ -39,8 +47,8 @@ export function AuthScreen() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -55,9 +63,21 @@ export function AuthScreen() {
         }
       });
       if (error) throw error;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
     }
+  };
+
+  const toggleMode = () => {
+    setIsSignUp(!isSignUp);
+    setIsForgotPassword(false);
+    setError(null);
+  };
+
+  const toggleForgotPassword = () => {
+    setIsForgotPassword(!isForgotPassword);
+    setIsSignUp(false);
+    setError(null);
   };
 
   return (
@@ -76,7 +96,7 @@ export function AuthScreen() {
 
       <div className="relative z-10 w-full max-w-md rounded-[2.5rem] bg-white/60 backdrop-blur-xl p-8 shadow-soft-2xl border border-white/60">
         <h1 className="mb-6 text-center text-3xl font-black text-slate-900 tracking-tight">
-          {isSignUp ? "צור חשבון" : "התחברות"}
+          {isForgotPassword ? "איפוס סיסמה" : isSignUp ? "צור חשבון" : "התחברות"}
         </h1>
         {error && (
           <div className="mb-4 rounded-2xl bg-red-50 border border-red-100 p-3 text-sm text-red-700 font-medium">
@@ -109,18 +129,31 @@ export function AuthScreen() {
               dir="ltr"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">סיסמה</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full text-left"
-              dir="ltr"
-            />
-          </div>
+          {!isForgotPassword && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">סיסמה</Label>
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={toggleForgotPassword}
+                    className="text-xs font-medium text-blue-600 hover:underline"
+                  >
+                    שכחתי סיסמה?
+                  </button>
+                )}
+              </div>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full text-left"
+                dir="ltr"
+              />
+            </div>
+          )}
 
           {isSignUp && (
             <div className="flex items-start gap-2 pt-2">
@@ -138,39 +171,53 @@ export function AuthScreen() {
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "טוען..." : isSignUp ? "הרשם" : "התחבר"}
+            {loading ? "טוען..." : isForgotPassword ? "שלח קישור לאיפוס" : isSignUp ? "הרשם" : "התחבר"}
           </Button>
+
+          {isForgotPassword && (
+            <button
+              type="button"
+              onClick={toggleForgotPassword}
+              className="w-full text-center text-sm font-medium text-slate-600 hover:text-slate-900"
+            >
+              חזרה להתחברות
+            </button>
+          )}
         </form>
 
-        <div className="my-6 flex items-center">
-          <div className="flex-1 border-t border-slate-200"></div>
-          <span className="px-4 text-sm text-slate-400">או</span>
-          <div className="flex-1 border-t border-slate-200"></div>
-        </div>
+        {!isForgotPassword && (
+          <>
+            <div className="my-6 flex items-center">
+              <div className="flex-1 border-t border-slate-200"></div>
+              <span className="px-4 text-sm text-slate-400">או</span>
+              <div className="flex-1 border-t border-slate-200"></div>
+            </div>
 
-        <div className="space-y-3">
-          <Button
-            variant="outline"
-            onClick={handleGoogleAuth}
-            className="w-full bg-white/50 hover:bg-white/80 backdrop-blur-sm"
-          >
-            התחבר עם Google
-          </Button>
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                onClick={handleGoogleAuth}
+                className="w-full bg-white/50 hover:bg-white/80 backdrop-blur-sm"
+              >
+                התחבר עם Google
+              </Button>
 
-          <p className="text-center text-xs text-slate-500">
-            לא עובד? <span className="cursor-help underline decoration-dotted" title="אם לא נפתח חלון התחברות, ייתכן שחוסם פופ-אפים (Popup Blocker) מונע זאת. נסה לבטל אותו עבור אתר זה.">בדוק את חוסם הפופ-אפים שלך</span>
-          </p>
-        </div>
+              <p className="text-center text-xs text-slate-500">
+                לא עובד? <span className="cursor-help underline decoration-dotted" title="אם לא נפתח חלון התחברות, ייתכן שחוסם פופ-אפים (Popup Blocker) מונע זאת. נסה לבטל אותו עבור אתר זה.">בדוק את חוסם הפופ-אפים שלך</span>
+              </p>
+            </div>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          {isSignUp ? "כבר יש לך חשבון? " : "אין לך חשבון? "}
-          <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="font-medium text-blue-600 hover:underline"
-          >
-            {isSignUp ? "התחבר" : "הרשם עכשיו"}
-          </button>
-        </p>
+            <p className="mt-6 text-center text-sm text-slate-600">
+              {isSignUp ? "כבר יש לך חשבון? " : "אין לך חשבון? "}
+              <button
+                onClick={toggleMode}
+                className="font-medium text-blue-600 hover:underline"
+              >
+                {isSignUp ? "התחבר" : "הרשם עכשיו"}
+              </button>
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

@@ -425,3 +425,16 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 * **Retroactive Logging Default:** Opening `MealLogModal` should reset `targetDate` to the current logical day by default, not inherit a previously browsed historical dashboard day. Retroactive logging is an explicit user action via the date control.
 * **Date Picker Presentation:** The logging date control must stay visually lightweight: use a compact inline chip/pill above the tabs, with the native date input overlaid invisibly for picker behavior. Do NOT render a large standalone date card above the modal content.
 
+## 25. Forgot Password & Recovery Flow (March 2026)
+
+* **Architecture:**
+    * **Request Phase:** `AuthScreen.tsx` provides a "Forgot Password?" link in Sign-In mode. It triggers `supabase.auth.resetPasswordForEmail` with a `redirectTo` pointing to `/auth/callback`.
+    * **Recovery Phase:** The `PASSWORD_RECOVERY` event is intercepted in `AuthProvider.tsx`'s `onAuthStateChange` listener. It sets a global `isRecoveringPassword: true` flag in the Zustand store.
+    * **UI Routing:** `App.tsx` prioritizes rendering `PasswordRecoveryScreen.tsx` if `isRecoveringPassword` is true, bypassing the normal Auth/Dashboard routing.
+    * **Execution:** `PasswordRecoveryScreen.tsx` collects a new password and calls `supabase.auth.updateUser({ password })`. Upon success, it clears the recovery flag, transitioning the user into the app.
+* **Security & UX:**
+    * Password recovery requires a valid session (automatically provided by Supabase when clicking the email link).
+    * Recovery UI follows the premium Glassmorphism aesthetic and RTL standards.
+    * The recovery flag is explicitly reset on `SIGNED_OUT` events to prevent stale state.
+* **Standard:** All authentication-related email flows must use the redirection-and-event-interception pattern to ensure a seamless "native" feel within the PWA.
+

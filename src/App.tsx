@@ -4,6 +4,7 @@ import { Dashboard } from "./features/dashboard/Dashboard";
 import { OnboardingFlow } from "./features/onboarding/OnboardingFlow";
 import { AuthScreen } from "./features/auth/AuthScreen";
 import { AuthCallback } from "./features/auth/AuthCallback";
+import { PasswordRecoveryScreen } from "./features/auth/PasswordRecoveryScreen";
 import { useAuth } from "./components/AuthProvider";
 import { useAppStore } from "./store";
 import { cn } from "./utils/utils";
@@ -13,6 +14,7 @@ function App() {
   const profile = useAppStore(state => state.profile);
   const isLoadingData = useAppStore(state => state.isLoadingData);
   const isAppReady = useAppStore(state => state.isAppReady);
+  const isRecoveringPassword = useAppStore(state => state.isRecoveringPassword);
   const hasHydrated = useAppStore(state => state._hasHydrated);
   const setAppReady = useAppStore(state => state.setAppReady);
   const isCallback = window.location.pathname === "/auth/callback";
@@ -47,7 +49,10 @@ function App() {
   let screen = <AuthScreen />;
   let key = "auth";
 
-  if (user) {
+  if (isRecoveringPassword) {
+    screen = <PasswordRecoveryScreen />;
+    key = "recovery";
+  } else if (user) {
     if (profile) {
       screen = <Dashboard />;
       key = "dashboard";
