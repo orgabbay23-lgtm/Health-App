@@ -36,17 +36,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
-
-      if (event === 'PASSWORD_RECOVERY') {
-        useAppStore.getState().setIsRecoveringPassword(true);
-      }
 
       const sessionUser = session?.user ?? null;
       setUser(sessionUser);
 
-      if (sessionUser) {
+      if (event === 'PASSWORD_RECOVERY') {
+        // When user clicks the magic link in email
+        const newPassword = prompt("הכנס סיסמא חדשה:");
+        if (newPassword) {
+          const { error } = await supabase.auth.updateUser({ password: newPassword });
+          if (error) alert("שגיאה בעדכון הסיסמא: " + error.message);
+          else alert("הסיסמא עודכנה בהצלחה!");
+        }
+      } else if (sessionUser) {
         const existingProfile = useAppStore.getState().profile;
         
         // AGGRESSIVE FILTERING for iOS:
@@ -60,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fetchUserData(sessionUser.id, !!existingProfile);
         }
       } else if (event === 'SIGNED_OUT') {
-        useAppStore.getState().setIsRecoveringPassword(false);
         clearUserData();
       }
     });
