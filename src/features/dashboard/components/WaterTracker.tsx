@@ -13,6 +13,7 @@ import {
   Pencil,
   ChevronDown,
   Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "../../../store";
@@ -35,6 +36,12 @@ const QUICK_ADD_OPTIONS = [
   { ml: 500, label: "בקבוק קטן", icon: Plus },
   { ml: 750, label: "בקבוק בינוני", icon: Plus },
   { ml: 1000, label: "בקבוק גדול", icon: Plus },
+] as const;
+
+const SPECIAL_SIZES = [
+  { ml: 180, label: "כוס ח״פ" },
+  { ml: 330, label: "ספל" },
+  { ml: 600, label: "בקבוק ספורט" },
 ] as const;
 
 /* Elegant carafe SVG path — viewBox 0 0 160 290 */
@@ -84,6 +91,10 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
   const [addBubbles, setAddBubbles] = useState<{ id: number; x: number }[]>(
     []
   );
+
+  /* Custom add state */
+  const [isCustomAddOpen, setIsCustomAddOpen] = useState(false);
+  const [customAddValue, setCustomAddValue] = useState("");
 
   /* unique SVG element IDs */
   const uid = useId().replace(/:/g, "");
@@ -210,6 +221,17 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
     setIsEditingTarget(false);
     toast.success("היעד הוחזר לחישוב אוטומטי");
   }, [setCustomWaterTarget]);
+
+  const handleSubmitCustomAdd = useCallback(() => {
+    const ml = parseInt(customAddValue, 10);
+    if (isNaN(ml) || ml <= 0) {
+      toast.error("יש להזין כמות תקינה");
+      return;
+    }
+    handleAddWater(ml);
+    setCustomAddValue("");
+    setIsCustomAddOpen(false);
+  }, [customAddValue, handleAddWater]);
 
   /* ── Render ─────────────────────────────────────────────── */
 
@@ -616,20 +638,95 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                   </div>
                 </div>
 
-                {/* ── Glass quick-add buttons ── */}
-                <div className="flex flex-wrap gap-2.5 mt-8 justify-center">
-                  {QUICK_ADD_OPTIONS.map(({ ml, label, icon: Icon }) => (
-                    <motion.button
-                      key={ml}
-                      whileTap={{ scale: 0.93 }}
-                      onClick={() => handleAddWater(ml)}
-                      className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-slate-700 hover:bg-white/25 transition-all"
-                    >
-                      <Icon className="w-4 h-4 text-sky-500" strokeWidth={2.5} />
-                      <span className="text-[14px] font-black">+{ml}</span>
-                      <span className="text-[12px] font-bold text-slate-500">{label}</span>
-                    </motion.button>
-                  ))}
+                {/* ── Add Water Section ── */}
+                <div className="mt-8">
+                  <AnimatePresence mode="wait">
+                    {!isCustomAddOpen ? (
+                      <motion.div
+                        key="quick-add"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex flex-wrap gap-2.5 justify-center"
+                      >
+                        {QUICK_ADD_OPTIONS.map(({ ml, label, icon: Icon }) => (
+                          <motion.button
+                            key={ml}
+                            whileTap={{ scale: 0.93 }}
+                            onClick={() => handleAddWater(ml)}
+                            className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-slate-700 hover:bg-white/25 transition-all"
+                          >
+                            <Icon className="w-4 h-4 text-sky-500" strokeWidth={2.5} />
+                            <span className="text-[14px] font-black">+{ml}</span>
+                            <span className="text-[12px] font-bold text-slate-500">{label}</span>
+                          </motion.button>
+                        ))}
+                        <motion.button
+                          whileTap={{ scale: 0.93 }}
+                          onClick={() => setIsCustomAddOpen(true)}
+                          className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-slate-700 hover:bg-white/25 transition-all"
+                        >
+                          <Plus className="w-4 h-4 text-sky-500" strokeWidth={2.5} />
+                          <span className="text-[14px] font-black">מותאם אישית</span>
+                        </motion.button>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="custom-add"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex flex-col gap-4"
+                      >
+                        {/* Custom input row */}
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            placeholder="הזן כמות מ״ל..."
+                            value={customAddValue}
+                            onChange={(e) => setCustomAddValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSubmitCustomAdd();
+                              if (e.key === "Escape") setIsCustomAddOpen(false);
+                            }}
+                            autoFocus
+                            className="bg-white/20 backdrop-blur-md border border-white/30 text-center text-[16px] font-bold outline-none rounded-2xl py-2.5 px-4 w-full text-slate-800 placeholder:text-slate-400 focus:border-sky-400 transition-all"
+                          />
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={handleSubmitCustomAdd}
+                            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-2xl bg-emerald-500/80 text-white shadow-lg backdrop-blur-md border border-white/20"
+                          >
+                            <Check className="w-5 h-5" strokeWidth={3} />
+                          </motion.button>
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setIsCustomAddOpen(false)}
+                            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-2xl bg-slate-200/50 text-slate-500 shadow-lg backdrop-blur-md border border-white/20"
+                          >
+                            <X className="w-5 h-5" strokeWidth={3} />
+                          </motion.button>
+                        </div>
+
+                        {/* Special Sizes */}
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {SPECIAL_SIZES.map(({ ml, label }) => (
+                            <motion.button
+                              key={ml}
+                              whileTap={{ scale: 0.93 }}
+                              onClick={() => {
+                                handleAddWater(ml);
+                                setIsCustomAddOpen(false);
+                              }}
+                              className="py-1.5 px-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-slate-500 hover:bg-white/25 transition-all text-[12px] font-bold"
+                            >
+                              {label} ({ml} מ״ל)
+                            </motion.button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* ── Undo last drink ── */}
