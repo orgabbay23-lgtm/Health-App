@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 import { parseMealDescription } from "../utils/gemini";
+import { getLogicalDayKey as getHydrationDayKey } from "../utils/nutrition-utils";
 import {
   ActivityLevel,
   EMPTY_MICRONUTRIENTS,
@@ -328,6 +329,9 @@ interface AppState {
   userId: string | null;
   _lastFetchTime: number;
   activeScreen: "home" | "calendar" | "profile";
+  dailyWaterAmount: number;
+  dailyWaterTarget: number;
+  customWaterTarget: number | null;
 
   setActiveScreen: (screen: "home" | "calendar" | "profile") => void;
   saveInsight: (key: string, text: string) => void;
@@ -353,6 +357,11 @@ interface AppState {
   decrementMealQuantity: (dayKey: string, mealId: string) => Promise<void>;
   uploadMealImage: (savedMealId: string, file: File) => Promise<void>;
   deleteMealImage: (savedMealId: string) => Promise<void>;
+  fetchTodayWater: () => Promise<void>;
+  logWater: (amountMl: number) => Promise<void>;
+  removeLastWaterLog: () => Promise<void>;
+  setDailyWaterTarget: (target: number) => void;
+  setCustomWaterTarget: (target: number | null) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -370,6 +379,9 @@ export const useAppStore = create<AppState>()(
       userId: null,
       _lastFetchTime: 0,
       activeScreen: "home",
+      dailyWaterAmount: 0,
+      dailyWaterTarget: 2500,
+      customWaterTarget: null,
 
       setActiveScreen: (screen) => set({ activeScreen: screen }),
 
@@ -504,7 +516,19 @@ export const useAppStore = create<AppState>()(
       },
 
       clearUserData: () => {
-        set({ name: null, profile: null, dailyLogs: {}, savedMeals: [], aiInsights: {}, userId: null, _lastFetchTime: 0, isAppReady: false });
+        set({
+          name: null,
+          profile: null,
+          dailyLogs: {},
+          savedMeals: [],
+          aiInsights: {},
+          userId: null,
+          _lastFetchTime: 0,
+          isAppReady: false,
+          dailyWaterAmount: 0,
+          dailyWaterTarget: 2500,
+          customWaterTarget: null,
+        });
         // FIX: Use Zustand persist clearStorage instead of raw localStorage
         useAppStore.persist.clearStorage();
       },
@@ -1110,7 +1134,104 @@ export const useAppStore = create<AppState>()(
       console.error("Error deleting image:", error);
       toast.error("שגיאה במחיקת התמונה");
     }
-  }
+  },
+
+  fetchTodayWater: async () => {
+    const { userId } = get();
+    if (!userId) return;
+
+    const todayKey = getHydrationDayKey();
+    // Query water_logs for today (3 AM rollover: from todayKey 03:00 to next day 03:00)
+    const startOfDay = `${todayKey}T03:00:00.000Z`;
+    const tomorrow = new Date(todayKey);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const endOfDay = `${tomorrow.toISOString().slice(0, 10)}T03:00:00.000Z`;
+
+    const { data, error } = await supabase
+      .from("water_logs")
+      .select("amount_ml")
+      .eq("user_id", userId)
+      .gte("created_at", startOfDay)
+      .lt("created_at", endOfDay);
+
+    if (error) {
+      console.error("Error fetching water logs:", error);
+      return;
+    }
+
+    const total = (data ?? []).reduce((sum, row) => sum + (row.amount_ml ?? 0), 0);
+    set({ dailyWaterAmount: total });
+  },
+
+  logWater: async (amountMl: number) => {
+    const { userId, dailyWaterAmount } = get();
+    if (!userId) return;
+
+    // Optimistic update
+    const previousAmount = dailyWaterAmount;
+    set({ dailyWaterAmount: dailyWaterAmount + amountMl });
+
+    const { error } = await supabase
+      .from("water_logs")
+      .insert({ user_id: userId, amount_ml: amountMl });
+
+    if (error) {
+      console.error("Error logging water:", error);
+      set({ dailyWaterAmount: previousAmount });
+      toast.error("שגיאה ברישום שתייה");
+    }
+  },
+
+  setDailyWaterTarget: (target: number) => {
+    set({ dailyWaterTarget: target });
+  },
+
+  removeLastWaterLog: async () => {
+    const { userId, dailyWaterAmount } = get();
+    if (!userId || dailyWaterAmount <= 0) return;
+
+    const todayKey = getHydrationDayKey();
+    const startOfDay = `${todayKey}T03:00:00.000Z`;
+    const tomorrow = new Date(todayKey);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const endOfDay = `${tomorrow.toISOString().slice(0, 10)}T03:00:00.000Z`;
+
+    const { data, error: fetchError } = await supabase
+      .from("water_logs")
+      .select("id, amount_ml")
+      .eq("user_id", userId)
+      .gte("created_at", startOfDay)
+      .lt("created_at", endOfDay)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (fetchError || !data?.length) {
+      console.error("Error finding water log:", fetchError);
+      return;
+    }
+
+    const lastLog = data[0];
+    const previousAmount = dailyWaterAmount;
+    set({ dailyWaterAmount: Math.max(0, dailyWaterAmount - lastLog.amount_ml) });
+
+    const { error: deleteError } = await supabase
+      .from("water_logs")
+      .delete()
+      .eq("id", lastLog.id);
+
+    if (deleteError) {
+      console.error("Error deleting water log:", deleteError);
+      set({ dailyWaterAmount: previousAmount });
+      toast.error("שגיאה במחיקת רישום שתייה");
+    }
+  },
+
+  setCustomWaterTarget: (target: number | null) => {
+    set({ customWaterTarget: target });
+    if (target !== null) {
+      set({ dailyWaterTarget: target });
+    }
+  },
 }),
 {
   name: "app-storage",
@@ -1122,6 +1243,9 @@ export const useAppStore = create<AppState>()(
     savedMeals: state.savedMeals,
     aiInsights: state.aiInsights,
     userId: state.userId,
+    dailyWaterAmount: state.dailyWaterAmount,
+    dailyWaterTarget: state.dailyWaterTarget,
+    customWaterTarget: state.customWaterTarget,
   }),
   // FIX: Wrap onRehydrateStorage in try/catch to handle corrupted storage
   onRehydrateStorage: () => (state, error) => {

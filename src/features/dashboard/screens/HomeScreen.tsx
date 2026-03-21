@@ -21,6 +21,7 @@ import { PeriodBreakdown } from "../components/PeriodBreakdown";
 import { PrimaryNutrientCard } from "../components/PrimaryNutrientCard";
 import { SafetyAlertsCard } from "../components/SafetyAlertsCard";
 import { SmartInsightGenerator } from "../components/SmartInsightGenerator";
+import { WaterTracker } from "../components/WaterTracker";
 import { InfoPopover } from "../../../components/ui/info-popover";
 
 interface HomeScreenProps {
@@ -160,6 +161,12 @@ export function HomeScreen({
       </motion.section>
 
 
+
+      {periodMode === "daily" && (
+        <motion.div variants={itemVariants}>
+          <WaterTracker userProfile={userProfile} />
+        </motion.div>
+      )}
 
       {periodMode === "daily" && safetyAlerts.length > 0 && (
         <motion.div variants={itemVariants}>

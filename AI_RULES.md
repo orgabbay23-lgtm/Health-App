@@ -217,6 +217,15 @@ fetchUserData to be silent by default if profile data already exists.
     * `clearUserData()` uses `useAppStore.persist.clearStorage()` instead of raw `localStorage.removeItem()` to stay in sync with Zustand's persist middleware lifecycle.
     * The fetch throttle guard uses an independent time check (`now - _lastFetchTime < 5000`) without requiring `isLoadingData` to also be true, preventing race conditions.
 
+* **2026-03-21: WaterTracker Polish & Undo Feature**
+    * **Issue:** (1) SVG wave surface rendered black due to `fill="currentColor"` + `className="text-inherit"` inheriting the page's default text color instead of the dynamic fillColor MotionValue. (2) No way to undo an accidental water log. (3) Daily target was static with no user-editable control.
+    * **Fix:**
+        1. Replaced `fill="currentColor"` + `text-inherit` + `style={{ color: fillColor }}` on the wave `<motion.path>` with direct `style={{ fill: fillColor }}`, ensuring the wave always matches the liquid color through framer-motion's MotionValue pipeline.
+        2. Added `removeLastWaterLog()` Zustand action: queries the most recent `water_logs` row for today (respecting 3 AM rollover), performs optimistic local state decrement, then deletes from Supabase with rollback on error.
+        3. Added animated "undo last drink" button (visible only when `dailyWaterAmount > 0`) with `AnimatePresence` fade + haptic feedback.
+        4. Made daily target header interactive: tapping opens a native `prompt()` for new target input (validated as positive integer), calling `setDailyWaterTarget()`. Subtle `Pencil` icon with hover state.
+    * **Standard:** For SVG elements animated by framer-motion MotionValues, always use `style={{ fill: motionValue }}` directly instead of `currentColor` + CSS `color` indirection to avoid inheritance conflicts.
+
 * **Optimistic Update Rollback:**
     * All Supabase write operations (`addMealLog`, `removeMealLog`, `saveMealAsFavorite`, `removeSavedMeal`) snapshot state before optimistic updates. If the DB write returns an `error`, state is rolled back and a Hebrew toast notifies the user.
     * Background fetch merges server `savedMeals` with local optimistic entries (by ID) instead of wholesale overwriting.
@@ -230,6 +239,15 @@ fetchUserData to be silent by default if profile data already exists.
 
 * **Modal Focus Trap:**
     * The `ModalShell` focus trap query selector covers all input types: `input:not([disabled])` (universal), not just specific `input[type="text"]` variants. This ensures Tab-trapping works for `number`, `password`, `email`, `date`, and all future input types.
+
+* **2026-03-21: WaterTracker Expandable Architecture & Aesthetic Overhaul**
+    * **Change:** Complete UI overhaul of `WaterTracker.tsx`. The tracker is now **collapsed by default** (minimalist summary row) and expands on tap to reveal the full hydration interface.
+    * **Collapsed State:** Icon + "מעקב שתייה" title + progress text ("X / Y מ״ל") + percentage badge + animated gradient progress bar. Fits seamlessly between Macros and Safety Alerts.
+    * **Expanded State:** (1) Replaced the generic rounded-rectangle liquid container with an **SVG carafe/bottle shape** using `<clipPath>` to constrain the liquid fill within an elegant outline. (2) Liquid uses semi-transparent `linearGradient` stops (`stopOpacity` 0.55–0.85) with a glass-like shine overlay gradient for depth. (3) Wave surface animates via `motion.g` + `motion.path` translateX loop inside the SVG clip. (4) Bubbles converted from HTML `motion.div` to SVG `motion.circle` elements. (5) Quick-add buttons redesigned as floating glass pills (`bg-white/40 backdrop-blur-md`). (6) Stats overlay uses HTML `position: absolute` over the SVG for clean typography.
+    * **Animation:** Expand/collapse uses `AnimatePresence` with `height: 0 → "auto"` spring animation (damping: 28, stiffness: 220). Header chevron rotates 180° on toggle. Collapsed elements (progress text, badge, bar) fade in/out independently.
+    * **SVG ID Safety:** All SVG `<clipPath>` and `<linearGradient>` elements use `useId()`-derived unique IDs to prevent conflicts.
+    * **All business logic preserved:** State, Supabase fetching, water logging, undo, target editing — zero changes to data flow.
+    * **Standard:** For expandable dashboard cards, use `AnimatePresence` + `height: "auto"` spring transitions. `overflow: hidden` is acceptable on the animated motion.div wrapper (not on parent containers housing unrelated floating content).
 
 ## 10. Gemini Prompt & 24 Micronutrient Schema (Updated March 2026)
 
@@ -437,4 +455,17 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
     * Recovery UI follows the premium Glassmorphism aesthetic and RTL standards.
     * The recovery flag is explicitly reset on `SIGNED_OUT` events to prevent stale state.
 * **Standard:** All authentication-related email flows must use the redirection-and-event-interception pattern to ensure a seamless "native" feel within the PWA.
+
+## 26. Gamified Water Tracking (March 2026)
+
+* **Architecture:**
+    * `src/utils/hydration-utils.ts`: Scientific hydration calculator implementing the unified formula `Vtotal = (Wkg × Cage × Cgender) + (Tact × Cact) + Vgoal`. Coefficients derived from NASEM/WHO/ACSM/Mayo Clinic guidelines. Age brackets (30/35/40 ml/kg), gender scaling (1.0/0.9), activity-intensity minute rates (0–20 ml/min), and weight-loss goal additions (0–1500 ml). Safety caps at 4000ml (sedentary) / 6000ml (active) to prevent hyponatremia.
+    * `water_logs_schema.sql`: Supabase table `water_logs` with uuid PK, `user_id` FK, `amount_ml` integer, `created_at` timestamptz. RLS policies for select/insert/delete scoped to `auth.uid()`.
+    * **Zustand State:** `dailyWaterAmount` (number) and `dailyWaterTarget` (number) added to `AppState`, persisted via `partialize`. Actions: `fetchTodayWater()` sums today's logs (3 AM rollover aligned), `logWater(amountMl)` inserts with optimistic update and rollback on failure, `setDailyWaterTarget(target)` for profile-derived recalculation.
+    * `src/features/dashboard/components/WaterTracker.tsx`: Premium liquid-fill UI with SVG wave animation (GPU-accelerated translateX), Framer Motion spring physics (mass: 1.3, stiffness: 90, damping: 11), color interpolation (light cyan → deep blue), 4 quick-add buttons (250/500/750/1000ml), haptic feedback via `navigator.vibrate`, bubble micro-interactions on add, and celebration state (floating bubbles + badge pulse) on target completion.
+* **Integration:** Rendered in `HomeScreen.tsx` in daily mode only, positioned between Macronutrients and Safety Alerts.
+* **Rules:**
+    * Water target recalculates automatically when profile changes (weight, age, gender, activity, goalDeficit).
+    * `goalDeficitToWaterGoal()` maps the existing `goalDeficit` (kcal) to hydration goal tiers: 0→maintenance, ≤300→slow, ≤600→moderate, >600→fast.
+    * The water tracker is daily-only (no weekly/monthly aggregation in this phase).
 
