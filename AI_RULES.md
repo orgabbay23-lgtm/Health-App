@@ -249,6 +249,14 @@ fetchUserData to be silent by default if profile data already exists.
     * **All business logic preserved:** State, Supabase fetching, water logging, undo, target editing — zero changes to data flow.
     * **Standard:** For expandable dashboard cards, use `AnimatePresence` + `height: "auto"` spring transitions. `overflow: hidden` is acceptable on the animated motion.div wrapper (not on parent containers housing unrelated floating content).
 
+* **2026-03-21: WaterTracker — Inline Target Editor, Wave Fix & Bottle Silhouette**
+    * **Issue:** (1) Native `prompt()` for editing daily water target is buggy/broken on iOS Safari (blocks thread, sometimes unresponsive). (2) Framer Motion wave loop had 1-frame jumps at loop boundaries due to pixel-value animation and aggressive spring physics. (3) Empty bottle shape was nearly invisible against white backgrounds (white-on-white).
+    * **Fix:**
+        1. **Inline Target Editor:** Replaced `prompt()` with inline `<input type="number">` (using `text-[16px]` per iOS zoom rule) toggled via `isEditingTarget` state. Two action buttons: Check (save custom target) and RotateCcw (reset to calculated default via `setCustomWaterTarget(null)`). Supports Enter/Escape keyboard shortcuts. Animated via `AnimatePresence mode="wait"`.
+        2. **Wave Animation:** Changed `useSpring` params from `{mass:1.3, stiffness:90, damping:11}` to `{mass:1, stiffness:50, damping:14}` for smoother, less erratic fill transitions. Fixed wave loop from `animate={{ x: [0, -VB_W] }}` (pixel values) to `animate={{ x: ["0%", "-50%"] }}` (percentage-based, mathematically perfect seamless loop). Added `transform: "translateZ(0)"` on the SVG element for GPU compositing.
+        3. **Bottle Silhouette:** Added SVG `<filter>` (inverted alpha inner shadow) applied to the empty bottle path. Changed fill from `rgba(241,245,249,0.5)` to `rgba(148,163,184,0.08)` with inner shadow filter. Added a separate outer rim stroke path (`rgba(148,163,184,0.35)`, strokeWidth 1.5) for clear glass definition even when empty.
+    * **Standard:** Never use native `prompt()`/`confirm()` in mobile-targeted UIs — always use inline editors with `text-[16px]` inputs. For SVG wave loops, use percentage-based animation (`"-50%"` on a 2× width path) to guarantee seamless looping without pixel rounding errors.
+
 ## 10. Gemini Prompt & 24 Micronutrient Schema (Updated March 2026)
 
 * **System Instruction:**

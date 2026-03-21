@@ -12,6 +12,7 @@ import {
   RotateCcw,
   Pencil,
   ChevronDown,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "../../../store";
@@ -77,6 +78,8 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
   } = useAppStore();
 
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isEditingTarget, setIsEditingTarget] = useState(false);
+  const [tempTarget, setTempTarget] = useState("");
   const [celebrationBubbles, setCelebrationBubbles] = useState<number[]>([]);
   const [addBubbles, setAddBubbles] = useState<{ id: number; x: number }[]>(
     []
@@ -87,6 +90,7 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
   const clipId = `wt-clip-${uid}`;
   const depGrad = `wt-dep-${uid}`;
   const shiGrad = `wt-shi-${uid}`;
+  const innId = `wt-inn-${uid}`;
 
   /* ── Business logic (preserved) ────────────────────────── */
 
@@ -129,9 +133,9 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
   }, [progress, progressMV]);
 
   const spring = useSpring(progressMV, {
-    mass: 1.3,
-    stiffness: 90,
-    damping: 11,
+    mass: 1,
+    stiffness: 50,
+    damping: 14,
   });
 
   /* SVG fill transform */
@@ -186,23 +190,26 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
   }, [removeLastWaterLog]);
 
   const handleEditTarget = useCallback(() => {
-    const input = prompt("הזן יעד מים חדש (במ״ל), או השאר ריק כדי לחזור להמלצה המותאמת אישית:", dailyWaterTarget.toString());
-    if (input === null) return;
-    
-    if (input.trim() === "") {
-      setCustomWaterTarget(null);
-      toast.success("היעד הוחזר לחישוב אוטומטי");
-      return;
-    }
+    setTempTarget(dailyWaterTarget.toString());
+    setIsEditingTarget(true);
+  }, [dailyWaterTarget]);
 
-    const value = parseInt(input, 10);
+  const handleSaveTarget = useCallback(() => {
+    const value = parseInt(tempTarget, 10);
     if (isNaN(value) || value <= 0) {
       toast.error("יש להזין מספר חיובי");
       return;
     }
     setCustomWaterTarget(value);
+    setIsEditingTarget(false);
     toast.success(`היעד עודכן ל-${value} מ״ל`);
-  }, [dailyWaterTarget, setCustomWaterTarget]);
+  }, [tempTarget, setCustomWaterTarget]);
+
+  const handleResetTarget = useCallback(() => {
+    setCustomWaterTarget(null);
+    setIsEditingTarget(false);
+    toast.success("היעד הוחזר לחישוב אוטומטי");
+  }, [setCustomWaterTarget]);
 
   /* ── Render ─────────────────────────────────────────────── */
 
@@ -317,23 +324,70 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
               <div className="px-5 pb-6">
                 {/* Target edit row */}
                 <div className="flex items-center justify-end mb-4">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditTarget();
-                    }}
-                    className="group flex items-center gap-1.5 transition-colors"
-                  >
-                    <div>
-                      <div className="text-[13px] font-bold text-slate-500">
-                        יעד יומי
-                      </div>
-                      <div className="text-[15px] font-black text-slate-800">
-                        {(dailyWaterTarget / 1000).toFixed(1)} ליטר
-                      </div>
-                    </div>
-                    <Pencil className="w-3.5 h-3.5 text-slate-300 group-hover:text-sky-500 transition-colors" />
-                  </button>
+                  <AnimatePresence mode="wait">
+                    {isEditingTarget ? (
+                      <motion.div
+                        key="edit"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="flex items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="text-[13px] font-bold text-slate-500">יעד יומי</div>
+                        <input
+                          type="number"
+                          value={tempTarget}
+                          onChange={(e) => setTempTarget(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveTarget();
+                            if (e.key === "Escape") setIsEditingTarget(false);
+                          }}
+                          autoFocus
+                          className="w-20 text-center text-[16px] font-black text-slate-800 bg-white/60 backdrop-blur-sm border border-slate-200/80 rounded-xl py-1 px-2 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400/30 transition-all"
+                          dir="ltr"
+                        />
+                        <span className="text-[13px] font-bold text-slate-400">מ״ל</span>
+                        <button
+                          onClick={handleSaveTarget}
+                          className="w-7 h-7 rounded-full bg-sky-500 flex items-center justify-center text-white shadow-sm hover:bg-sky-600 transition-colors"
+                        >
+                          <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                        </button>
+                        <button
+                          onClick={handleResetTarget}
+                          className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors"
+                          title="איפוס ליעד מחושב"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.div>
+                    ) : (
+                      <motion.button
+                        key="display"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditTarget();
+                        }}
+                        className="group flex items-center gap-1.5 transition-colors"
+                      >
+                        <div>
+                          <div className="text-[13px] font-bold text-slate-500">
+                            יעד יומי
+                          </div>
+                          <div className="text-[15px] font-black text-slate-800">
+                            {(dailyWaterTarget / 1000).toFixed(1)} ליטר
+                          </div>
+                        </div>
+                        <Pencil className="w-3.5 h-3.5 text-slate-300 group-hover:text-sky-500 transition-colors" />
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* ── SVG Carafe Bottle ── */}
@@ -347,6 +401,7 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                     style={{
                       filter:
                         "drop-shadow(0 6px 20px rgba(14,165,233,0.18))",
+                      transform: "translateZ(0)",
                     }}
                   >
                     <defs>
@@ -390,14 +445,33 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                           stopColor="rgba(255,255,255,0)"
                         />
                       </linearGradient>
+                      <filter id={innId} x="-5%" y="-5%" width="110%" height="110%">
+                        <feComponentTransfer in="SourceAlpha">
+                          <feFuncA type="table" tableValues="1 0" />
+                        </feComponentTransfer>
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feOffset in="blur" dx="0" dy="1" result="offsetBlur" />
+                        <feFlood floodColor="rgba(71,85,105,0.18)" result="color" />
+                        <feComposite in="color" in2="offsetBlur" operator="in" result="innerShadow" />
+                        <feComposite in="innerShadow" in2="SourceAlpha" operator="in" result="clipped" />
+                        <feMerge>
+                          <feMergeNode in="SourceGraphic" />
+                          <feMergeNode in="clipped" />
+                        </feMerge>
+                      </filter>
                     </defs>
 
-                    {/* Empty bottle background */}
+                    {/* Empty bottle background — enhanced glass silhouette */}
                     <path
                       d={BOTTLE_PATH}
-                      fill="rgba(241,245,249,0.5)"
-                      stroke="rgba(148,163,184,0.15)"
-                      strokeWidth="1"
+                      fill="rgba(148,163,184,0.08)"
+                      filter={`url(#${innId})`}
+                    />
+                    <path
+                      d={BOTTLE_PATH}
+                      fill="none"
+                      stroke="rgba(148,163,184,0.35)"
+                      strokeWidth="1.5"
                     />
 
                     {/* Liquid fill — clipped to bottle silhouette */}
@@ -415,7 +489,7 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                         <motion.path
                           d={wavePath}
                           style={{ fill: fillColor, y: -6 }}
-                          animate={{ x: [0, -VB_W] }}
+                          animate={{ x: ["0%", "-50%"] }}
                           transition={{
                             repeat: Infinity,
                             duration: 4,
