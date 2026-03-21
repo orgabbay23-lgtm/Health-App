@@ -59,11 +59,16 @@ visibilitychange listeners to trigger global loading states or full-page refresh
 - ׳’ג€¦ Clinical data expansion ׳’ג‚¬ג€ 24 micronutrients (including Omega 3 EPA+DHA), 3-tier hierarchy, accessibility font scale, updated Gemini prompt.
 - ׳³ֲ ׳’ג‚¬׳’ג‚¬ **CURRENT PHASE:** Contextual AI Insights & UX Refinement ׳³ג€™׳’ג€ֲ¬׳’ג‚¬ Smart nutritional recommendations and seamless feedback loops (auto-navigation + scroll).
 ## 6. Native PWA & Mobile UX
-* **Theme Sync:** `index.html` must include `meta name="theme-color"` matching the primary background (`#f8fafc`) and `apple-mobile-web-app-status-bar-style: black-translucent`.
-* **Safe Area Insets:** Use `pt-safe-top` and `pb-safe-bottom` (defined in `tailwind.config.js`) for layout containers and floating bars (like Bottom Navigation) to prevent overlap with device hardware (notches/home indicators).
+* **Theme Sync:** `index.html` must include dual media-query meta tags for dynamic Dark/Light mode auto-switching on iOS:
+  `<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />`
+  `<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />`
+  It must also include `apple-mobile-web-app-status-bar-style: black-translucent`.
+* **SPA Static Host 404s & OAuth Callbacks (CRITICAL):** Because the app is a static SPA (Single Page Application), nested redirect URLs like `/auth/callback` will cause 404 errors on hosts like Vercel/GitHub Pages without specialized server rewrite rules. ALL Supabase `redirectTo` configurations (for `signInWithOAuth` Google login, and `resetPasswordForEmail`) MUST point to the root origin (`window.location.origin + '/'`) instead of `/auth/callback`.
 * **Scroll Hygiene:** Apply `overscroll-behavior: none` to `html` and `body` to disable browser pull-to-refresh/rubber-banding, ensuring a "one continuous surface" feel.
 
 ## 6b. Mobile UX Input Standards (Hardened ׳’ג‚¬ג€ March 2026)
+* **Strict Prompt Ban:** The native `prompt()` function is STRICTLY FORBIDDEN across the entire app due to severe bugs with the iOS virtual keyboard (failing to show typed input). Any required text/number input must use beautiful, inline React state-driven inputs (like the inline custom target editor).
+* **Framer Motion Liquid Physics:** Any "liquid fill" or wave animations MUST feed state changes through `useMotionValue` rather than relying purely on React state for `useSpring`, ensuring 60fps real-time reactivity without visual frame jumps. Furthermore, SVG wave elements must seamlessly match the fluid container's top color exactly (no conflicting gradients) to maintain the Glassmorphism illusion.
 * **iOS Zoom Prevention (CRITICAL):** All interactive form elements (`<input>`, `<textarea>`, `<select>`) must use `text-[16px]` (hardcoded arbitrary Tailwind value). Do NOT use `text-base` ׳’ג‚¬ג€ it resolves to `1rem` which depends on root font-size and can be overridden by parent containers. iOS Safari forcefully zooms the viewport when any input with computed font-size below 16px receives focus.
 * **No Framer `layout` on Modals (CRITICAL):** Never use `layout` or `layoutId` props on modal/dialog containers. When the iOS virtual keyboard appears/disappears, `dvh` units change the element's bounding box, causing Framer Motion's FLIP algorithm to trigger a layout animation ׳’ג‚¬ג€ this is the root cause of the "viewport wildly jumping" bug. Entry/exit animations (`initial`/`animate`/`exit`) are sufficient.
 * **Viewport Meta ׳’ג‚¬ג€ `interactive-widget`:** The viewport meta tag must include `interactive-widget=resizes-content` to instruct Safari to resize the layout viewport (not shift the visual viewport) when the virtual keyboard appears.
@@ -454,15 +459,13 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 ## 25. Forgot Password & Recovery Flow (March 2026)
 
 * **Architecture:**
-    * **Request Phase:** `AuthScreen.tsx` provides a "Forgot Password?" link in Sign-In mode. It triggers `supabase.auth.resetPasswordForEmail` with a `redirectTo` pointing to `/auth/callback`.
-    * **Recovery Phase:** The `PASSWORD_RECOVERY` event is intercepted in `AuthProvider.tsx`'s `onAuthStateChange` listener. It sets a global `isRecoveringPassword: true` flag in the Zustand store.
-    * **UI Routing:** `App.tsx` prioritizes rendering `PasswordRecoveryScreen.tsx` if `isRecoveringPassword` is true, bypassing the normal Auth/Dashboard routing.
-    * **Execution:** `PasswordRecoveryScreen.tsx` collects a new password and calls `supabase.auth.updateUser({ password })`. Upon success, it clears the recovery flag, transitioning the user into the app.
+    * **Request Phase:** Handled entirely within `AuthScreen.tsx` using an `authMode` state (`signin` | `signup` | `forgot_password`). `resetPasswordForEmail` is called with `redirectTo` pointing to the root origin (`window.location.origin + '/'`).
+    * **Recovery Phase:** The `PASSWORD_RECOVERY` event is intercepted globally in `AuthProvider.tsx` inside `onAuthStateChange`.
+    * **Execution:** When the recovery event fires, the app directly prompts the user for a new password and submits it using `supabase.auth.updateUser({ password: newPassword })`, bypassing the need for a dedicated recovery routing screen.
 * **Security & UX:**
     * Password recovery requires a valid session (automatically provided by Supabase when clicking the email link).
     * Recovery UI follows the premium Glassmorphism aesthetic and RTL standards.
-    * The recovery flag is explicitly reset on `SIGNED_OUT` events to prevent stale state.
-* **Standard:** All authentication-related email flows must use the redirection-and-event-interception pattern to ensure a seamless "native" feel within the PWA.
+* **Standard:** All authentication-related email flows must use the root-origin redirection and global event interception pattern to ensure a seamless "native" feel and avoid SPA 404 errors.
 
 ## 26. Gamified Water Tracking (March 2026)
 
@@ -477,3 +480,9 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
     * `goalDeficitToWaterGoal()` maps the existing `goalDeficit` (kcal) to hydration goal tiers: 0→maintenance, ≤300→slow, ≤600→moderate, >600→fast.
     * The water tracker is daily-only (no weekly/monthly aggregation in this phase).
 
+
+* **2026-03-21: WaterTracker — Custom Amount (מותאם אישית) Feature**
+    * **Change:** Added a \"Custom Amount\" (מותאם אישית) workflow to the `WaterTracker.tsx` component to allow precise logging.
+    * **Implementation:** (1) Added `isCustomAddOpen` and `customAddValue` state for view toggling. (2) Replaced the static `QUICK_ADD_OPTIONS` list in the UI with an `<AnimatePresence mode=\"wait\">` that switches between the standard pill buttons and a \"Custom Input Panel\". (3) Added a \"מותאם אישית\" button with a `Plus` icon as the final pill in the quick-add view. (4) The Custom Input Panel features a transparent `text-[16px]` numeric input (iOS zoom-safe), a green glassmorphism `Check` button, and a slate `X` cancel button. (5) Added \"Special Sizes\" (גדלים מיוחדים) pills for 180ml (כוס ח״פ), 330ml (ספל), and 600ml (בקבוק ספורט) for common Israeli container sizes.
+    * **Transition:** Used `motion.div` with fade/slide animations (`y: 10` → `0`) for the view switch.
+    * **Standard:** Custom input panels in dashboard cards must use `AnimatePresence mode=\"wait\"` for view transitions and provide \"Special Sizes\" shortcuts where applicable to reduce typing effort. Inputs must always be `text-[16px]` to prevent iOS Safari viewport zooming.
