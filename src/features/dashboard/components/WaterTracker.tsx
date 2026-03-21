@@ -32,14 +32,14 @@ interface WaterTrackerProps {
 }
 
 const QUICK_ADD_OPTIONS = [
-  { ml: 250, label: "כוס", icon: Plus },
+  { ml: 240, label: "כוס", icon: Plus },
   { ml: 500, label: "בקבוק קטן", icon: Plus },
   { ml: 750, label: "בקבוק בינוני", icon: Plus },
   { ml: 1000, label: "בקבוק גדול", icon: Plus },
 ] as const;
 
 const SPECIAL_SIZES = [
-  { ml: 180, label: "כוס ח״פ" },
+  { ml: 150, label: "כוס ח״פ" },
   { ml: 330, label: "ספל" },
   { ml: 600, label: "בקבוק ספורט" },
 ] as const;
@@ -689,7 +689,6 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                               if (e.key === "Enter") handleSubmitCustomAdd();
                               if (e.key === "Escape") setIsCustomAddOpen(false);
                             }}
-                            autoFocus
                             className="bg-white/20 backdrop-blur-md border border-white/30 text-center text-[16px] font-bold outline-none rounded-2xl py-2.5 px-4 w-full text-slate-800 placeholder:text-slate-400 focus:border-sky-400 transition-all"
                           />
                           <motion.button
