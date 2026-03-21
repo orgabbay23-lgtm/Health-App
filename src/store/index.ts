@@ -330,6 +330,7 @@ interface AppState {
   _lastFetchTime: number;
   activeScreen: "home" | "calendar" | "profile";
   dailyWaterAmount: number;
+  waterDateKey: string;
   dailyWaterTarget: number;
   customWaterTarget: number | null;
 
@@ -380,6 +381,7 @@ export const useAppStore = create<AppState>()(
       _lastFetchTime: 0,
       activeScreen: "home",
       dailyWaterAmount: 0,
+      waterDateKey: "",
       dailyWaterTarget: 2500,
       customWaterTarget: null,
 
@@ -526,6 +528,7 @@ export const useAppStore = create<AppState>()(
           _lastFetchTime: 0,
           isAppReady: false,
           dailyWaterAmount: 0,
+          waterDateKey: "",
           dailyWaterTarget: 2500,
           customWaterTarget: null,
         });
@@ -1141,11 +1144,13 @@ export const useAppStore = create<AppState>()(
     if (!userId) return;
 
     const todayKey = getHydrationDayKey();
-    // Query water_logs for today (3 AM rollover: from todayKey 03:00 to next day 03:00)
-    const startOfDay = `${todayKey}T03:00:00.000Z`;
-    const tomorrow = new Date(todayKey);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const endOfDay = `${tomorrow.toISOString().slice(0, 10)}T03:00:00.000Z`;
+    const [year, month, day] = todayKey.split('-').map(Number);
+    // Create local dates for 03:00 AM today and 03:00 AM tomorrow
+    const startOfLogicalDay = new Date(year, month - 1, day, 3, 0, 0);
+    const endOfLogicalDay = new Date(year, month - 1, day + 1, 3, 0, 0);
+    
+    const startOfDay = startOfLogicalDay.toISOString();
+    const endOfDay = endOfLogicalDay.toISOString();
 
     const { data, error } = await supabase
       .from("water_logs")
@@ -1160,16 +1165,27 @@ export const useAppStore = create<AppState>()(
     }
 
     const total = (data ?? []).reduce((sum, row) => sum + (row.amount_ml ?? 0), 0);
-    set({ dailyWaterAmount: total });
+    set({ dailyWaterAmount: total, waterDateKey: todayKey });
   },
 
   logWater: async (amountMl: number) => {
-    const { userId, dailyWaterAmount } = get();
+    const { userId } = get();
     if (!userId) return;
 
+    // Prevent stale data accumulation across rollovers
+    if (get().waterDateKey && get().waterDateKey !== getHydrationDayKey()) {
+      await get().fetchTodayWater();
+    }
+
+    // CRITICAL: Fetch dailyWaterAmount AFTER potential fetchTodayWater execution
+    const currentDailyAmount = get().dailyWaterAmount;
+    const previousAmount = currentDailyAmount;
+
     // Optimistic update
-    const previousAmount = dailyWaterAmount;
-    set({ dailyWaterAmount: dailyWaterAmount + amountMl });
+    set({ 
+      dailyWaterAmount: currentDailyAmount + amountMl,
+      waterDateKey: getHydrationDayKey()
+    });
 
     const { error } = await supabase
       .from("water_logs")
@@ -1187,14 +1203,25 @@ export const useAppStore = create<AppState>()(
   },
 
   removeLastWaterLog: async () => {
-    const { userId, dailyWaterAmount } = get();
-    if (!userId || dailyWaterAmount <= 0) return;
+    const { userId } = get();
+    if (!userId) return;
+
+    // Prevent stale state deletion attempts
+    if (get().waterDateKey && get().waterDateKey !== getHydrationDayKey()) {
+      await get().fetchTodayWater();
+    }
+
+    // CRITICAL: Fetch dailyWaterAmount AFTER potential fetchTodayWater execution
+    const currentDailyAmount = get().dailyWaterAmount;
+    if (currentDailyAmount <= 0) return;
 
     const todayKey = getHydrationDayKey();
-    const startOfDay = `${todayKey}T03:00:00.000Z`;
-    const tomorrow = new Date(todayKey);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const endOfDay = `${tomorrow.toISOString().slice(0, 10)}T03:00:00.000Z`;
+    const [year, month, day] = todayKey.split('-').map(Number);
+    const startOfLogicalDay = new Date(year, month - 1, day, 3, 0, 0);
+    const endOfLogicalDay = new Date(year, month - 1, day + 1, 3, 0, 0);
+    
+    const startOfDay = startOfLogicalDay.toISOString();
+    const endOfDay = endOfLogicalDay.toISOString();
 
     const { data, error: fetchError } = await supabase
       .from("water_logs")
@@ -1211,8 +1238,8 @@ export const useAppStore = create<AppState>()(
     }
 
     const lastLog = data[0];
-    const previousAmount = dailyWaterAmount;
-    set({ dailyWaterAmount: Math.max(0, dailyWaterAmount - lastLog.amount_ml) });
+    const previousAmount = currentDailyAmount;
+    set({ dailyWaterAmount: Math.max(0, currentDailyAmount - lastLog.amount_ml) });
 
     const { error: deleteError } = await supabase
       .from("water_logs")
@@ -1244,6 +1271,7 @@ export const useAppStore = create<AppState>()(
     aiInsights: state.aiInsights,
     userId: state.userId,
     dailyWaterAmount: state.dailyWaterAmount,
+    waterDateKey: state.waterDateKey,
     dailyWaterTarget: state.dailyWaterTarget,
     customWaterTarget: state.customWaterTarget,
   }),

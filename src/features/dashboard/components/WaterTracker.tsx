@@ -21,6 +21,7 @@ import {
   calculateDailyWaterTarget,
   goalDeficitToWaterGoal,
 } from "../../../utils/hydration-utils";
+import { getLogicalDayKey } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
 
 /* ═══════════════════════════════════════════════════════════
@@ -131,6 +132,30 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
 
   useEffect(() => {
     fetchTodayWater();
+  }, [fetchTodayWater]);
+
+  // Automatic 3:00 AM Rollover Listener
+  useEffect(() => {
+    const checkRollover = () => {
+      const currentDayKey = getLogicalDayKey();
+      const storedDayKey = useAppStore.getState().waterDateKey;
+      if (storedDayKey && currentDayKey !== storedDayKey) {
+        fetchTodayWater();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") checkRollover();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    // Check periodically in case the user leaves the screen on at 3:00 AM
+    const interval = setInterval(checkRollover, 60000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, [fetchTodayWater]);
 
   const progress = Math.min(dailyWaterAmount / dailyWaterTarget, 1);
