@@ -333,6 +333,100 @@ ${JSON.stringify(nutritionData)}
   }
 }
 
+const CUSTOM_ANSWER_SYSTEM_INSTRUCTION = `You are a warm, friendly, and human Israeli clinical nutritionist. 
+Your goal is to directly answer the user's specific question using their provided nutritional context and profile.
+- Tone: Human, warm, and concise.
+- Directness: Answer the specific question immediately.
+- Context: Use the provided data (calories, macros, micros vs targets) only if relevant to the question. Don't overwhelm with numbers.
+- Language: Hebrew.
+- Formatting: No markdown (no bolding, no asterisks). Use plain text and bullet points with dashes (-).
+- Emojis: Use 1-2 relevant emojis to keep it friendly.`;
+
+export async function generateCustomAnswer(
+  userData: Record<string, unknown>,
+  period: string,
+  nutritionData: Record<string, unknown>,
+  question: string,
+): Promise<string> {
+  const finalKey = await getApiKey();
+
+  const userPrompt = `
+תקופה: ${period}
+פרופיל משתמש: ${JSON.stringify(userData)}
+נתוני תזונה: ${JSON.stringify(nutritionData)}
+שאלת המשתמש: ${question}
+
+ענה למשתמש בצורה אנושית וחמה בהתבסס על הנתונים.
+`;
+
+  try {
+    const genAI = new GoogleGenerativeAI(finalKey);
+    const model = genAI.getGenerativeModel({
+      model: FALLBACK_MODEL,
+      systemInstruction: CUSTOM_ANSWER_SYSTEM_INSTRUCTION,
+      generationConfig: {
+        ...GLOBAL_THINKING_CONFIG,
+      },
+    });
+    const result = await model.generateContent(userPrompt);
+    const text = result.response.text().trim();
+    if (!text) throw new Error("Empty response");
+    return text;
+  } catch (apiError: any) {
+    if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
+    throw new Error("שגיאה במתן התשובה, אנא נסו שוב מאוחר יותר.");
+  }
+}
+
+const SUPPLEMENT_SYSTEM_INSTRUCTION = `You are an expert Israeli clinical nutritionist specializing in supplementation.
+Your goal is to recommend the Top 5 dietary supplements based on the user's likely deficiencies from their monthly data.
+
+Rules:
+1. EXCLUDE: Do not recommend vitamins primarily synthesized outside the diet, like Vitamin D (from sun).
+2. GROUP: Recommend grouped supplements like "B-Complex" rather than individual B vitamins if multiple are low.
+3. TOXICITY WARNING: For fat-soluble vitamins (A, E, K) or minerals with toxicity risk (Iron, Zinc, etc.), explicitly state that a blood test is MANDATORY before starting.
+4. FORMAT: 
+   - Name of supplement.
+   - Brief explanation of why it's recommended based on their data.
+   - Common deficiency symptoms.
+   - Top 3-4 food sources in Israel to fix it naturally.
+5. NO MARKDOWN: Do not use bolding (**) or asterisks. Use dashes (-) for lists.
+6. DISCLAIMER: End with a strict medical disclaimer: "המידע המוצג הוא בגדר המלצה תזונתית בלבד ואינו מהווה ייעוץ רפואי. יש להיוועץ ברופא/ה ולבצע בדיקות דם לפני נטילת תוספי תזונה."
+7. LANGUAGE: Hebrew.
+8. TONE: Professional yet accessible.`;
+
+export async function generateSupplementRecommendations(
+  userData: Record<string, unknown>,
+  nutritionData: Record<string, unknown>,
+): Promise<string> {
+  const finalKey = await getApiKey();
+
+  const userPrompt = `
+נתוני תזונה חודשיים (אחוזים מהיעד): ${JSON.stringify(nutritionData)}
+פרופיל משתמש: ${JSON.stringify(userData)}
+
+בהתבסס על החסרים בתזונה החודשית, המלץ על 5 תוספי התזונה המתאימים ביותר.
+`;
+
+  try {
+    const genAI = new GoogleGenerativeAI(finalKey);
+    const model = genAI.getGenerativeModel({
+      model: FALLBACK_MODEL,
+      systemInstruction: SUPPLEMENT_SYSTEM_INSTRUCTION,
+      generationConfig: {
+        ...GLOBAL_THINKING_CONFIG,
+      },
+    });
+    const result = await model.generateContent(userPrompt);
+    const text = result.response.text().trim();
+    if (!text) throw new Error("Empty response");
+    return text;
+  } catch (apiError: any) {
+    if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
+    throw new Error("שגיאה ביצירת המלצות לתוספים, אנא נסו שוב מאוחר יותר.");
+  }
+}
+
 const FOLLOWUP_SYSTEM_INSTRUCTION = `You are the same friendly Israeli clinical nutritionist. The user is asking a follow-up question regarding your previous recommendation.
 Rules:
 - Language: Hebrew.
