@@ -241,56 +241,11 @@ export function Dashboard() {
         transition={{ duration: 0.8 }}
         className="relative mx-auto max-w-2xl bg-white/20 backdrop-blur-[2px] border-x border-white/10 shadow-2xl"
       >
-        <div className="space-y-8 px-4 py-6 pt-safe-top pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-12">
+        <div className="space-y-8 px-4 py-6 pt-safe-top pb-32 pb-safe-bottom">
           <DashboardTopBar
             periodMode={periodMode}
             onPeriodChange={setPeriodMode}
           />
-
-          <div className="hidden md:flex md:flex-wrap md:gap-3 justify-center">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              const active = activeScreen === item.key;
-
-              return (
-                <motion.div
-                  key={item.key}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    type="button"
-                    variant={active ? "default" : "outline"}
-                    className={cn(
-                      "rounded-full px-6 transition-all duration-300",
-                      active 
-                        ? "shadow-lg shadow-slate-200" 
-                        : "border-white/70 bg-white/60 backdrop-blur-md hover:bg-white/90"
-                    )}
-                    onClick={() => setActiveScreen(item.key)}
-                  >
-                    <Icon size={16} className="ms-2" />
-                    <span className="font-bold">{item.label}</span>
-                  </Button>
-                </motion.div>
-              );
-            })}
-            
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="md:ms-2"
-            >
-              <Button
-                type="button"
-                className="rounded-full px-6 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200/50 border-none"
-                onClick={() => setIsMealModalOpen(true)}
-              >
-                <Plus size={18} className="ms-2" />
-                <span className="font-bold">הוספת ארוחה</span>
-              </Button>
-            </motion.div>
-          </div>
 
           <AnimatePresence mode="wait">
             <motion.section

@@ -27,13 +27,14 @@ export function BottomNavigation({
   onOpenMealModal,
 }: BottomNavigationProps) {
   return (
-    <div className="fixed bottom-[calc(2rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[92%] max-w-md z-50 md:hidden">
-      <motion.div 
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.5 }}
-        className="bg-white/60 backdrop-blur-2xl border border-white/50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] rounded-[3rem] p-3 neo-blur"
-      >
+    <div className="fixed bottom-0 left-0 right-0 p-4 pb-safe-bottom z-[50] flex justify-center pointer-events-none">
+      <div className="w-full max-w-md pointer-events-auto">
+        <motion.div 
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.5 }}
+          className="bg-white/60 backdrop-blur-2xl border border-white/50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] rounded-[3rem] p-3 neo-blur"
+        >
         <div className="flex items-center justify-around">
           {navigationItems.map((item, index) => {
             const Icon = item.icon;
@@ -96,6 +97,7 @@ export function BottomNavigation({
           })}
         </div>
       </motion.div>
+      </div>
     </div>
   );
 }

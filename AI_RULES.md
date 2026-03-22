@@ -502,3 +502,12 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
         3. **Toxicity-Aware Ranking (RANKING RULE):** Enforced a mandatory ranking logic in generateSupplementRecommendations: Safe, water-soluble nutrients (B-Complex, Vit C, Magnesium, Calcium) MUST be ranked 1-3. Fat-soluble vitamins (A, E, K) or high-toxicity minerals (Iron) MUST be pushed to ranks 4-5, regardless of deficiency severity.
         4. **Vercel Build Stability:** Replaced implicit ny types in src/utils/gemini.ts error handlers with unknown and performed explicit casting to satisfy strict TypeScript production builds.
     * **Standard:** All AI features that display rich text MUST use the FormattedAIResponse component and adhere to the number-and-dot header (1. ) and dash-bullet (- ) standard. Never use markdown hashes (#) in AI output.
+
+* **2026-03-22: Floating Period Selection Tabs (Mobile UI Repositioning)**
+    * **Change:** Repositioned the Period Selection Tabs (היום/השבוע/החודש) from the top of the screen to a floating, fixed position at the bottom of the viewport on mobile.
+    * **Implementation:**
+        1. **Mobile (Fixed Floating):** The PeriodTabs are now rendered in a dedicated fixed container in Dashboard.tsx with ottom-[calc(7.5rem+env(safe-area-inset-bottom))] and z-[60]. This ensures they float gracefully above the BottomNavigation bar.
+        2. **Desktop (Integrated):** On desktop (md:), the tabs are integrated into the main top navigation row next to the navigation buttons, rather than floating.
+        3. **Visibility Logic:** On mobile, the floating tabs only appear when ctiveScreen is 'home' or 'calendar' to maintain focus on those data-heavy views.
+        4. **Layout Integration (Padding):** The main content container's bottom padding in Dashboard.tsx was increased to pb-[calc(14rem+env(safe-area-inset-bottom))] to prevent content (like AI Insights or Water Tracker) from being obscured by the new floating elements.
+    * **Standard:** Fixed UI elements added to the bottom of the screen MUST include a corresponding increase in the scrollable container's padding-bottom and must respect iOS safe areas and the existing BottomNavigation height.
