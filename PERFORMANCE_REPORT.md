@@ -125,6 +125,12 @@ Note: `WaterTracker.tsx` SVG already had `transform: "translateZ(0)"` on the par
 |---|---|---|
 | `FoodTypeahead.tsx`, `ProfileFormFields.tsx`, `EditProfileModal.tsx`, `MealLogModal.tsx`, `EditLoggedMealModal.tsx`, `EditFavoriteModal.tsx`, `ByokModal.tsx` | `scrollIntoView` fired at 350ms after focus, but iOS Safari's keyboard animation can take 300-400ms on slower devices. The scroll would fire while the viewport was still resizing, causing the input to end up behind the keyboard. | Increased all `scrollIntoView` timeouts from 350ms to 450ms across all 7 files (16 occurrences). |
 
+### Bug 5: RTL screen-transition horizontal glitch (Profile → Home)
+
+| Component | Issue | Fix |
+|---|---|---|
+| `Dashboard.tsx` | Outer `<div dir="rtl" className="overflow-x-hidden">` created a scroll context. In RTL, the scroll origin is at the right edge. During `AnimatePresence mode="wait"` screen transitions, the brief content collapse (between exit-complete and enter-start) caused the browser to recalculate the scroll position, producing a visible horizontal shift — the screen jumped left then snapped back right. | **Two fixes applied:** (1) Changed `overflow-x-hidden` to `overflow-x-clip` — clips content without creating a scroll context, so there's no scroll position to reset. (2) Simplified screen exit animation from `{ opacity: 0, y: -15 }` to `{ opacity: 0 }` — the `y` offset during exit added unnecessary layout interaction in the RTL scroll context. Enter animation remains untouched (each screen has its own staggered spring animations). |
+
 ## Updated Summary
 
 - **Store selectors**: 1 component fixed (WaterTracker).
@@ -137,3 +143,4 @@ Note: `WaterTracker.tsx` SVG already had `transform: "translateZ(0)"` on the par
 - **`willChange` cleanup**: 6 persistent allocations removed from one-shot animations.
 - **ModalShell scroll lock**: Cleanup now re-queries DOM to avoid stale references.
 - **iOS keyboard timing**: 16 `scrollIntoView` timeouts raised from 350ms to 450ms across 7 files.
+- **RTL navigation glitch**: Fixed horizontal shift on screen transitions by switching from `overflow-x-hidden` to `overflow-x-clip` and removing `y` offset from exit animation.

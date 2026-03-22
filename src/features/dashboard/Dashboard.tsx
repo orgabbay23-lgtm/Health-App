@@ -228,7 +228,7 @@ export function Dashboard() {
 
   return (
     <div
-      className="relative overflow-x-hidden"
+      className="relative overflow-x-clip"
       dir="rtl"
     >
       <motion.div
@@ -246,15 +246,10 @@ export function Dashboard() {
           <AnimatePresence mode="wait">
             <motion.section
               key={activeScreen}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{
-                type: "spring",
-                stiffness: 260,
-                damping: 25,
-                duration: 0.4
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeInOut" }}
             >
             {activeScreen === "home" ? (
               <HomeScreen
