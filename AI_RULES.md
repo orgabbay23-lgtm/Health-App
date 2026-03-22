@@ -511,3 +511,25 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
         3. **Visibility Logic:** On mobile, the floating tabs only appear when ctiveScreen is 'home' or 'calendar' to maintain focus on those data-heavy views.
         4. **Layout Integration (Padding):** The main content container's bottom padding in Dashboard.tsx was increased to pb-[calc(14rem+env(safe-area-inset-bottom))] to prevent content (like AI Insights or Water Tracker) from being obscured by the new floating elements.
     * **Standard:** Fixed UI elements added to the bottom of the screen MUST include a corresponding increase in the scrollable container's padding-bottom and must respect iOS safe areas and the existing BottomNavigation height.
+
+## 27. Code Quality & Build Stability (Vercel)
+* **Zero Unused Symbols (CRITICAL):** Vercel builds strictly enforce \
+oUnusedLocals\ and \
+oUnusedParameters\. The Agent MUST ensure all imports, variables, types, and constants are actively used. Unused symbols (Error TS6133) will break production deployments.
+* **Build Validation:** If possible, execute project-specific build commands (e.g. \
+pm run build\ or \	sc\) to verify changes before concluding a task.
+
+## 28. Fixed Floating Bottom Navigation (March 2026)
+* **Architecture:** The \BottomNavigation.tsx\ is now a fixed, floating bar across all screen sizes.
+* **Positioning:** It uses \ixed bottom-0 left-0 right-0 p-4 pb-safe-bottom z-[50]\. The pointer-events are disabled on the outer container and enabled on the inner menu to allow clicks on background content through the margins.
+* **Content Padding:** The main dashboard container (\Dashboard.tsx\) MUST maintain a minimum of \pb-32 pb-safe-bottom\ to ensure the bottom-most content (like AI Insights or Water Tracker) is fully scrollable and visible above the floating bar.
+* **Desktop Redundancy:** Standard desktop navigation buttons in the top bar are removed to maintain a single, premium navigation experience through the floating bar across all viewports.
+
+---
+* **2026-03-22: Fixed Floating Navigation & Build Stability Fix**
+    * **Change:** Unified the navigation experience into a single fixed floating \BottomNavigation\ and removed unused symbols to fix Vercel build failures.
+    * **Implementation:** 
+        1. **Fixed Floating Nav:** Updated \BottomNavigation.tsx\ to use a fixed, centered floating layout with \pb-safe-bottom\ support.
+        2. **Dashboard Layout:** Updated \Dashboard.tsx\ with \pb-32 pb-safe-bottom\ and removed redundant desktop-only navigation.
+        3. **Build Fix (TS6133):** Purged unused imports (\Plus\, \Button\, \cn\) and types (\DashboardScreen\) from \Dashboard.tsx\ to satisfy strict production build rules.
+    * **Standard:** Always ensure a clean production build by removing unused imports/variables. Maintain the floating navigation standard with proper bottom padding on all scrollable views.
