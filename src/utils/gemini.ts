@@ -31,23 +31,25 @@ export interface GeminiUserProfile {
 }
 
 // ── Error detection helpers ─────────────────────────────────────────
-function checkIsAuthError(err: any): boolean {
+function checkIsAuthError(err: unknown): boolean {
+  const error = err as any;
   return (
-    err?.status === 401 ||
-    err?.status === 403 ||
-    err?.message?.includes("401") ||
-    err?.message?.includes("403") ||
-    err?.message?.toLowerCase?.()?.includes("unauthorized") ||
-    err?.message?.toLowerCase?.()?.includes("invalid api key") ||
-    err?.message?.toLowerCase?.()?.includes("api key not found")
+    error?.status === 401 ||
+    error?.status === 403 ||
+    error?.message?.includes("401") ||
+    error?.message?.includes("403") ||
+    error?.message?.toLowerCase?.()?.includes("unauthorized") ||
+    error?.message?.toLowerCase?.()?.includes("invalid api key") ||
+    error?.message?.toLowerCase?.()?.includes("api key not found")
   );
 }
 
-function checkIsInvalidKeyError(err: any): boolean {
+function checkIsInvalidKeyError(err: unknown): boolean {
+  const error = err as any;
   return (
-    err?.status === 400 ||
-    err?.message?.includes("400") ||
-    err?.message?.includes("API_KEY_INVALID")
+    error?.status === 400 ||
+    error?.message?.includes("400") ||
+    error?.message?.includes("API_KEY_INVALID")
   );
 }
 
@@ -297,11 +299,15 @@ You will receive the user's profile including their caloric deficit goal (goalDe
 Rules for your response:
 - Language: Hebrew.
 - Tone: Warm, friendly, encouraging, strictly NO fluff.
-- Format: Use plain bullet points with a dash (-). DO NOT use markdown asterisks (**) for bolding. DO NOT use any markdown formatting. Use standard plain text only.
+- Formatting (STRICT):
+  1. Start main sections with a number and a dot (e.g., 1. נקודות לשימור).
+  2. Use plain bullet points with a dash (-). 
+  3. Wrap ALL labels and important terms in double asterisks (e.g., **המלצה:**, **חלבון:**).
+  4. ABSOLUTELY FORBIDDEN: Do not use hashes (#), backticks, or any other markdown headers.
 - Structure:
   1. A short, encouraging opening sentence (max 1 sentence).
-  2. נקודות לשימור - What went well (2-3 short bullets, max 1-2 sentences each).
-  3. נקודות לשיפור - What is missing/over the limit, and suggest 2-3 specific, common Israeli foods to fix it. IMPORTANT: Provide practical, everyday portion sizes (e.g., 'חצי גביע קוטג 5%', 'כף טחינה גולמית') rather than just naming the ingredient (2-3 short bullets, max 1-2 sentences each).
+  2. 1. נקודות לשימור - What went well (2-3 short bullets, max 1-2 sentences each).
+  3. 2. נקודות לשיפור - What is missing/over the limit, and suggest 2-3 specific, common Israeli foods to fix it. IMPORTANT: Provide practical, everyday portion sizes (e.g., 'חצי גביע קוטג 5%', 'כף טחינה גולמית') rather than just naming the ingredient (2-3 short bullets, max 1-2 sentences each).
 - Use relevant and fun emojis natively within the text (e.g., 💪, 🥑, 🔥, ✨, 🥗, 💧, 🌟) to make the tone vibrant and engaging.
 - Keep it extremely concise, punchy, and actionable. No long explanations.`;
 
@@ -326,7 +332,7 @@ ${JSON.stringify(userProfile)}
 נתוני התזונה (אחוזים מהיעד היומי/תקופתי — 100% = הגעת ליעד):
 ${JSON.stringify(nutritionData)}
 
-נתח את הנתונים ותן המלצה קצרה ומותאמת אישית.`;
+נתח את הנתונים ותן המלצה קצרה ומותאמת אישית תוך שימוש בפורמט המספור וההדגשה הנדרש.`;
 
   try {
     const genAI = new GoogleGenerativeAI(finalKey);
@@ -353,7 +359,12 @@ Your goal is to directly answer the user's specific question using their provide
 - Directness: Answer the specific question immediately.
 - Context: Use the provided data (calories, macros, micros vs targets) only if relevant to the question. Don't overwhelm with numbers.
 - Language: Hebrew.
-- Formatting: You MUST use strict formatting: Wrap all labels in double asterisks (e.g., **הסבר:**, **סימפטומים:**). If there is a medical or toxicity warning, you MUST write exactly **אזהרת רעילות:** or **אזהרה רפואית:**. Start main list items with a number and a dot (e.g., 1. Calcium). Use dashes (-) for sub-lists.
+- Formatting (STRICT): 
+  1. Start main list items with a number and a dot (e.g., 1. כותרת).
+  2. Use dashes (-) for sub-lists.
+  3. Wrap ALL labels and important terms in double asterisks (e.g., **הסבר:**, **סימפטומים:**). 
+  4. If there is a medical or toxicity warning, you MUST write exactly **אזהרת רעילות:** or **אזהרה רפואית:**.
+  5. ABSOLUTELY FORBIDDEN: Do not use hashes (#), backticks, or any other markdown headers.
 - Emojis: Use 1-2 relevant emojis to keep it friendly.`;
 
 export async function generateCustomAnswer(
@@ -370,7 +381,7 @@ export async function generateCustomAnswer(
 נתוני תזונה: ${JSON.stringify(nutritionData)}
 שאלת המשתמש: ${question}
 
-ענה למשתמש בצורה אנושית וחמה בהתבסס על הנתונים.
+ענה למשתמש בצורה אנושית וחמה בהתבסס על הנתונים תוך שימוש בפורמט המספור וההדגשה הנדרש.
 `;
 
   try {
@@ -399,17 +410,21 @@ Rules:
 1. EXCLUDE: Do not recommend vitamins primarily synthesized outside the diet, like Vitamin D (from sun).
 2. GROUP: Recommend grouped supplements like "B-Complex" rather than individual B vitamins if multiple are low.
 3. TOXICITY WARNING: For fat-soluble vitamins (A, E, K) or minerals with toxicity risk (Iron, Zinc, etc.), explicitly state that a blood test is MANDATORY before starting.
-4. FORMAT: 
-   - You MUST use strict formatting: Wrap all labels in double asterisks (e.g., **הסבר:**, **סימפטומים:**). If there is a medical or toxicity warning, you MUST write exactly **אזהרת רעילות:** or **אזהרה רפואית:**. 
+4. RANKING RULE: You MUST sort the Top 5 recommendations by SAFETY first, then by deficiency severity. Safe, water-soluble vitamins and minerals (e.g., B-Complex, Vitamin C, Magnesium, Calcium) MUST appear at the top of the list (ranks 1-3). Fat-soluble vitamins with toxicity risks (e.g., Vitamin A, K, E) or minerals with high toxicity risk (e.g., Iron) MUST be pushed to the bottom of the list (ranks 4-5), even if their mathematical deficiency gap is much larger. Never recommend highly toxic elements first.
+5. Formatting (STRICT): 
    - Start main list items with a number and a dot (e.g., 1. Vitamin B12).
+   - Use dashes (-) for sub-lists.
+   - Wrap ALL labels and important terms in double asterisks (e.g., **הסבר:**, **סימפטומים:**). 
+   - If there is a medical or toxicity warning, you MUST write exactly **אזהרת רעילות:** or **אזהרה רפואית:**. 
    - Each supplement entry should include:
-     1. Name of supplement (as a numbered header).
+     1. Name of supplement (as a numbered header, e.g., 1. ויטמין B12).
      2. **הסבר:** Brief explanation of why it's recommended based on their data.
      3. **סימפטומים:** Common deficiency symptoms.
      4. **מקורות מהמזון:** Top 3-4 food sources in Israel to fix it naturally.
-5. DISCLAIMER: End with a strict medical disclaimer: "המידע המוצג הוא בגדר המלצה תזונתית בלבד ואינו מהווה ייעוץ רפואי. יש להיוועץ ברופא/ה ולבצע בדיקות דם לפני נטילת תוספי תזונה."
-6. LANGUAGE: Hebrew.
-7. TONE: Professional yet accessible.`;
+   - ABSOLUTELY FORBIDDEN: Do not use hashes (#), backticks, or any other markdown headers.
+6. DISCLAIMER: End with a strict medical disclaimer: "המידע המוצג הוא בגדר המלצה תזונתית בלבד ואינו מהווה ייעוץ רפואי. יש להיוועץ ברופא/ה ולבצע בדיקות דם לפני נטילת תוספי תזונה."
+7. LANGUAGE: Hebrew.
+8. TONE: Professional yet accessible.`;
 
 export async function generateSupplementRecommendations(
   userData: GeminiUserProfile,
@@ -421,7 +436,7 @@ export async function generateSupplementRecommendations(
 נתוני תזונה חודשיים (אחוזים מהיעד): ${JSON.stringify(nutritionData)}
 פרופיל משתמש: ${JSON.stringify(userData)}
 
-בהתבסס על החסרים בתזונה החודשית, המלץ על 5 תוספי התזונה המתאימים ביותר.
+בהתבסס על החסרים בתזונה החודשית, המלץ על 5 תוספי התזונה המתאימים ביותר תוך שימוש בפורמט המספור וההדגשה הנדרש.
 `;
 
   try {
@@ -448,8 +463,11 @@ Rules:
 - Language: Hebrew.
 - Answer directly, concisely (max 2-3 sentences), in a warm and friendly tone.
 - Use relevant emojis to keep the tone vibrant.
-- DO NOT use markdown asterisks (**) for bolding. Use standard plain text only.
+- Formatting (STRICT):
+  1. Wrap important terms in double asterisks (e.g., **חשוב לדעת:**). 
+  2. ABSOLUTELY FORBIDDEN: Do not use hashes (#), backticks, or any other markdown headers.
 - If the user asks for medical advice, medication instructions, or diagnostic information beyond basic nutrition, gently remind them to consult a doctor.`;
+
 
 export async function answerInsightFollowUp(
   originalInsight: string,

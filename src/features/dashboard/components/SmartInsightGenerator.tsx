@@ -63,25 +63,30 @@ export function FormattedAIResponse({ content }: { content: string }) {
         const trimmed = line.trim();
         if (!trimmed) return <div key={idx} className="h-2" />;
 
-        // 1. Numbered Header Check
-        const headerMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
-        if (headerMatch) {
-          return (
-            <h4 key={idx} className="text-[17px] font-black text-sky-700 mt-5 mb-2 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-sky-100 text-sky-700 text-[12px] font-black">
-                {headerMatch[1]}
-              </span>
-              {renderBoldText(headerMatch[2])}
-            </h4>
-          );
+        // 1. Numbered Header Check (Resilient to space variations)
+        const headerMatch = trimmed.match(/^(\d+)\.?\s*(.*)/);
+        if (headerMatch && !trimmed.startsWith("-")) {
+          const num = headerMatch[1];
+          const text = headerMatch[2];
+          if (text) {
+            return (
+              <h4 key={idx} className="text-[17px] font-black text-sky-700 mt-5 mb-2 flex items-center gap-2">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-sky-100 text-sky-700 text-[12px] font-black shrink-0">
+                  {num}
+                </span>
+                {renderBoldText(text)}
+              </h4>
+            );
+          }
         }
 
-        // 2. Bullet Point Check
-        if (trimmed.startsWith("- ")) {
+        // 2. Bullet Point Check (Resilient to space variations)
+        if (trimmed.startsWith("-")) {
+          const bulletText = trimmed.replace(/^-+\s*/, "");
           return (
             <div key={idx} className="flex gap-2 mb-1.5 pr-1">
               <span className="text-sky-500 mt-1 flex-shrink-0">•</span>
-              <p className="flex-grow">{renderBoldText(trimmed.substring(2))}</p>
+              <p className="flex-grow">{renderBoldText(bulletText)}</p>
             </div>
           );
         }
