@@ -321,7 +321,7 @@ interface AppState {
   profile: UserProfile | null;
   dailyLogs: Record<string, DailyLog>;
   savedMeals: SavedMeal[];
-  aiInsights: Record<string, { insight: string; followUpQuestion?: string; followUpAnswer?: string }>;
+  aiInsights: Record<string, string | null>;
   isLoadingData: boolean;
   isAppReady: boolean;
   isRecoveringPassword: boolean;
@@ -335,9 +335,7 @@ interface AppState {
   customWaterTarget: number | null;
 
   setActiveScreen: (screen: "home" | "calendar" | "profile") => void;
-  saveInsight: (key: string, text: string) => void;
-  saveInsightFollowUp: (key: string, question: string, answer: string) => void;
-  clearInsight: (key: string) => void;
+  setAiInsight: (key: string, value: string | null) => void;
   fetchUserData: (userId: string, isSilent?: boolean) => Promise<void>;
   setAppReady: (ready: boolean) => void;
   setIsRecoveringPassword: (isRecovering: boolean) => void;
@@ -387,29 +385,14 @@ export const useAppStore = create<AppState>()(
 
       setActiveScreen: (screen) => set({ activeScreen: screen }),
 
-      saveInsight: (key, text) => {
-        set((state) => ({
-          aiInsights: { ...state.aiInsights, [key]: { insight: text } },
-        }));
-      },
-
-      saveInsightFollowUp: (key, question, answer) => {
-        set((state) => {
-          const existing = state.aiInsights[key];
-          if (!existing) return state;
-          return {
-            aiInsights: {
-              ...state.aiInsights,
-              [key]: { ...existing, followUpQuestion: question, followUpAnswer: answer },
-            },
-          };
-        });
-      },
-
-      clearInsight: (key) => {
+      setAiInsight: (key, value) => {
         set((state) => {
           const next = { ...state.aiInsights };
-          delete next[key];
+          if (value === null) {
+            delete next[key];
+          } else {
+            next[key] = value;
+          }
           return { aiInsights: next };
         });
       },

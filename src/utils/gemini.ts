@@ -11,10 +11,24 @@ const PRIMARY_MODEL = "gemini-3-flash-preview";
 const FALLBACK_MODEL = "gemini-3.1-flash-lite-preview";
 
 // Global High Thinking configuration — applied to ALL models
-// @ts-ignore
-const GLOBAL_THINKING_CONFIG: any = {
+export interface GeminiThinkingConfig {
+  thinkingConfig: { thinkingLevel: "high" | "low" };
+}
+
+const GLOBAL_THINKING_CONFIG: GeminiThinkingConfig = {
   thinkingConfig: { thinkingLevel: "high" },
 };
+
+export interface GeminiUserProfile {
+  name: string;
+  age: number;
+  gender: "male" | "female";
+  weight: number;
+  height: number;
+  activityLevel: string;
+  goalDeficit: number;
+  isSmoker: boolean;
+}
 
 // ── Error detection helpers ─────────────────────────────────────────
 function checkIsAuthError(err: any): boolean {
@@ -206,7 +220,7 @@ export async function analyzeMealImage(
       systemInstruction: VISION_SYSTEM_INSTRUCTION,
       generationConfig: {
         ...GLOBAL_THINKING_CONFIG,
-      },
+      } as any,
     });
     const result = await model.generateContent([
       { inlineData: { data: base64Image, mimeType } },
@@ -293,8 +307,8 @@ Rules for your response:
 
 export async function generateNutritionalInsight(
   timeframe: 'day' | 'week' | 'month',
-  nutritionData: Record<string, unknown>,
-  userProfile: Record<string, unknown>,
+  nutritionData: Record<string, number>,
+  userProfile: GeminiUserProfile,
 ): Promise<string> {
   const finalKey = await getApiKey();
 
@@ -321,7 +335,7 @@ ${JSON.stringify(nutritionData)}
       systemInstruction: INSIGHT_SYSTEM_INSTRUCTION,
       generationConfig: {
         ...GLOBAL_THINKING_CONFIG,
-      },
+      } as any,
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
@@ -339,13 +353,13 @@ Your goal is to directly answer the user's specific question using their provide
 - Directness: Answer the specific question immediately.
 - Context: Use the provided data (calories, macros, micros vs targets) only if relevant to the question. Don't overwhelm with numbers.
 - Language: Hebrew.
-- Formatting: No markdown (no bolding, no asterisks). Use plain text and bullet points with dashes (-).
+- Formatting: You MUST use strict formatting: Wrap all labels in double asterisks (e.g., **הסבר:**, **סימפטומים:**). If there is a medical or toxicity warning, you MUST write exactly **אזהרת רעילות:** or **אזהרה רפואית:**. Start main list items with a number and a dot (e.g., 1. Calcium). Use dashes (-) for sub-lists.
 - Emojis: Use 1-2 relevant emojis to keep it friendly.`;
 
 export async function generateCustomAnswer(
-  userData: Record<string, unknown>,
+  userData: GeminiUserProfile,
   period: string,
-  nutritionData: Record<string, unknown>,
+  nutritionData: Record<string, number>,
   question: string,
 ): Promise<string> {
   const finalKey = await getApiKey();
@@ -366,7 +380,7 @@ export async function generateCustomAnswer(
       systemInstruction: CUSTOM_ANSWER_SYSTEM_INSTRUCTION,
       generationConfig: {
         ...GLOBAL_THINKING_CONFIG,
-      },
+      } as any,
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
@@ -386,18 +400,20 @@ Rules:
 2. GROUP: Recommend grouped supplements like "B-Complex" rather than individual B vitamins if multiple are low.
 3. TOXICITY WARNING: For fat-soluble vitamins (A, E, K) or minerals with toxicity risk (Iron, Zinc, etc.), explicitly state that a blood test is MANDATORY before starting.
 4. FORMAT: 
-   - Name of supplement.
-   - Brief explanation of why it's recommended based on their data.
-   - Common deficiency symptoms.
-   - Top 3-4 food sources in Israel to fix it naturally.
-5. NO MARKDOWN: Do not use bolding (**) or asterisks. Use dashes (-) for lists.
-6. DISCLAIMER: End with a strict medical disclaimer: "המידע המוצג הוא בגדר המלצה תזונתית בלבד ואינו מהווה ייעוץ רפואי. יש להיוועץ ברופא/ה ולבצע בדיקות דם לפני נטילת תוספי תזונה."
-7. LANGUAGE: Hebrew.
-8. TONE: Professional yet accessible.`;
+   - You MUST use strict formatting: Wrap all labels in double asterisks (e.g., **הסבר:**, **סימפטומים:**). If there is a medical or toxicity warning, you MUST write exactly **אזהרת רעילות:** or **אזהרה רפואית:**. 
+   - Start main list items with a number and a dot (e.g., 1. Vitamin B12).
+   - Each supplement entry should include:
+     1. Name of supplement (as a numbered header).
+     2. **הסבר:** Brief explanation of why it's recommended based on their data.
+     3. **סימפטומים:** Common deficiency symptoms.
+     4. **מקורות מהמזון:** Top 3-4 food sources in Israel to fix it naturally.
+5. DISCLAIMER: End with a strict medical disclaimer: "המידע המוצג הוא בגדר המלצה תזונתית בלבד ואינו מהווה ייעוץ רפואי. יש להיוועץ ברופא/ה ולבצע בדיקות דם לפני נטילת תוספי תזונה."
+6. LANGUAGE: Hebrew.
+7. TONE: Professional yet accessible.`;
 
 export async function generateSupplementRecommendations(
-  userData: Record<string, unknown>,
-  nutritionData: Record<string, unknown>,
+  userData: GeminiUserProfile,
+  nutritionData: Record<string, number>,
 ): Promise<string> {
   const finalKey = await getApiKey();
 
@@ -415,7 +431,7 @@ export async function generateSupplementRecommendations(
       systemInstruction: SUPPLEMENT_SYSTEM_INSTRUCTION,
       generationConfig: {
         ...GLOBAL_THINKING_CONFIG,
-      },
+      } as any,
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
@@ -438,7 +454,7 @@ Rules:
 export async function answerInsightFollowUp(
   originalInsight: string,
   userQuestion: string,
-  userProfile: Record<string, unknown>,
+  userProfile: GeminiUserProfile,
 ): Promise<string> {
   const finalKey = await getApiKey();
 
@@ -458,7 +474,7 @@ ${userQuestion}`;
       systemInstruction: FOLLOWUP_SYSTEM_INSTRUCTION,
       generationConfig: {
         ...GLOBAL_THINKING_CONFIG,
-      },
+      } as any,
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
@@ -490,7 +506,7 @@ export async function parseMealDescription(
           responseMimeType: "application/json",
           responseSchema: mealResponseSchema,
           ...GLOBAL_THINKING_CONFIG,
-        },
+        } as any,
       });
       const result = await model.generateContent(description.trim());
       const responseText = result.response.text().trim();

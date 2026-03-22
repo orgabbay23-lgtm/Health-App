@@ -57,13 +57,6 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const meals = selectedDailyLog?.meals ?? [];
 
-  const insightKey =
-    periodMode === "daily"
-      ? `insight_day_${periodDetails.startKey}`
-      : periodMode === "weekly"
-        ? `insight_week_${periodDetails.startKey}`
-        : `insight_month_${periodDetails.startKey.slice(0, 7)}`;
-
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -186,7 +179,6 @@ export function HomeScreen({
       <motion.div variants={itemVariants}>
         <SmartInsightGenerator
           periodMode={periodMode}
-          insightKey={insightKey}
           currentAggregations={periodData.aggregations}
           periodTargets={periodTargets}
           userProfile={userProfile}

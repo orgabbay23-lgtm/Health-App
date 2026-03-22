@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, 
@@ -9,7 +9,8 @@ import {
   ChevronDown, 
   ChevronUp,
   Loader2,
-  RotateCcw
+  RotateCcw,
+  AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "../../../store";
@@ -19,12 +20,12 @@ import { MICRONUTRIENT_KEYS } from "../../../utils/nutrition-utils";
 import { 
   generateNutritionalInsight, 
   generateCustomAnswer, 
-  generateSupplementRecommendations 
+  generateSupplementRecommendations,
+  type GeminiUserProfile
 } from "../../../utils/gemini";
 
 interface SmartInsightGeneratorProps {
   periodMode: DashboardPeriod;
-  insightKey: string;
   currentAggregations: DailyAggregations;
   periodTargets: DailyAggregations;
   userProfile: UserProfile;
@@ -51,15 +52,75 @@ function buildNutritionPercentages(
   return data;
 }
 
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/\*\*\*/g, "")
-    .replace(/\*\*/g, "")
-    .replace(/(?<!\S)\*(?!\s)/g, "")
-    .replace(/(?<!\s)\*(?!\S)/g, "")
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/`{1,3}/g, "")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+export function FormattedAIResponse({ content }: { content: string }) {
+  if (!content) return null;
+
+  const lines = content.split("\n");
+
+  return (
+    <div className="space-y-1 text-slate-700 leading-relaxed text-[15px]">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={idx} className="h-2" />;
+
+        // 1. Numbered Header Check
+        const headerMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+        if (headerMatch) {
+          return (
+            <h4 key={idx} className="text-[17px] font-black text-sky-700 mt-5 mb-2 flex items-center gap-2">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-sky-100 text-sky-700 text-[12px] font-black">
+                {headerMatch[1]}
+              </span>
+              {renderBoldText(headerMatch[2])}
+            </h4>
+          );
+        }
+
+        // 2. Bullet Point Check
+        if (trimmed.startsWith("- ")) {
+          return (
+            <div key={idx} className="flex gap-2 mb-1.5 pr-1">
+              <span className="text-sky-500 mt-1 flex-shrink-0">•</span>
+              <p className="flex-grow">{renderBoldText(trimmed.substring(2))}</p>
+            </div>
+          );
+        }
+
+        // 3. Normal Paragraph
+        return (
+          <p key={idx} className="mb-2">
+            {renderBoldText(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function renderBoldText(text: string) {
+  if (!text.includes("**")) return text;
+
+  const parts = text.split("**");
+  return parts.map((part, i) => {
+    // Even indices are normal text, odd indices are bold
+    if (i % 2 === 0) return part;
+    
+    const isWarning = part.includes("אזהר") || part.includes("רעיל");
+    if (isWarning) {
+      return (
+        <strong key={i} className="text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 font-black mx-0.5">
+          <AlertTriangle className="w-3.5 h-3.5" />
+          {part}
+        </strong>
+      );
+    }
+    
+    return (
+      <strong key={i} className="font-black text-slate-900 mx-0.5">
+        {part}
+      </strong>
+    );
+  });
 }
 
 export function SmartInsightGenerator({
@@ -70,21 +131,26 @@ export function SmartInsightGenerator({
 }: SmartInsightGeneratorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // Local states for interactive elements
-  const [customQuestion, setCustomQuestion] = useState("");
-  const [customAnswer, setCustomAnswer] = useState<string | null>(null);
+  // Zustand store bindings
+  const aiInsights = useAppStore((state) => state.aiInsights);
+  const setAiInsight = useAppStore((state) => state.setAiInsight);
+
+  // Key calculation
+  const keys = {
+    classic: `insight_${periodMode}_classic`,
+    customQ: `insight_${periodMode}_custom_q`,
+    customA: `insight_${periodMode}_custom_a`,
+    supplements: `insight_monthly_supplements`
+  };
+
   const [isLoadingCustom, setIsLoadingCustom] = useState(false);
-  
-  const [insightAnswer, setInsightAnswer] = useState<string | null>(null);
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
-  
-  const [supplementAnswer, setSupplementAnswer] = useState<string | null>(null);
   const [isLoadingSupplements, setIsLoadingSupplements] = useState(false);
 
   const timeframe: 'day' | 'week' | 'month' =
     periodMode === "daily" ? "day" : periodMode === "weekly" ? "week" : "month";
 
-  const profileData = {
+  const profileData: GeminiUserProfile = {
     name: userProfile.name,
     age: userProfile.age,
     gender: userProfile.gender,
@@ -99,13 +165,14 @@ export function SmartInsightGenerator({
 
   // Zone 1: Custom Chat
   const handleAskCustom = async () => {
-    if (!customQuestion.trim() || isLoadingCustom) return;
+    const question = aiInsights[keys.customQ] || "";
+    if (!question.trim() || isLoadingCustom) return;
     if (!window.confirm('האם אתה בטוח?')) return;
     
     setIsLoadingCustom(true);
     try {
-      const answer = await generateCustomAnswer(profileData, timeframe, nutritionData, customQuestion);
-      setCustomAnswer(answer);
+      const answer = await generateCustomAnswer(profileData, timeframe, nutritionData, question);
+      setAiInsight(keys.customA, answer);
     } catch (error: any) {
       toast.error(error.message || "שגיאה במתן התשובה");
     } finally {
@@ -121,7 +188,7 @@ export function SmartInsightGenerator({
     setIsLoadingInsight(true);
     try {
       const text = await generateNutritionalInsight(timeframe, nutritionData, profileData);
-      setInsightAnswer(text);
+      setAiInsight(keys.classic, text);
     } catch (error: any) {
       toast.error(error.message || "שגיאה ביצירת ההמלצה");
     } finally {
@@ -137,7 +204,7 @@ export function SmartInsightGenerator({
     setIsLoadingSupplements(true);
     try {
       const text = await generateSupplementRecommendations(profileData, nutritionData);
-      setSupplementAnswer(text);
+      setAiInsight(keys.supplements, text);
     } catch (error: any) {
       toast.error(error.message || "שגיאה ביצירת המלצות לתוספים");
     } finally {
@@ -185,7 +252,7 @@ export function SmartInsightGenerator({
                 </div>
                 
                 <AnimatePresence mode="wait">
-                  {!customAnswer ? (
+                  {!aiInsights[keys.customA] ? (
                     <motion.div 
                       key="input"
                       initial={{ opacity: 0, y: 10 }}
@@ -194,15 +261,15 @@ export function SmartInsightGenerator({
                       className="relative"
                     >
                       <textarea
-                        value={customQuestion}
-                        onChange={(e) => setCustomQuestion(e.target.value)}
+                        value={aiInsights[keys.customQ] || ""}
+                        onChange={(e) => setAiInsight(keys.customQ, e.target.value)}
                         placeholder="למשל: איך אני יכול לשפר את צריכת החלבון שלי היום?"
                         className="w-full rounded-2xl border border-slate-200/50 bg-white/40 p-4 text-[16px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30 min-h-[100px] resize-none"
                         disabled={isLoadingCustom}
                       />
                       <button
                         onClick={handleAskCustom}
-                        disabled={!customQuestion.trim() || isLoadingCustom}
+                        disabled={!(aiInsights[keys.customQ] || "").trim() || isLoadingCustom}
                         className="absolute bottom-3 left-3 flex items-center justify-center rounded-xl bg-violet-600 p-2 text-white shadow-soft-md hover:bg-violet-700 disabled:opacity-40 transition-all"
                       >
                         {isLoadingCustom ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="rotate-180" />}
@@ -218,15 +285,13 @@ export function SmartInsightGenerator({
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-xs font-bold text-violet-500 bg-violet-100/50 px-2 py-1 rounded-lg">תשובת המומחה</span>
                         <button 
-                          onClick={() => { setCustomAnswer(null); setCustomQuestion(""); }}
+                          onClick={() => { setAiInsight(keys.customA, null); setAiInsight(keys.customQ, null); }}
                           className="text-slate-400 hover:text-slate-600 transition-colors"
                         >
                           <RotateCcw size={16} />
                         </button>
                       </div>
-                      <p className="text-slate-700 leading-relaxed whitespace-pre-wrap text-base">
-                        {stripMarkdown(customAnswer)}
-                      </p>
+                      <FormattedAIResponse content={aiInsights[keys.customA] || ""} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -240,7 +305,7 @@ export function SmartInsightGenerator({
                 </div>
                 
                 <AnimatePresence mode="wait">
-                  {!insightAnswer ? (
+                  {!aiInsights[keys.classic] ? (
                     <motion.button
                       key="btn"
                       whileHover={{ scale: 1.01 }}
@@ -262,15 +327,14 @@ export function SmartInsightGenerator({
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-xs font-bold text-amber-600 bg-amber-100/50 px-2 py-1 rounded-lg">ניתוח תקופתי</span>
                         <button 
-                          onClick={() => setInsightAnswer(null)}
+                          onClick={handleGenerateInsight}
                           className="text-slate-400 hover:text-slate-600 transition-colors"
+                          disabled={isLoadingInsight}
                         >
-                          <RotateCcw size={16} />
+                          <RotateCcw size={16} className={isLoadingInsight ? "animate-spin" : ""} />
                         </button>
                       </div>
-                      <div className="text-slate-700 leading-relaxed whitespace-pre-wrap text-base">
-                        {stripMarkdown(insightAnswer)}
-                      </div>
+                      <FormattedAIResponse content={aiInsights[keys.classic] || ""} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -285,7 +349,7 @@ export function SmartInsightGenerator({
                   </div>
 
                   <AnimatePresence mode="wait">
-                    {!supplementAnswer ? (
+                    {!aiInsights[keys.supplements] ? (
                       <motion.button
                         key="btn-supp"
                         whileHover={{ scale: 1.01 }}
@@ -307,15 +371,14 @@ export function SmartInsightGenerator({
                         <div className="flex justify-between items-start mb-2">
                           <span className="text-xs font-bold text-emerald-600 bg-emerald-100/50 px-2 py-1 rounded-lg">המלצות תוספים</span>
                           <button 
-                            onClick={() => setSupplementAnswer(null)}
+                            onClick={handleGenerateSupplements}
                             className="text-slate-400 hover:text-slate-600 transition-colors"
+                            disabled={isLoadingSupplements}
                           >
-                            <RotateCcw size={16} />
+                            <RotateCcw size={16} className={isLoadingSupplements ? "animate-spin" : ""} />
                           </button>
                         </div>
-                        <div className="text-slate-700 leading-relaxed whitespace-pre-wrap text-base">
-                          {stripMarkdown(supplementAnswer)}
-                        </div>
+                        <FormattedAIResponse content={aiInsights[keys.supplements] || ""} />
                       </motion.div>
                     )}
                   </AnimatePresence>
