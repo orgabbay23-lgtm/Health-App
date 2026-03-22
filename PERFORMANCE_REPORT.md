@@ -131,6 +131,32 @@ Note: `WaterTracker.tsx` SVG already had `transform: "translateZ(0)"` on the par
 |---|---|---|
 | `Dashboard.tsx` | Outer `<div dir="rtl" className="overflow-x-hidden">` created a scroll context. In RTL, the scroll origin is at the right edge. During `AnimatePresence mode="wait"` screen transitions, the brief content collapse (between exit-complete and enter-start) caused the browser to recalculate the scroll position, producing a visible horizontal shift — the screen jumped left then snapped back right. | **Two fixes applied:** (1) Changed `overflow-x-hidden` to `overflow-x-clip` — clips content without creating a scroll context, so there's no scroll position to reset. (2) Simplified screen exit animation from `{ opacity: 0, y: -15 }` to `{ opacity: 0 }` — the `y` offset during exit added unnecessary layout interaction in the RTL scroll context. Enter animation remains untouched (each screen has its own staggered spring animations). |
 
+## PWA Mobile Audit (Final Pass)
+
+### Bug 6: App.tsx top-level AnimatePresence RTL glitch (same pattern as Dashboard)
+
+| Component | Issue | Fix |
+|---|---|---|
+| `App.tsx` | Top-level `AnimatePresence mode="wait"` used `exit={{ opacity: 0, y: -12 }}` with spring transition. Same RTL horizontal shift as Dashboard — the `y` offset during exit interacted with the `.ios-scroll-canvas` scroll context. | Simplified to `exit={{ opacity: 0 }}` with `duration: 0.15, ease: "easeInOut"` transition. Affects auth→onboarding→dashboard screen transitions. |
+
+### Bug 7: `.ios-scroll-canvas` `overflow-x: hidden` creating RTL scroll context
+
+| File | Issue | Fix |
+|---|---|---|
+| `index.css` | `.ios-scroll-canvas` used `overflow-x: hidden !important` — creates a scroll context where RTL scroll origin is at the right edge. This was the global root cause enabling the horizontal shift glitch in both Dashboard.tsx and App.tsx transitions. | Changed to `overflow-x: clip !important` — clips overflow without creating a scroll context. |
+
+### Bug 8: Missing `interactive-widget=resizes-content` viewport meta
+
+| File | Issue | Fix |
+|---|---|---|
+| `index.html` | Viewport meta tag lacked `interactive-widget=resizes-content`. Without this, iOS Safari and Chrome mobile resize the visual viewport differently when the virtual keyboard appears, which can cause layout shifts and incorrect `dvh` calculations. | Added `interactive-widget=resizes-content` to the viewport meta content. |
+
+### Bug 9: `layout` prop in EditLoggedMealModal inside scroll container
+
+| Component | Issue | Fix |
+|---|---|---|
+| `EditLoggedMealModal.tsx` | Raw `<motion.div layout>` on the AI info banner, inside the modal's scrollable area (`overflow-y-auto`). Same FLIP-in-scroll-container issue as the previous `layout` prop removals. | Removed `layout` prop. The element is static content that doesn't animate its dimensions. |
+
 ## Updated Summary
 
 - **Store selectors**: 1 component fixed (WaterTracker).
@@ -139,8 +165,10 @@ Note: `WaterTracker.tsx` SVG already had `transform: "translateZ(0)"` on the par
 - **React.memo()**: 4 components wrapped.
 - **GPU acceleration**: `translateZ(0)` on progress bars + calorie ring; `willChange` only on WaterTracker infinite wave.
 - **Debounce**: FoodTypeahead suggestion scoring (120ms).
-- **`layout` prop removal**: 4 instances removed from scroll-container children (SmartInsightGenerator, PeriodBreakdown, MealTimeline ×2).
+- **`layout` prop removal**: 5 instances removed from scroll-container children (SmartInsightGenerator, PeriodBreakdown, MealTimeline ×2, EditLoggedMealModal).
 - **`willChange` cleanup**: 6 persistent allocations removed from one-shot animations.
 - **ModalShell scroll lock**: Cleanup now re-queries DOM to avoid stale references.
 - **iOS keyboard timing**: 16 `scrollIntoView` timeouts raised from 350ms to 450ms across 7 files.
-- **RTL navigation glitch**: Fixed horizontal shift on screen transitions by switching from `overflow-x-hidden` to `overflow-x-clip` and removing `y` offset from exit animation.
+- **RTL navigation glitch**: Fixed horizontal shift on screen transitions in both `Dashboard.tsx` and `App.tsx` by removing `y` offset from exit animations.
+- **RTL scroll context (global)**: Changed `.ios-scroll-canvas` from `overflow-x: hidden` to `overflow-x: clip` — eliminates the root cause of all RTL horizontal shift glitches.
+- **Viewport meta**: Added `interactive-widget=resizes-content` for correct iOS keyboard resize behavior.

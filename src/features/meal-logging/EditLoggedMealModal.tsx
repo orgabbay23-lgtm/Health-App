@@ -126,7 +126,6 @@ export function EditLoggedMealModal({ isOpen, onClose, meal, dayKey }: EditLogge
           </div>
 
           <motion.div
-            layout
             className="p-5 rounded-3xl bg-gradient-to-br from-blue-50/80 to-violet-50/50 border border-blue-200/40"
           >
             <p className="text-[13px] font-bold text-blue-600 leading-relaxed">

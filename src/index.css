@@ -128,7 +128,7 @@
     width: 100% !important;
     height: 100dvh !important;
     overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
     overscroll-behavior-y: contain !important;
     -webkit-overflow-scrolling: touch !important;
     background-color: transparent !important;
