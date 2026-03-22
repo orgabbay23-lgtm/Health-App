@@ -1,9 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, Home, Plus, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "../../components/ui/button";
-import { cn } from "../../utils/utils";
 import {
   EMPTY_MICRONUTRIENTS,
   MICRONUTRIENT_KEYS,
@@ -37,16 +34,6 @@ import { HistoryScreen } from "./screens/HistoryScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import type { DashboardScreen } from "./types";
-
-const navigationItems: Array<{
-  key: DashboardScreen;
-  label: string;
-  icon: typeof Home;
-}> = [
-  { key: "home", label: "בית", icon: Home },
-  { key: "calendar", label: "יומן", icon: CalendarDays },
-  { key: "profile", label: "פרופיל", icon: UserRound },
-];
 
 const EMPTY_DAILY_LOGS: Record<string, DailyLog> = {};
 const EMPTY_SAVED_MEALS: ReadonlyArray<{
