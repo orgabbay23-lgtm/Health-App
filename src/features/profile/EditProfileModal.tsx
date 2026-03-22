@@ -78,7 +78,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                 const target = e.target;
                 setTimeout(() => {
                   target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 350);
+                }, 450);
               }}
               className="text-[16px]"
               required
@@ -96,7 +96,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                   const target = e.target;
                   setTimeout(() => {
                     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }, 350);
+                  }, 450);
                 }}
                 className="text-[16px]"
                 required
@@ -127,7 +127,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                   const target = e.target;
                   setTimeout(() => {
                     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }, 350);
+                  }, 450);
                 }}
                 className="text-[16px]"
                 required
@@ -146,7 +146,7 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
                   const target = e.target;
                   setTimeout(() => {
                     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }, 350);
+                  }, 450);
                 }}
                 className="text-[16px]"
                 required

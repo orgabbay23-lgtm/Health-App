@@ -49,7 +49,7 @@ export function ProfileFormFields({
             const target = e.target;
             setTimeout(() => {
               target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 350);
+            }, 450);
           }}
           className="text-[16px]"
           {...register("name")}
@@ -65,7 +65,7 @@ export function ProfileFormFields({
               const target = e.target;
               setTimeout(() => {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 350);
+              }, 450);
             }}
             className="text-[16px]"
             {...register("age", { valueAsNumber: true })}
@@ -87,7 +87,7 @@ export function ProfileFormFields({
               const target = e.target;
               setTimeout(() => {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 350);
+              }, 450);
             }}
             className="text-[16px]"
             {...register("height", { valueAsNumber: true })}
@@ -102,7 +102,7 @@ export function ProfileFormFields({
               const target = e.target;
               setTimeout(() => {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 350);
+              }, 450);
             }}
             className="text-[16px]"
             {...register("weight", { valueAsNumber: true })}

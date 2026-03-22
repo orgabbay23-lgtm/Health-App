@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "../../../components/ui/card";
 import { TipPopover } from "../../../components/ui/tip-popover";
@@ -18,7 +19,7 @@ interface NutrientCardProps {
   index?: number;
 }
 
-export function NutrientCard({
+export const NutrientCard = memo(function NutrientCard({
   nutrient,
   current,
   target,
@@ -71,10 +72,11 @@ export function NutrientCard({
           </div>
 
           <div className="h-1.5 w-full bg-slate-100/80 rounded-full overflow-hidden">
-            <motion.div 
+            <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
               transition={{ type: "spring", stiffness: 50, damping: 15, delay: 0.1 + (index * 0.05) }}
+              style={{ transform: "translateZ(0)" }}
               className={cn(
                 "h-full rounded-full transition-all duration-500",
                 colors.bg
@@ -85,4 +87,4 @@ export function NutrientCard({
       </Card>
     </motion.div>
   );
-}
+});

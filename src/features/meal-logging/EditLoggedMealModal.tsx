@@ -117,7 +117,7 @@ export function EditLoggedMealModal({ isOpen, onClose, meal, dayKey }: EditLogge
                 const target = e.target;
                 setTimeout(() => {
                   target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 350);
+                }, 450);
               }}
               placeholder="מה אכלת?"
               className="w-full h-32 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-[16px] font-medium px-6 py-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300/50"

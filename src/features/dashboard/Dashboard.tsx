@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -166,7 +166,7 @@ export function Dashboard() {
     return createScaledTargets(baseTargets, Math.max(activeDaysCount, 1));
   }, [periodDetails.dayKeys, periodMode, userProfile, dailyLogs]);
 
-  const onSaveFavorite = async (meal: MealItem) => {
+  const onSaveFavorite = useCallback(async (meal: MealItem) => {
     const signature = createMealSignature(meal);
     const existing = savedMeals.find((sm) => sm.signature === signature);
 
@@ -184,33 +184,43 @@ export function Dashboard() {
     }
 
     toast.message("הארוחה כבר קיימת במועדפים");
-  };
+  }, [savedMeals, removeSavedMeal, saveMealAsFavorite]);
 
-  const scrollToTop = () => {
+  const scrollToTop = useCallback(() => {
     const scrollCanvas = document.querySelector('.ios-scroll-canvas');
     if (scrollCanvas) {
       scrollCanvas.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, []);
 
-  const onHistoryIncrement = (dayKey: string, mealId: string) => {
+  const onHistoryIncrement = useCallback((dayKey: string, mealId: string) => {
     incrementMealQuantity(dayKey, mealId);
     setActiveScreen("home");
     requestAnimationFrame(scrollToTop);
-  };
+  }, [incrementMealQuantity, setActiveScreen, scrollToTop]);
 
-  const onHistoryDecrement = (dayKey: string, mealId: string) => {
+  const onHistoryDecrement = useCallback((dayKey: string, mealId: string) => {
     decrementMealQuantity(dayKey, mealId);
     setActiveScreen("home");
     requestAnimationFrame(scrollToTop);
-  };
+  }, [decrementMealQuantity, setActiveScreen, scrollToTop]);
 
-  const onSelectArchiveDay = (dayKey: string) => {
+  const onSelectArchiveDay = useCallback((dayKey: string) => {
     setPeriodMode("daily");
     setReferenceDate(dayKeyToDate(dayKey));
-  };
+  }, []);
+
+  const onEditMeal = useCallback((dayKey: string, meal: MealItem) => {
+    setEditingLog({ dayKey, meal });
+  }, []);
+
+  const onOpenMealModal = useCallback(() => setIsMealModalOpen(true), []);
+  const onCloseMealModal = useCallback(() => setIsMealModalOpen(false), []);
+  const onOpenProfileModal = useCallback(() => setIsProfileModalOpen(true), []);
+  const onCloseProfileModal = useCallback(() => setIsProfileModalOpen(false), []);
+  const onCloseEditLog = useCallback(() => setEditingLog(null), []);
 
   if (!activeUser || !userProfile) {
     return null;
@@ -239,11 +249,11 @@ export function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              transition={{ 
+              transition={{
                 type: "spring",
                 stiffness: 260,
                 damping: 25,
-                duration: 0.4 
+                duration: 0.4
               }}
             >
             {activeScreen === "home" ? (
@@ -258,7 +268,7 @@ export function Dashboard() {
                 savedSignatures={savedSignatures}
                 onDeleteMeal={removeMealLog}
                 onSaveFavorite={onSaveFavorite}
-                onEditMeal={(dayKey, meal) => setEditingLog({ dayKey, meal })}
+                onEditMeal={onEditMeal}
                 onIncrementMeal={incrementMealQuantity}
                 onDecrementMeal={decrementMealQuantity}
               />
@@ -279,7 +289,7 @@ export function Dashboard() {
                 onSelectDayKey={onSelectArchiveDay}
                 onDeleteMeal={removeMealLog}
                 onSaveFavorite={onSaveFavorite}
-                onEditMeal={(dayKey, meal) => setEditingLog({ dayKey, meal })}
+                onEditMeal={onEditMeal}
                 onIncrementMeal={onHistoryIncrement}
                 onDecrementMeal={onHistoryDecrement}
               />
@@ -291,7 +301,7 @@ export function Dashboard() {
                 activeUser={activeUser}
                 savedMealsCount={savedMeals.length}
                 loggedDaysCount={Object.keys(dailyLogs).length}
-                onEditProfile={() => setIsProfileModalOpen(true)}
+                onEditProfile={onOpenProfileModal}
               />
             ) : null}
           </motion.section>
@@ -302,23 +312,23 @@ export function Dashboard() {
       <BottomNavigation
         activeScreen={activeScreen}
         onNavigate={setActiveScreen}
-        onOpenMealModal={() => setIsMealModalOpen(true)}
+        onOpenMealModal={onOpenMealModal}
       />
 
       <MealLogModal
         isOpen={isMealModalOpen}
-        onClose={() => setIsMealModalOpen(false)}
+        onClose={onCloseMealModal}
         targetDayKey={selectedDayKey}
       />
 
       <EditProfileModal
         isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
+        onClose={onCloseProfileModal}
       />
 
       <EditLoggedMealModal
         isOpen={editingLog !== null}
-        onClose={() => setEditingLog(null)}
+        onClose={onCloseEditLog}
         meal={editingLog?.meal ?? null}
         dayKey={editingLog?.dayKey ?? ""}
       />

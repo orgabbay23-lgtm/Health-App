@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Heart, ChevronDown, Sparkles, Trash2, Coffee, Utensils, Sandwich, Apple, Moon, Pill, Pencil, Plus, Minus } from "lucide-react";
 import { Button } from "../../../components/ui/button";
@@ -99,7 +99,7 @@ interface MealTimelineItemProps {
   isSaved: boolean;
 }
 
-function MealTimelineItem({
+const MealTimelineItem = memo(function MealTimelineItem({
   meal,
   index: _index,
   canDelete,
@@ -146,7 +146,6 @@ function MealTimelineItem({
       }}
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.96, transition: { type: "spring", stiffness: 400, damping: 17 } }}
-      layout
     >
       <Card className="rounded-[2rem] border border-white/60 bg-white/50 backdrop-blur-md shadow-soft-xl transition-all duration-300">
         <CardContent className="p-0">
@@ -313,7 +312,6 @@ function MealTimelineItem({
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                layout
                 className="overflow-hidden bg-slate-50/50 border-t border-white/50"
               >
                 <div className="p-6 grid grid-cols-2 gap-3">
@@ -340,7 +338,7 @@ function MealTimelineItem({
       </Card>
     </motion.div>
   );
-}
+});
 
 function formatMealTime(timestamp: string) {
   const date = new Date(timestamp);

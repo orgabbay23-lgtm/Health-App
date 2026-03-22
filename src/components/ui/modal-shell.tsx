@@ -74,8 +74,10 @@ export function ModalShell({
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      if (scrollCanvas) {
-        scrollCanvas.style.overflow = '';
+      // Re-query DOM in cleanup — the captured ref may be stale if rapid open/close occurs
+      const currentScrollCanvas = document.querySelector('.ios-scroll-canvas') as HTMLElement | null;
+      if (currentScrollCanvas) {
+        currentScrollCanvas.style.overflow = '';
       }
     };
   }, [isOpen, onClose]);

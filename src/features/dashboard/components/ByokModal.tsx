@@ -56,7 +56,7 @@ export function ByokModal({ isOpen, onClose, onSuccess }: ByokModalProps) {
               const target = e.target;
               setTimeout(() => {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 350);
+              }, 450);
             }}
             className="text-left text-[16px]"
             dir="ltr"

@@ -103,30 +103,35 @@ export function FoodTypeahead({
     const { activeQuery } = extractActiveQuery(value);
 
     if (activeQuery.length >= 2 && isOpen) {
-      const historySet = new Set<string>();
-      const scored: { name: string; score: number }[] = [];
+      // Debounce suggestion computation to avoid blocking main thread on rapid keystrokes
+      const timer = setTimeout(() => {
+        const historySet = new Set<string>();
+        const scored: { name: string; score: number }[] = [];
 
-      Object.values(dailyLogs).forEach((log) => {
-        log.meals.forEach((m) => {
-          const score = scoreSuggestion(m.meal_name, activeQuery);
-          if (score > 0 && !historySet.has(m.meal_name)) {
-            historySet.add(m.meal_name);
-            scored.push({ name: m.meal_name, score });
-          }
+        Object.values(dailyLogs).forEach((log) => {
+          log.meals.forEach((m) => {
+            const score = scoreSuggestion(m.meal_name, activeQuery);
+            if (score > 0 && !historySet.has(m.meal_name)) {
+              historySet.add(m.meal_name);
+              scored.push({ name: m.meal_name, score });
+            }
+          });
         });
-      });
 
-      for (const item of foodSuggestions) {
-        if (historySet.has(item)) continue;
-        const score = scoreSuggestion(item, activeQuery);
-        if (score > 0) {
-          scored.push({ name: item, score });
+        for (const item of foodSuggestions) {
+          if (historySet.has(item)) continue;
+          const score = scoreSuggestion(item, activeQuery);
+          if (score > 0) {
+            scored.push({ name: item, score });
+          }
         }
-      }
 
-      scored.sort((a, b) => b.score - a.score || a.name.length - b.name.length);
-      setSuggestions(scored.slice(0, 15).map((s) => s.name));
-      setActiveIndex(-1);
+        scored.sort((a, b) => b.score - a.score || a.name.length - b.name.length);
+        setSuggestions(scored.slice(0, 15).map((s) => s.name));
+        setActiveIndex(-1);
+      }, 120);
+
+      return () => clearTimeout(timer);
     } else {
       setSuggestions([]);
     }
@@ -217,10 +222,11 @@ export function FoodTypeahead({
     onFocus: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setIsOpen(true);
       // iOS: scroll input into view after virtual keyboard finishes expanding
+      // 450ms accounts for slower keyboard animation on low-end iOS devices
       const target = e.target;
       setTimeout(() => {
         target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 350);
+      }, 450);
     },
     onKeyDown: handleKeyDown,
   };

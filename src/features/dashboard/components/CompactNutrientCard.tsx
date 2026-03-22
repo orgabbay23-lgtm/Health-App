@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
@@ -19,7 +20,7 @@ interface CompactNutrientCardProps {
   index?: number;
 }
 
-export function CompactNutrientCard({
+export const CompactNutrientCard = memo(function CompactNutrientCard({
   nutrient,
   current,
   target,
@@ -108,17 +109,18 @@ export function CompactNutrientCard({
           </div>
 
           <div className="h-2 w-full bg-slate-100/50 rounded-full overflow-hidden">
-            <motion.div 
+            <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
-              transition={{ 
+              transition={{
                 type: "spring",
                 stiffness: 50,
                 damping: 15,
-                delay: 0.3 + (index * 0.1) 
+                delay: 0.3 + (index * 0.1)
               }}
+              style={{ transform: "translateZ(0)" }}
               className={cn(
-                "h-full rounded-full transition-all duration-500", 
+                "h-full rounded-full transition-all duration-500",
                 colors.bg
               )}
             />
@@ -127,4 +129,4 @@ export function CompactNutrientCard({
       </Card>
     </motion.div>
   );
-}
+});

@@ -136,6 +136,7 @@ export function PrimaryNutrientCard({
                   damping: 20
                 }}
                 strokeLinecap="round"
+                style={{ transform: "translateZ(0)" }}
                 className={cn("drop-shadow-sm transition-colors duration-500")}
               />
             </svg>

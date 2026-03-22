@@ -74,16 +74,14 @@ function SvgBubble({ delay, cx }: { delay: number; cx: number }) {
    ═══════════════════════════════════════════════════════════ */
 
 export function WaterTracker({ userProfile }: WaterTrackerProps) {
-  const {
-    dailyWaterAmount,
-    dailyWaterTarget,
-    customWaterTarget,
-    fetchTodayWater,
-    logWater,
-    setDailyWaterTarget,
-    setCustomWaterTarget,
-    removeLastWaterLog,
-  } = useAppStore();
+  const dailyWaterAmount = useAppStore((s) => s.dailyWaterAmount);
+  const dailyWaterTarget = useAppStore((s) => s.dailyWaterTarget);
+  const customWaterTarget = useAppStore((s) => s.customWaterTarget);
+  const fetchTodayWater = useAppStore((s) => s.fetchTodayWater);
+  const logWater = useAppStore((s) => s.logWater);
+  const setDailyWaterTarget = useAppStore((s) => s.setDailyWaterTarget);
+  const setCustomWaterTarget = useAppStore((s) => s.setCustomWaterTarget);
+  const removeLastWaterLog = useAppStore((s) => s.removeLastWaterLog);
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditingTarget, setIsEditingTarget] = useState(false);
@@ -535,7 +533,7 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                         {/* Wave surface */}
                         <motion.path
                           d={wavePath}
-                          style={{ fill: fillColor, y: -6 }}
+                          style={{ fill: fillColor, y: -6, willChange: "transform" }}
                           animate={{ x: ["0%", "-50%"] }}
                           transition={{
                             repeat: Infinity,

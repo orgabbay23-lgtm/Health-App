@@ -101,7 +101,7 @@ export function EditFavoriteModal({
               const target = e.target;
               setTimeout(() => {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 350);
+              }, 450);
             }}
             className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-[16px] font-medium px-6 text-[16px]"
             placeholder="שם התבנית"
@@ -120,7 +120,7 @@ export function EditFavoriteModal({
               const target = e.target;
               setTimeout(() => {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 350);
+              }, 450);
             }}
             placeholder="למשל: 2 פרוסות לחם מלא, 2 ביצים קשות, חצי אבוקדו, עגבנייה"
             className="w-full h-32 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-[16px] font-medium px-6 py-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300/50"

@@ -498,7 +498,7 @@ export function MealLogModal({
                           const target = e.target;
                           setTimeout(() => {
                             target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          }, 350);
+                          }, 450);
                         }}
                         className="w-full h-32 rounded-2xl border border-emerald-200/60 bg-white/90 backdrop-blur-sm text-[16px] font-medium px-5 py-4 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-300/50 transition-all"
                         dir="rtl"
@@ -662,7 +662,7 @@ export function MealLogModal({
                               const target = e.target;
                               setTimeout(() => {
                                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                              }, 350);
+                              }, 450);
                             }}
                             {...registerManual(`ingredients.${index}.quantity`, {
                               valueAsNumber: true,
@@ -754,7 +754,7 @@ export function MealLogModal({
                             const target = e.target;
                             setTimeout(() => {
                               target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }, 350);
+                            }, 450);
                           }}
                           placeholder="למשל: ארוחת בוקר רגילה"
                           className="h-12 rounded-2xl border-slate-200 bg-white/80 focus:bg-white transition-all text-[16px] font-medium px-5"
@@ -769,7 +769,7 @@ export function MealLogModal({
                             const target = e.target;
                             setTimeout(() => {
                               target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }, 350);
+                            }, 450);
                           }}
                           placeholder="למשל: 2 פרוסות לחם מלא, 2 ביצים קשות, חצי אבוקדו, עגבנייה"
                           className="w-full h-24 rounded-2xl border border-slate-200 bg-white/80 focus:bg-white transition-all text-[16px] font-medium px-5 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300/50 whitespace-pre-wrap break-words"

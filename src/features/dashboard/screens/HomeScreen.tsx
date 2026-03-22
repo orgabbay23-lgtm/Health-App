@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { motion, type Variants } from "framer-motion";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -23,6 +24,29 @@ import { SafetyAlertsCard } from "../components/SafetyAlertsCard";
 import { SmartInsightGenerator } from "../components/SmartInsightGenerator";
 import { WaterTracker } from "../components/WaterTracker";
 import { InfoPopover } from "../../../components/ui/info-popover";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 260,
+      damping: 20
+    }
+  }
+};
 
 interface HomeScreenProps {
   periodMode: DashboardPeriod;
@@ -57,34 +81,13 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const meals = selectedDailyLog?.meals ?? [];
 
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { 
-        type: "spring", 
-        stiffness: 260, 
-        damping: 20 
-      }
-    }
-  };
-
-  const periodCaption = periodMode === "weekly"
-    ? `${format(periodDetails.startDate, "EEEE", { locale: he })} – ${format(periodDetails.endDate, "EEEE", { locale: he })}`
-    : periodMode === "monthly"
-      ? `${format(periodDetails.startDate, "d בMMMM", { locale: he })} – ${format(periodDetails.endDate, "d בMMMM", { locale: he })}`
-      : null;
+  const periodCaption = useMemo(() => {
+    if (periodMode === "weekly")
+      return `${format(periodDetails.startDate, "EEEE", { locale: he })} – ${format(periodDetails.endDate, "EEEE", { locale: he })}`;
+    if (periodMode === "monthly")
+      return `${format(periodDetails.startDate, "d בMMMM", { locale: he })} – ${format(periodDetails.endDate, "d בMMMM", { locale: he })}`;
+    return null;
+  }, [periodMode, periodDetails.startDate, periodDetails.endDate]);
 
   return (
     <motion.div

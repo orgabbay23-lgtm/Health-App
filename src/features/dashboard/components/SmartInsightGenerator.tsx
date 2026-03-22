@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, 
@@ -52,7 +52,7 @@ function buildNutritionPercentages(
   return data;
 }
 
-export function FormattedAIResponse({ content }: { content: string }) {
+export const FormattedAIResponse = memo(function FormattedAIResponse({ content }: { content: string }) {
   if (!content) return null;
 
   const lines = content.split("\n");
@@ -100,7 +100,7 @@ export function FormattedAIResponse({ content }: { content: string }) {
       })}
     </div>
   );
-}
+});
 
 function renderBoldText(text: string) {
   if (!text.includes("**")) return text;
@@ -141,12 +141,12 @@ export function SmartInsightGenerator({
   const setAiInsight = useAppStore((state) => state.setAiInsight);
 
   // Key calculation
-  const keys = {
+  const keys = useMemo(() => ({
     classic: `insight_${periodMode}_classic`,
     customQ: `insight_${periodMode}_custom_q`,
     customA: `insight_${periodMode}_custom_a`,
     supplements: `insight_monthly_supplements`
-  };
+  }), [periodMode]);
 
   const [isLoadingCustom, setIsLoadingCustom] = useState(false);
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
@@ -155,7 +155,7 @@ export function SmartInsightGenerator({
   const timeframe: 'day' | 'week' | 'month' =
     periodMode === "daily" ? "day" : periodMode === "weekly" ? "week" : "month";
 
-  const profileData: GeminiUserProfile = {
+  const profileData = useMemo<GeminiUserProfile>(() => ({
     name: userProfile.name,
     age: userProfile.age,
     gender: userProfile.gender,
@@ -164,16 +164,19 @@ export function SmartInsightGenerator({
     activityLevel: userProfile.activityLevel,
     goalDeficit: userProfile.goalDeficit,
     isSmoker: userProfile.isSmoker,
-  };
+  }), [userProfile.name, userProfile.age, userProfile.gender, userProfile.weight, userProfile.height, userProfile.activityLevel, userProfile.goalDeficit, userProfile.isSmoker]);
 
-  const nutritionData = buildNutritionPercentages(currentAggregations, periodTargets);
+  const nutritionData = useMemo(
+    () => buildNutritionPercentages(currentAggregations, periodTargets),
+    [currentAggregations, periodTargets],
+  );
 
   // Zone 1: Custom Chat
-  const handleAskCustom = async () => {
+  const handleAskCustom = useCallback(async () => {
     const question = aiInsights[keys.customQ] || "";
     if (!question.trim() || isLoadingCustom) return;
     if (!window.confirm('האם אתה בטוח?')) return;
-    
+
     setIsLoadingCustom(true);
     try {
       const answer = await generateCustomAnswer(profileData, timeframe, nutritionData, question);
@@ -183,13 +186,13 @@ export function SmartInsightGenerator({
     } finally {
       setIsLoadingCustom(false);
     }
-  };
+  }, [aiInsights, keys, isLoadingCustom, profileData, timeframe, nutritionData, setAiInsight]);
 
   // Zone 2: Classic Insight
-  const handleGenerateInsight = async () => {
+  const handleGenerateInsight = useCallback(async () => {
     if (isLoadingInsight) return;
     if (!window.confirm('האם אתה בטוח?')) return;
-    
+
     setIsLoadingInsight(true);
     try {
       const text = await generateNutritionalInsight(timeframe, nutritionData, profileData);
@@ -199,13 +202,13 @@ export function SmartInsightGenerator({
     } finally {
       setIsLoadingInsight(false);
     }
-  };
+  }, [isLoadingInsight, timeframe, nutritionData, profileData, setAiInsight, keys.classic]);
 
   // Zone 3: Supplements
-  const handleGenerateSupplements = async () => {
+  const handleGenerateSupplements = useCallback(async () => {
     if (isLoadingSupplements) return;
     if (!window.confirm('האם אתה בטוח?')) return;
-    
+
     setIsLoadingSupplements(true);
     try {
       const text = await generateSupplementRecommendations(profileData, nutritionData);
@@ -215,14 +218,12 @@ export function SmartInsightGenerator({
     } finally {
       setIsLoadingSupplements(false);
     }
-  };
+  }, [isLoadingSupplements, profileData, nutritionData, setAiInsight, keys.supplements]);
 
   return (
     <div className="w-full" dir="rtl">
       <motion.div
-        layout
         className="w-full rounded-[2rem] border border-white/40 bg-white/30 backdrop-blur-xl shadow-soft-xl overflow-visible"
-        style={{ height: "auto" }}
       >
         {/* Header / Toggle */}
         <button
