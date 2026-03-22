@@ -138,7 +138,7 @@ function App() {
 
   return (
     <div className="ios-app-shell" dir="rtl">
-      <div className={cn("ios-scroll-canvas font-sans text-foreground relative", getTimeTint())}>
+      <div className={cn("ios-scroll-canvas font-sans text-foreground", getTimeTint())}>
         {/* Animated Mesh Background */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
           <div className="blob-animate blob-1" />
@@ -153,8 +153,8 @@ function App() {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.26, ease: "easeOut" }}
-            className="relative z-10"
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="w-full min-h-full relative z-10"
           >
             {screen}
           </motion.div>
