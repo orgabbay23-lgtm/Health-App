@@ -33,7 +33,6 @@ import { DashboardTopBar } from "./components/DashboardTopBar";
 import { HistoryScreen } from "./screens/HistoryScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
-import type { DashboardScreen } from "./types";
 
 const EMPTY_DAILY_LOGS: Record<string, DailyLog> = {};
 const EMPTY_SAVED_MEALS: ReadonlyArray<{
