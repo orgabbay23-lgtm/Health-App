@@ -25,7 +25,6 @@ vite.config.d.ts
 *.njsproj
 *.sln
 *.sw?
-AI_RULES.md
 Gemini_Coversations/
 Deep_Researches/
 prompt.md
