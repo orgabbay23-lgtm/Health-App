@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Save, Bell, ArrowLeft } from "lucide-react";
 import { useAppStore } from "../../../store";
 
+const PROMO_EXPIRATION_DATE = new Date("2026-05-01").getTime();
+
 export function WeightFeaturePromoModal() {
   const addWeightLog = useAppStore((state) => state.addWeightLog);
   const weightLogs = useAppStore((state) => state.weightLogs);
@@ -13,6 +15,8 @@ export function WeightFeaturePromoModal() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    if (Date.now() > PROMO_EXPIRATION_DATE) return;
+
     const hasSeenPromo = localStorage.getItem("has_seen_weight_promo");
     if (!hasSeenPromo) {
       const timeout = setTimeout(() => setIsOpen(true), 1500);
@@ -50,7 +54,7 @@ export function WeightFeaturePromoModal() {
     handleClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || Date.now() > PROMO_EXPIRATION_DATE) return null;
 
   return (
     <AnimatePresence>

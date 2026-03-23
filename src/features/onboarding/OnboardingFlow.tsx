@@ -41,8 +41,9 @@ export function OnboardingFlow() {
     return null;
   }
 
-  const onSubmit = (data: ProfileFormValues) => {
-    setUserProfile(data);
+  const onSubmit = async (data: ProfileFormValues) => {
+    await setUserProfile(data);
+    localStorage.setItem("has_seen_weight_promo", "true");
   };
 
   const handleBack = async () => {
