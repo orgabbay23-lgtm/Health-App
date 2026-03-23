@@ -657,6 +657,8 @@ export function MealLogModal({
                           <Label className="text-[13px] font-black text-slate-500 uppercase tracking-widest">כמות</Label>
                           <Input
                             type="number"
+                            step="any"
+                            inputMode="decimal"
                             className="bg-white border-none shadow-sm rounded-xl text-[16px]"
                             onFocus={(e) => {
                               const target = e.target;

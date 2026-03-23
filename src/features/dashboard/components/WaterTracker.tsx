@@ -383,6 +383,8 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                         <div className="text-[13px] font-bold text-slate-500">יעד יומי</div>
                         <input
                           type="number"
+                          step="any"
+                          inputMode="decimal"
                           value={tempTarget}
                           onChange={(e) => setTempTarget(e.target.value)}
                           onKeyDown={(e) => {
@@ -705,6 +707,8 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
+                            step="any"
+                            inputMode="decimal"
                             placeholder="הזן כמות מ״ל..."
                             value={customAddValue}
                             onChange={(e) => setCustomAddValue(e.target.value)}

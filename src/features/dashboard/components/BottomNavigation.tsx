@@ -1,30 +1,32 @@
 import { motion } from "framer-motion";
-import { CalendarDays, Home, Plus, UserRound } from "lucide-react";
+import { CalendarDays, Home, Plus, MoreHorizontal } from "lucide-react";
 import { cn } from "../../../utils/utils";
 import type { DashboardScreen } from "../types";
 import { SafeLayoutMotion } from "../../../components/SafeLayoutMotion";
 
 interface BottomNavigationProps {
   activeScreen: DashboardScreen;
-  onNavigate: (screen: Exclude<DashboardScreen, never>) => void;
+  onNavigate: (screen: DashboardScreen) => void;
   onOpenMealModal: () => void;
+  onOpenMoreSheet: () => void;
 }
 
 const navigationItems: Array<{
-  key: DashboardScreen | "add";
+  key: DashboardScreen | "add" | "more";
   label: string;
   icon: typeof Home;
 }> = [
   { key: "home", label: "בית", icon: Home },
   { key: "calendar", label: "יומן", icon: CalendarDays },
   { key: "add", label: "הוסף", icon: Plus },
-  { key: "profile", label: "פרופיל", icon: UserRound },
+  { key: "more", label: "עוד", icon: MoreHorizontal },
 ];
 
 export function BottomNavigation({
   activeScreen,
   onNavigate,
   onOpenMealModal,
+  onOpenMoreSheet,
 }: BottomNavigationProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 p-4 pb-safe-bottom z-[50] flex justify-center pointer-events-none">
@@ -40,7 +42,9 @@ export function BottomNavigation({
           {navigationItems.map((item, index) => {
             const Icon = item.icon;
             const isAdd = item.key === "add";
-            const active = !isAdd && activeScreen === item.key;
+            const isMore = item.key === "more";
+            const active = (!isAdd && !isMore && activeScreen === item.key) || 
+                          (isMore && (activeScreen === "profile" || activeScreen === "weight"));
 
             return (
               <motion.button
@@ -57,9 +61,15 @@ export function BottomNavigation({
                     ? "h-16 w-16 rounded-[2rem] bg-slate-950 text-white shadow-2xl -mt-12 border-[6px] border-slate-50/50" 
                     : "flex-1 h-12 rounded-2xl"
                 )}
-                onClick={() =>
-                  isAdd ? onOpenMealModal() : onNavigate(item.key as DashboardScreen)
-                }
+                onClick={() => {
+                  if (isAdd) {
+                    onOpenMealModal();
+                  } else if (isMore) {
+                    onOpenMoreSheet();
+                  } else {
+                    onNavigate(item.key as DashboardScreen);
+                  }
+                }}
               >
                 {active && (
                   <SafeLayoutMotion

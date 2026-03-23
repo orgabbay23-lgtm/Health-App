@@ -316,11 +316,18 @@ function removeMealFromDailyLogs(
   };
 }
 
+export interface WeightLog {
+  id: string;
+  weight: number;
+  logged_at: string;
+}
+
 interface AppState {
   name: string | null;
   profile: UserProfile | null;
   dailyLogs: Record<string, DailyLog>;
   savedMeals: SavedMeal[];
+  weightLogs: WeightLog[];
   aiInsights: Record<string, string | null>;
   isLoadingData: boolean;
   isAppReady: boolean;
@@ -328,15 +335,19 @@ interface AppState {
   _hasHydrated: boolean;
   userId: string | null;
   _lastFetchTime: number;
-  activeScreen: "home" | "calendar" | "profile";
+  activeScreen: "home" | "calendar" | "profile" | "weight";
   dailyWaterAmount: number;
   waterDateKey: string;
   dailyWaterTarget: number;
   customWaterTarget: number | null;
 
-  setActiveScreen: (screen: "home" | "calendar" | "profile") => void;
+  setActiveScreen: (screen: "home" | "calendar" | "profile" | "weight") => void;
   setAiInsight: (key: string, value: string | null) => void;
   fetchUserData: (userId: string, isSilent?: boolean) => Promise<void>;
+  fetchWeightLogs: () => Promise<void>;
+  addWeightLog: (weight: number, date?: string, skipProfileUpdate?: boolean) => Promise<void>;
+  updateWeightLog: (id: string, weight: number) => Promise<void>;
+  deleteWeightLog: (id: string) => Promise<void>;
   setAppReady: (ready: boolean) => void;
   setIsRecoveringPassword: (isRecovering: boolean) => void;
   setHasHydrated: (hydrated: boolean) => void;
@@ -382,8 +393,95 @@ export const useAppStore = create<AppState>()(
       waterDateKey: "",
       dailyWaterTarget: 2500,
       customWaterTarget: null,
+      weightLogs: [],
 
       setActiveScreen: (screen) => set({ activeScreen: screen }),
+
+      fetchWeightLogs: async () => {
+        const { userId } = get();
+        if (!userId) return;
+
+        const { data, error } = await supabase
+          .from("weight_logs")
+          .select("*")
+          .eq("user_id", userId)
+          .order("logged_at", { ascending: false });
+
+        if (error) {
+          console.error("Error fetching weight logs:", error);
+          return;
+        }
+
+        set({ weightLogs: data || [] });
+      },
+
+      addWeightLog: async (weight: number, date?: string, skipProfileUpdate?: boolean) => {
+        const { userId, updateProfileDetails } = get();
+        if (!userId) return;
+
+        const { error } = await supabase
+          .from("weight_logs")
+          .insert({
+            user_id: userId,
+            weight,
+            logged_at: date || new Date().toISOString()
+          });
+
+        if (error) {
+          console.error("Error adding weight log:", error);
+          toast.error("שגיאה ברישום משקל");
+          return;
+        }
+
+        await get().fetchWeightLogs();
+
+        // Only update profile weight if this is a "current" log (no specific past date)
+        if (!skipProfileUpdate && !date) {
+          await updateProfileDetails({ weight });
+        }
+
+        toast.success("המשקל עודכן בהצלחה");
+      },
+
+      updateWeightLog: async (id: string, weight: number) => {
+        const { weightLogs } = get();
+        const { data, error } = await supabase
+          .from("weight_logs")
+          .update({ weight })
+          .eq("id", id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error updating weight log:", error);
+          toast.error("שגיאה בעדכון משקל");
+          return;
+        }
+
+        set({
+          weightLogs: weightLogs.map((log) => (log.id === id ? data : log)),
+        });
+        await get().fetchWeightLogs();
+        toast.success("המשקל עודכן");
+      },
+
+      deleteWeightLog: async (id: string) => {
+        const { weightLogs } = get();
+        const { error } = await supabase
+          .from("weight_logs")
+          .delete()
+          .eq("id", id);
+
+        if (error) {
+          console.error("Error deleting weight log:", error);
+          toast.error("שגיאה במחיקת משקל");
+          return;
+        }
+
+        set({ weightLogs: weightLogs.filter((log) => log.id !== id) });
+        await get().fetchWeightLogs();
+        toast.success("הרישום נמחק");
+      },
 
       setAiInsight: (key, value) => {
         set((state) => {
@@ -414,10 +512,11 @@ export const useAppStore = create<AppState>()(
         set({ userId, _lastFetchTime: now });
 
         try {
-          const [profileRes, logsRes, mealsRes] = await Promise.all([
+          const [profileRes, logsRes, mealsRes, weightRes] = await Promise.all([
             supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
             supabase.from('daily_logs').select('*').eq('user_id', userId),
             supabase.from('saved_meals').select('*').eq('user_id', userId),
+            supabase.from('weight_logs').select('*').eq('user_id', userId).order('logged_at', { ascending: false }),
           ]);
 
           if (profileRes.error && profileRes.status !== 406) throw profileRes.error;
@@ -476,7 +575,21 @@ export const useAppStore = create<AppState>()(
             savedMeals = [...localOnly, ...serverMeals];
           }
 
-          set({ name, profile, dailyLogs: cleanedDailyLogs, savedMeals });
+          // One-time backfill: if user has a profile weight but no weight_logs, seed the baseline
+          let weightLogs = weightRes.data || [];
+          if (weightLogs.length === 0 && profileRes.data?.weight) {
+            const baselineDate = profileRes.data.updated_at || new Date(Date.now() - 86400000).toISOString();
+            const { data: seeded, error: seedErr } = await supabase
+              .from('weight_logs')
+              .insert({ user_id: userId, weight: profileRes.data.weight, logged_at: baselineDate })
+              .select()
+              .single();
+            if (!seedErr && seeded) {
+              weightLogs = [seeded];
+            }
+          }
+
+          set({ name, profile, dailyLogs: cleanedDailyLogs, savedMeals, weightLogs });
           await pruneDailyLogRows(userId, prunableLogKeys);
         } catch (error) {
           console.error("Error fetching user data", error);
@@ -1257,6 +1370,7 @@ export const useAppStore = create<AppState>()(
     waterDateKey: state.waterDateKey,
     dailyWaterTarget: state.dailyWaterTarget,
     customWaterTarget: state.customWaterTarget,
+    weightLogs: state.weightLogs,
   }),
   // FIX: Wrap onRehydrateStorage in try/catch to handle corrupted storage
   onRehydrateStorage: () => (state, error) => {

@@ -1,1 +1,1 @@
-export type DashboardScreen = "home" | "calendar" | "profile";
+export type DashboardScreen = "home" | "calendar" | "profile" | "weight";

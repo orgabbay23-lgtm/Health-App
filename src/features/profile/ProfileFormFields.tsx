@@ -83,6 +83,8 @@ export function ProfileFormFields({
           <Input
             id="height"
             type="number"
+            step="any"
+            inputMode="decimal"
             onFocus={(e) => {
               const target = e.target;
               setTimeout(() => {
@@ -98,6 +100,8 @@ export function ProfileFormFields({
           <Input
             id="weight"
             type="number"
+            step="any"
+            inputMode="decimal"
             onFocus={(e) => {
               const target = e.target;
               setTimeout(() => {

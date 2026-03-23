@@ -1,16 +1,15 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "../../components/ui/button";
 import { ModalShell } from "../../components/ui/modal-shell";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
-import { Select } from "../../components/ui/select";
 import { useActiveUser, useAppStore } from "../../store";
+import { ProfileFormFields } from "./ProfileFormFields";
 import {
-  activityLevelOptions,
-  goalDeficitOptions,
+  profileSchema,
   type ProfileFormValues,
 } from "./profile-form-schema";
-import { cn } from "../../utils/utils";
+import { Loader2 } from "lucide-react";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -20,12 +19,33 @@ interface EditProfileModalProps {
 export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const activeUser = useActiveUser();
   const updateProfileDetails = useAppStore((state) => state.updateProfileDetails);
+  const setActiveScreen = useAppStore((state) => state.setActiveScreen);
 
-  const [draft, setDraft] = useState<ProfileFormValues | null>(null);
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: "",
+      age: 30,
+      gender: "male",
+      height: 170,
+      weight: 70,
+      activityLevel: "sedentary",
+      goalDeficit: 500,
+      isSmoker: false,
+    },
+  });
 
+  // Reset form only once when modal opens or when profile data becomes available
+  const profileExists = !!activeUser?.profile;
   useEffect(() => {
     if (isOpen && activeUser?.profile) {
-      setDraft({
+      reset({
         name: activeUser.name === "משתמש" ? "" : activeUser.name,
         age: activeUser.profile.age,
         gender: activeUser.profile.gender,
@@ -36,27 +56,26 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
         isSmoker: activeUser.profile.isSmoker,
       });
     }
-  }, [isOpen]); // Intentionally omitting activeUser to prevent overwriting user input on re-renders
+  }, [isOpen, profileExists, reset]); // Added profileExists to ensure data loads if it arrives late
 
-  if (!activeUser?.profile || !draft) {
+  if (!activeUser?.profile) {
     return null;
   }
 
-  const handleChange = (field: keyof ProfileFormValues, value: any) => {
-    setDraft((prev) => (prev ? { ...prev, [field]: value } : null));
-  };
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (draft) {
-      updateProfileDetails(draft);
+  const onSubmit = async (data: ProfileFormValues) => {
+    try {
+      const weightChanged = activeUser?.profile && data.weight !== activeUser.profile.weight;
+      await updateProfileDetails(data);
       onClose();
+      
+      if (weightChanged) {
+        // Small delay to allow the modal to close smoothly before rendering the graph
+        setTimeout(() => setActiveScreen("weight"), 150);
+      }
+    } catch (error) {
+      console.error("Failed to update profile", error);
     }
   };
-
-  const containerClass = cn(
-    "space-y-2 rounded-[24px] p-5 border border-slate-200 bg-slate-50/80"
-  );
 
   return (
     <ModalShell
@@ -66,161 +85,31 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
       description=""
       className="max-w-md"
     >
-      <form onSubmit={onSubmit} className="space-y-6">
-        <div className="space-y-5">
-          <div className={containerClass}>
-            <Label>שם מלא</Label>
-            <Input
-              type="text"
-              value={draft.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              onFocus={(e) => {
-                const target = e.target;
-                setTimeout(() => {
-                  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 450);
-              }}
-              className="text-[16px]"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className={containerClass}>
-              <Label>גיל</Label>
-              <Input
-                type="number"
-                value={draft.age || ""}
-                onChange={(e) => handleChange("age", Number(e.target.value))}
-                onFocus={(e) => {
-                  const target = e.target;
-                  setTimeout(() => {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }, 450);
-                }}
-                className="text-[16px]"
-                required
-                min={15}
-                max={120}
-              />
-            </div>
-
-            <div className={containerClass}>
-              <Label>מגדר</Label>
-              <Select
-                className="text-right text-[16px]"
-                value={draft.gender}
-                onChange={(e) => handleChange("gender", e.target.value)}
-              >
-                <option value="male">זכר</option>
-                <option value="female">נקבה</option>
-              </Select>
-            </div>
-
-            <div className={containerClass}>
-              <Label>גובה (ס"מ)</Label>
-              <Input
-                type="number"
-                value={draft.height || ""}
-                onChange={(e) => handleChange("height", Number(e.target.value))}
-                onFocus={(e) => {
-                  const target = e.target;
-                  setTimeout(() => {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }, 450);
-                }}
-                className="text-[16px]"
-                required
-                min={100}
-                max={250}
-              />
-            </div>
-
-            <div className={containerClass}>
-              <Label>משקל (ק"ג)</Label>
-              <Input
-                type="number"
-                value={draft.weight || ""}
-                onChange={(e) => handleChange("weight", Number(e.target.value))}
-                onFocus={(e) => {
-                  const target = e.target;
-                  setTimeout(() => {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }, 450);
-                }}
-                className="text-[16px]"
-                required
-                min={30}
-                max={300}
-              />
-            </div>
-
-            <div className={containerClass}>
-              <Label>רמת פעילות</Label>
-              <Select
-                className="text-right text-[16px]"
-                value={draft.activityLevel}
-                onChange={(e) => handleChange("activityLevel", e.target.value)}
-              >
-                {activityLevelOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            <div className={containerClass}>
-              <Label>יעד גרעון קלורי</Label>
-              <Select
-                className="text-right text-[16px]"
-                value={draft.goalDeficit}
-                onChange={(e) => handleChange("goalDeficit", Number(e.target.value))}
-              >
-                {goalDeficitOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          </div>
-
-          <div className={containerClass}>
-            <Label>מעשן</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant={draft.isSmoker ? "default" : "outline"}
-                className="rounded-full"
-                onClick={() => handleChange("isSmoker", true)}
-              >
-                כן
-              </Button>
-              <Button
-                type="button"
-                variant={draft.isSmoker ? "outline" : "default"}
-                className="rounded-full"
-                onClick={() => handleChange("isSmoker", false)}
-              >
-                לא
-              </Button>
-            </div>
-            <p className="text-xs text-slate-500">
-              הבחירה הזו משפיעה ישירות על יעד ויטמין C.
-            </p>
-          </div>
-        </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <ProfileFormFields
+          register={register}
+          control={control}
+          errors={errors}
+          tone="muted"
+        />
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
             ביטול
           </Button>
-          <Button type="submit" className="rounded-full px-5">
-            שמירת שינויים
+          <Button type="submit" className="rounded-full px-5" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <Loader2 size={16} className="animate-spin" />
+                שומר...
+              </span>
+            ) : (
+              "שמירת שינויים"
+            )}
           </Button>
         </div>
       </form>
     </ModalShell>
   );
 }
+

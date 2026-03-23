@@ -33,6 +33,10 @@ import { DashboardTopBar } from "./components/DashboardTopBar";
 import { HistoryScreen } from "./screens/HistoryScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
+import { WeightGraphScreen } from "./screens/WeightGraphScreen";
+import { MorePopover } from "./components/MorePopover";
+import { WeightReminderModal } from "./components/WeightReminderModal";
+import { WeightFeaturePromoModal } from "./components/WeightFeaturePromoModal";
 
 const EMPTY_DAILY_LOGS: Record<string, DailyLog> = {};
 const EMPTY_SAVED_MEALS: ReadonlyArray<{
@@ -101,6 +105,7 @@ export function Dashboard() {
   const setActiveScreen = useAppStore((state) => state.setActiveScreen);
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false);
   const [periodMode, setPeriodMode] = useState<DashboardPeriod>("daily");
   const [referenceDate, setReferenceDate] = useState(() => getLogicalDate());
   const [editingLog, setEditingLog] = useState<{ dayKey: string; meal: MealItem } | null>(null);
@@ -299,6 +304,10 @@ export function Dashboard() {
                 onEditProfile={onOpenProfileModal}
               />
             ) : null}
+
+            {activeScreen === "weight" ? (
+              <WeightGraphScreen />
+            ) : null}
           </motion.section>
         </AnimatePresence>
       </div>
@@ -308,6 +317,13 @@ export function Dashboard() {
         activeScreen={activeScreen}
         onNavigate={setActiveScreen}
         onOpenMealModal={onOpenMealModal}
+        onOpenMoreSheet={() => setIsMoreSheetOpen(true)}
+      />
+
+      <MorePopover 
+        isOpen={isMoreSheetOpen}
+        onClose={() => setIsMoreSheetOpen(false)}
+        onNavigate={setActiveScreen}
       />
 
       <MealLogModal
@@ -327,6 +343,9 @@ export function Dashboard() {
         meal={editingLog?.meal ?? null}
         dayKey={editingLog?.dayKey ?? ""}
       />
+
+      <WeightReminderModal />
+      <WeightFeaturePromoModal />
     </div>
   );
 }

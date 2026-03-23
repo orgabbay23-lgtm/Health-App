@@ -525,7 +525,11 @@ pm run build\ or \	sc\) to verify changes before concluding a task.
 * **Content Padding:** The main dashboard container (\Dashboard.tsx\) MUST maintain a minimum of \pb-32 pb-safe-bottom\ to ensure the bottom-most content (like AI Insights or Water Tracker) is fully scrollable and visible above the floating bar.
 * **Desktop Redundancy:** Standard desktop navigation buttons in the top bar are removed to maintain a single, premium navigation experience through the floating bar across all viewports.
 
-## 29. Rendering Performance Optimization (March 2026)
+* **2026-03-23: Weight Tracking & Smart Reminders**
+    * **Architecture:** Added `weight_logs` table (SQL) and corresponding Zustand state/actions. Weight is synced from `profiles` via a Postgres trigger (`on_weight_change` → `handle_weight_update()`). A one-time backfill in `fetchUserData` catches legacy users: if `weightRes.data` is empty but `profileRes.data.weight` exists, a baseline `weight_log` row is inserted using `profileRes.data.updated_at` (or yesterday as fallback) and immediately included in the local state.
+    * **UI/UX:** (1) Repurposed Profile tab as "More" tab in `BottomNavigation`. (2) Created `MorePopover` (anchored `framer-motion` popover with `transform-origin` animation) to house Profile and Weight Graph links — replaced a heavy Bottom Sheet for a lightweight, native feel. (3) Implemented `WeightGraphScreen` with `recharts` for visual progress tracking and a full history list with CRUD (newest-first in history, oldest-first for graph). (4) Added `WeightReminderModal` that triggers if no log exists for 7+ days, only during morning hours (6-11 AM), with localStorage-based Snooze (tomorrow / next week) to avoid backend clutter.
+    * **Data Integrity Fix:** The original approach faked a mock "initial weight" data point in the UI and attempted two rapid sequential `addWeightLog` calls on the user's first entry. This caused race conditions (state clobbering between intermediate `fetchWeightLogs` calls). **Fix:** Eliminated all UI mock logic — `WeightGraphScreen` now renders exclusively from real `weightLogs` store data. The database trigger + `fetchUserData` backfill guarantees a baseline row always exists before the user reaches the graph.
+    * **Standard:** All weight entries must automatically update the user's profile weight to ensure nutritional targets remain accurate based on the latest measurement.
 
 * **2026-03-22: App-Wide 60/120fps Performance Pass**
     * **Zustand Selector Fix:** `WaterTracker.tsx` destructured the entire store via `useAppStore()`, causing re-renders on any unrelated state change (AI insights, meal logs, navigation). Refactored to 8 individual atomic selectors.
@@ -550,3 +554,23 @@ pm run build\ or \	sc\) to verify changes before concluding a task.
         2. **Dashboard Layout:** Updated \Dashboard.tsx\ with \pb-32 pb-safe-bottom\ and removed redundant desktop-only navigation.
         3. **Build Fix (TS6133):** Purged unused imports (\Plus\, \Button\, \cn\) and types (\DashboardScreen\) from \Dashboard.tsx\ to satisfy strict production build rules.
     * **Standard:** Always ensure a clean production build by removing unused imports/variables. Maintain the floating navigation standard with proper bottom padding on all scrollable views.
+
+## 29. Architectural Standards — Lessons from Weight Tracking (March 2026)
+
+### 29a. Data Integrity over UI Hacks
+* **Rule:** Never mock persistent state in the UI to cover up database gaps. The UI layer must only render actual truth from the Zustand store — no synthetic/fake entries injected via `useMemo` or component-local state.
+* **Case Study (Weight Tracking):** Instead of faking an "initial weight" data point in `WeightGraphScreen` and battling race conditions on the first insert (double `addWeightLog` calls with `setTimeout` between them, state clobbering from intermediate `fetchWeightLogs`), we implemented a data-layer solution:
+    1. **Database Trigger:** `on_weight_change` on the `profiles` table automatically inserts a `weight_log` whenever a profile weight is created or updated — covers new users going through onboarding.
+    2. **Backfill in `fetchUserData`:** On app init/login, if `weight_logs` is empty but `profile.weight` exists, a baseline row is inserted using the profile's `updated_at` timestamp. This catches legacy users or edge cases where the trigger wasn't active.
+    3. **Clean UI:** `WeightGraphScreen` is a pure renderer of store state — no mock points, no seed logic, no `id === 'initial'` guards.
+* **Standard:** When a UI component needs "starter data" to look correct, the solution is always a data-layer backfill (trigger, migration, or init-time sync) — never a UI-layer mock that pretends to be real data.
+
+### 29b. Mobile-First UX & Input Handling
+* **Rule:** All numeric inputs handling physical measurements (weight, height, custom water amounts) must explicitly support decimals using `step="any"` and trigger the correct mobile keyboard using `inputMode="decimal"`.
+* **Rule:** Avoid heavy UI patterns for simple actions. The "More" menu uses a sleek, anchored `Popover` (`MorePopover.tsx`) with `framer-motion` `transform-origin` animation instead of a full-screen Bottom Sheet — keeps the app feeling lightweight and native.
+* **Standard:** Before reaching for a modal or bottom sheet, evaluate whether a popover or inline expansion achieves the same goal with less visual weight.
+
+### 29c. Smart Notifications via Local Storage
+* **Rule:** User prompts (like `WeightReminderModal`) must be unobtrusive. Use specific time-of-day checks (e.g., morning hours 6-11 AM) and `localStorage` keys to handle "Snooze" functionality (remind tomorrow, remind next week) without cluttering the backend database with UI-state flags.
+* **Implementation:** `localStorage` stores a `weightReminderSnoozeUntil` ISO timestamp. The reminder only appears if: (1) current hour is 6-11 AM, (2) no weight log exists for the past 7 days, and (3) the snooze timestamp is expired or absent.
+* **Standard:** Ephemeral UI-state flags (snooze dates, dismiss states, tooltip-seen markers) belong in `localStorage` — never in Supabase. Reserve the database for domain data that has clinical or analytical value.
