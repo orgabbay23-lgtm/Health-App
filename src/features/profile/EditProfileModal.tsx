@@ -19,6 +19,7 @@ interface EditProfileModalProps {
 export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
   const activeUser = useActiveUser();
   const updateProfileDetails = useAppStore((state) => state.updateProfileDetails);
+  const addWeightLog = useAppStore((state) => state.addWeightLog);
   const setActiveScreen = useAppStore((state) => state.setActiveScreen);
 
   const {
@@ -66,6 +67,13 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     try {
       const weightChanged = activeUser?.profile && data.weight !== activeUser.profile.weight;
       await updateProfileDetails(data);
+      
+      if (weightChanged) {
+        // Explicitly add to weight history since the SQL trigger was removed
+        // Passing 'true' skips the reverse profile update to prevent double-saving & double-toasts
+        await addWeightLog(data.weight, undefined, true);
+      }
+      
       onClose();
       
       if (weightChanged) {

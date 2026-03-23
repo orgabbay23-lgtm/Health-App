@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { toast } from "sonner";
+import { isToday } from "date-fns";
 import { supabase } from "../lib/supabase";
 import { parseMealDescription } from "../utils/gemini";
 import { getLogicalDayKey as getHydrationDayKey } from "../utils/nutrition-utils";
@@ -435,8 +436,9 @@ export const useAppStore = create<AppState>()(
 
         await get().fetchWeightLogs();
 
-        // Only update profile weight if this is a "current" log (no specific past date)
-        if (!skipProfileUpdate && !date) {
+        // Update profile weight if this is a "current" log (today or no date provided)
+        const isTodayLog = !date || isToday(new Date(date));
+        if (!skipProfileUpdate && isTodayLog) {
           await updateProfileDetails({ weight });
         }
 
@@ -444,7 +446,7 @@ export const useAppStore = create<AppState>()(
       },
 
       updateWeightLog: async (id: string, weight: number) => {
-        const { weightLogs } = get();
+        const { weightLogs, updateProfileDetails } = get();
         const { data, error } = await supabase
           .from("weight_logs")
           .update({ weight })
@@ -462,6 +464,12 @@ export const useAppStore = create<AppState>()(
           weightLogs: weightLogs.map((log) => (log.id === id ? data : log)),
         });
         await get().fetchWeightLogs();
+
+        // Update profile weight if this log is for today
+        if (data?.logged_at && isToday(new Date(data.logged_at))) {
+          await updateProfileDetails({ weight });
+        }
+
         toast.success("המשקל עודכן");
       },
 

@@ -81,7 +81,12 @@ export function WeightGraphScreen() {
       await updateWeightLog(editingId, weight);
       setEditingId(null);
     } else {
-      await addWeightLog(weight, new Date(dateValue).toISOString());
+      // If the selected date is today, use the current full timestamp
+      // Otherwise, use the start of the selected day
+      const isTodaySelected = dateValue === format(new Date(), 'yyyy-MM-dd');
+      const finalDate = isTodaySelected ? new Date().toISOString() : new Date(dateValue).toISOString();
+      
+      await addWeightLog(weight, finalDate);
       setIsAdding(false);
     }
     setInputValue("");

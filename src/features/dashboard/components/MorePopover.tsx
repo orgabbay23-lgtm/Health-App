@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { UserRound, LineChart, X } from "lucide-react";
+import { UserRound, LineChart } from "lucide-react";
 import type { DashboardScreen } from "../types";
 import { useEffect, useRef } from "react";
 
