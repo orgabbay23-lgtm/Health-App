@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אנימציית חתול מזהה סושי</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* איפוס בסיסי ורקע שקוף */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Rubik', sans-serif;
+            overflow: hidden;
+        }
+
+        .widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .animation-stage {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        .cat-wrapper {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 200px;
+            height: 200px;
+            animation: floatCat 4s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        @keyframes floatCat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+
+        /* העיניים של החתול עוקבות אחרי ההדפסה ואז בוחנות את התמונה */
+        .eyes {
+            transform-origin: 100px 105px;
+            animation: catLook 6s infinite, blink 4s infinite;
+        }
+
+        @keyframes catLook {
+            0%, 15% { transform: translate(-6px, 6px); } /* מסתכל למטה על המדפסת */
+            25%, 80% { transform: translate(-6px, -2px); } /* מסתכל על התמונה המודפסת */
+            85%, 100% { transform: translate(0, 0); } /* מבט ניטרלי */
+        }
+
+        @keyframes blink {
+            0%, 95%, 98%, 100% { transform: scaleY(1); }
+            96%, 99% { transform: scaleY(0.1); }
+        }
+
+        /* אנימציה לתמונת הסושי שיוצאת מהמדפסת באופן מציאותי */
+        .printed-photo {
+            animation: printPhoto 6s infinite;
+        }
+
+        @keyframes printPhoto {
+            0%, 5% { transform: translateY(0); opacity: 1; } /* מוסתר למטה בתוך המדפסת */
+            20%, 85% { transform: translateY(-55px); opacity: 1; } /* מחליק החוצה למעלה */
+            90%, 100% { transform: translateY(0); opacity: 0; } /* נעלם ונופל חזרה בסיום */
+        }
+
+        /* אנימציה לזכוכית המגדלת שעולה מעל התמונה */
+        .magnifier-arm {
+            transform-origin: 55px 160px;
+            animation: examine 6s infinite;
+        }
+
+        @keyframes examine {
+            0%, 20% { transform: rotate(35deg); }
+            30%, 80% { transform: rotate(0deg); }
+            85%, 100% { transform: rotate(35deg); }
+        }
+
+        /* לייזר סריקה קטן על התמונה */
+        .photo-scanline {
+            animation: scanline 6s infinite;
+            opacity: 0;
+        }
+
+        @keyframes scanline {
+            0%, 30% { transform: translateY(0); opacity: 0; }
+            35% { opacity: 1; transform: translateY(0); }
+            75% { opacity: 1; transform: translateY(30px); }
+            80%, 100% { opacity: 0; transform: translateY(35px); }
+        }
+
+        /* סגנון לטקסטים שמנחשים מה יש בתמונה */
+        .guess-text {
+            font-weight: 900;
+            font-family: 'Rubik', sans-serif;
+            opacity: 0;
+            /* הצללה חזקה שתבליט אותם מעל כל רקע */
+            text-shadow: 
+                -1.5px -1.5px 0 #fff,  
+                 1.5px -1.5px 0 #fff,
+                -1.5px  1.5px 0 #fff,
+                 1.5px  1.5px 0 #fff,
+                 0px 3px 5px rgba(0,0,0,0.25);
+        }
+
+        /* ניחוש 1: המבורגר */
+        .guess-1 { fill: #ff7675; font-size: 12px; animation: popGuess1 6s infinite; }
+        /* ניחוש 2: פסטה */
+        .guess-2 { fill: #fdcb6e; font-size: 12px; animation: popGuess2 6s infinite; }
+        /* תוצאה סופית: סושי */
+        .guess-3 { fill: #00E676; font-size: 15px; animation: popGuess3 6s infinite; }
+
+        @keyframes popGuess1 {
+            0%, 30%, 45%, 100% { opacity: 0; transform: translateY(0) scale(0.5); }
+            35% { opacity: 1; transform: translateY(-10px) scale(1.1); }
+            42% { opacity: 0; transform: translateY(-15px) scale(0.8); }
+        }
+
+        @keyframes popGuess2 {
+            0%, 40%, 55%, 100% { opacity: 0; transform: translateY(0) scale(0.5); }
+            45% { opacity: 1; transform: translateY(-10px) scale(1.1); }
+            52% { opacity: 0; transform: translateY(-15px) scale(0.8); }
+        }
+
+        @keyframes popGuess3 {
+            0%, 50%, 85%, 100% { opacity: 0; transform: translateY(0) scale(0.5); }
+            55%, 75% { opacity: 1; transform: translateY(-15px) scale(1.2); }
+            80% { opacity: 0; transform: translateY(-20px) scale(1); }
+        }
+
+        /* נורת LED מהבהבת במדפסת */
+        .printer-led {
+            animation: blinkLed 6s infinite;
+        }
+
+        @keyframes blinkLed {
+            0%, 5%, 10%, 15%, 20% { fill: #00cec9; opacity: 1; }
+            2.5%, 7.5%, 12.5%, 17.5% { opacity: 0.2; }
+            25%, 100% { fill: #1dd1a1; opacity: 1; }
+        }
+
+        /* כף יד ימין שמתופפת בעדינות בזמן ההמתנה */
+        .tap-paw {
+            transform-origin: 145px 168px;
+            animation: tapAnim 2s infinite;
+        }
+
+        @keyframes tapAnim {
+            0%, 80%, 100% { transform: translateY(0); }
+            85%, 95% { transform: translateY(-3px) rotate(5deg); }
+            90% { transform: translateY(0); }
+        }
+
+        .tail-wag {
+            transform-origin: 140px 160px;
+            animation: wag 4s ease-in-out infinite;
+        }
+
+        @keyframes wag {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(8deg); }
+        }
+
+        .ear-twitch {
+            transform-origin: 45px 110px;
+            animation: twitch 8s infinite;
+        }
+
+        @keyframes twitch {
+            0%, 30%, 36%, 100% { transform: rotate(0deg); }
+            33% { transform: rotate(-10deg); }
+        }
+
+        .text-slider {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff9f43;
+            text-align: center;
+            min-height: 40px;
+            padding: 5px 15px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0px  4px 6px rgba(0,0,0,0.15);
+        }
+
+        .text-fade-out { opacity: 0; transform: translateY(-10px); }
+        .text-fade-in { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="widget-container">
+        <div class="animation-stage">
+            
+            <div class="cat-wrapper">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <!-- צל כללי -->
+                        <filter id="cat-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity="0.15" />
+                        </filter>
+
+                        <!-- קליפ-פאת' שחותך את הדף רק כשהוא יורד אל תוך חריץ המדפסת (מתחת ל-150px) -->
+                        <clipPath id="paper-clip">
+                            <rect x="0" y="0" width="200" height="150"/>
+                        </clipPath>
+                    </defs>
+
+                    <g filter="url(#cat-shadow)">
+                        
+                        <!-- זנב -->
+                        <g class="tail-wag">
+                            <path d="M 140,160 Q 180,180 180,140 Q 180,110 160,110" fill="none" stroke="#e18b2c" stroke-width="16" stroke-linecap="round" />
+                        </g>
+
+                        <!-- גוף החתול -->
+                        <path d="M 50,180 Q 100,220 150,180 L 140,110 Q 100,100 60,110 Z" fill="#ffb142" />
+
+                        <!-- אוזניים -->
+                        <g class="ear-twitch">
+                            <polygon points="45,110 25,35 90,65" fill="#ffb142" />
+                            <polygon points="52,100 35,52 82,75" fill="#ffcccc" />
+                        </g>
+                        <polygon points="155,110 175,35 110,65" fill="#ffb142" />
+                        <polygon points="148,100 165,52 118,75" fill="#ffcccc" />
+
+                        <!-- ראש -->
+                        <ellipse cx="100" cy="115" rx="75" ry="60" fill="#ffb142" />
+
+                        <!-- פסים על המצח -->
+                        <path d="M 100,55 L 100,75 M 82,60 L 88,75 M 118,60 L 112,75" stroke="#e18b2c" stroke-width="5" stroke-linecap="round" />
+
+                        <!-- לחיים לבנות ואף -->
+                        <ellipse cx="78" cy="132" rx="22" ry="16" fill="#ffffff" />
+                        <ellipse cx="122" cy="132" rx="22" ry="16" fill="#ffffff" />
+                        <polygon points="94,122 106,122 100,130" fill="#ff7eb3" />
+                        <path d="M 90,134 Q 100,136 110,134" stroke="#2d3436" stroke-width="2.5" fill="transparent" stroke-linecap="round" />
+
+                        <!-- שפם -->
+                        <line x1="10" y1="115" x2="40" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="5"  y1="132" x2="38" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="10" y1="149" x2="40" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="115" x2="160" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="195" y1="132" x2="162" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="149" x2="160" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+                        <!-- עיניים מונפשות -->
+                        <g class="eyes">
+                            <ellipse cx="65" cy="105" rx="11" ry="14" fill="#2d3436" />
+                            <ellipse cx="135" cy="105" rx="11" ry="14" fill="#2d3436" />
+                            <circle cx="61" cy="100" r="4.5" fill="#ffffff" />
+                            <circle cx="67" cy="111" r="2" fill="#ffffff" />
+                            <circle cx="131" cy="100" r="4.5" fill="#ffffff" />
+                            <circle cx="137" cy="111" r="2" fill="#ffffff" />
+                        </g>
+
+                        <!-- שולחן עבודה -->
+                        <rect x="10" y="174" width="180" height="6" rx="3" fill="#a4b0be"/>
+
+                        <!-- מדפסת חלק אחורי -->
+                        <rect x="18" y="140" width="64" height="34" rx="4" fill="#a4b0be"/>
+                        <path d="M 28,140 L 33,125 L 67,125 L 72,140 Z" fill="#ffffff" opacity="0.6"/> <!-- תומך נייר -->
+
+                        <!-- קבוצת התמונה המודפסת המוסתרת בעזרת ה-Clip Path -->
+                        <g clip-path="url(#paper-clip)">
+                            <!-- הדף מתחיל את האנימציה שלו ממיקום נמוך (150px) בתוך חריץ המדפסת -->
+                            <g transform="translate(30, 150)">
+                                <g class="printed-photo">
+                                    <!-- דף הצילום -->
+                                    <rect x="0" y="0" width="40" height="48" fill="#ffffff" stroke="#dcdde1" stroke-width="1" rx="1"/>
+                                    <!-- איור סושי (אמוג'י טקסט לטובת חדות) -->
+                                    <text x="20" y="24" font-size="22" font-family="Arial, sans-serif" text-anchor="middle" dominant-baseline="middle">🍣</text>
+                                    <!-- פס ברקוד / קוד בתחתית -->
+                                    <line x1="8" y1="38" x2="32" y2="38" stroke="#b2bec3" stroke-width="2" stroke-linecap="round"/>
+                                    <line x1="12" y1="42" x2="28" y2="42" stroke="#b2bec3" stroke-width="1.5" stroke-linecap="round"/>
+                                    
+                                    <!-- לייזר סריקה מעל התמונה -->
+                                    <line x1="2" y1="8" x2="38" y2="8" stroke="#00E676" stroke-width="2" stroke-linecap="round" class="photo-scanline" />
+                                </g>
+                            </g>
+                        </g>
+
+                        <!-- מדפסת חלק קדמי (מסתיר את תחתית התמונה ויוצר את תחושת החריץ) -->
+                        <rect x="15" y="148" width="70" height="26" rx="4" fill="#b2bec3"/>
+                        <!-- חריץ יציאת הדף -->
+                        <rect x="20" y="149" width="60" height="3" rx="1.5" fill="#2d3436"/> 
+                        <!-- נורות -->
+                        <circle cx="25" cy="165" r="3" class="printer-led"/>
+                        <circle cx="35" cy="165" r="2" fill="#ff7675"/>
+
+                        <!-- כף רגל שמאל אוחזת בזכוכית מגדלת -->
+                        <g class="magnifier-arm">
+                            <!-- מקל -->
+                            <line x1="55" y1="160" x2="50" y2="135" stroke="#2d3436" stroke-width="5" stroke-linecap="round"/>
+                            <!-- עדשת הזכוכית (מרחפת מעל אזור התמונה) -->
+                            <circle cx="50" cy="115" r="18" fill="#00cec9" fill-opacity="0.25" stroke="#2d3436" stroke-width="4"/>
+                            <path d="M 42,107 A 8,8 0 0,1 58,107" stroke="#ffffff" fill="none" stroke-width="2" stroke-linecap="round"/>
+                            <!-- כף יד -->
+                            <ellipse cx="55" cy="160" rx="10" ry="14" fill="#e18b2c" transform="rotate(20 55 160)"/>
+                            <ellipse cx="55" cy="160" rx="7" ry="11" fill="#ffb142" transform="rotate(20 55 160)"/>
+                        </g>
+
+                        <!-- טקסטים קופצים של ניחושי התמונה (מיושרים לאמצע כדי שלא ייחתכו!) -->
+                        <text x="45" y="80" class="guess-text guess-1" text-anchor="middle">המבורגר?</text>
+                        <text x="55" y="70" class="guess-text guess-2" text-anchor="middle">פסטה?</text>
+                        <text x="50" y="55" class="guess-text guess-3" text-anchor="middle">סושי!</text>
+
+                        <!-- כף רגל ימין מתופפת בעדינות על השולחן -->
+                        <g class="tap-paw">
+                            <ellipse cx="145" cy="168" rx="12" ry="8" fill="#e18b2c"/>
+                            <ellipse cx="145" cy="168" rx="9" ry="5" fill="#ffb142"/>
+                        </g>
+
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- אזור הטקסט המתחלף בתחתית -->
+        <div class="text-slider" id="animated-text">בודק מרכיבים בתמונה</div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const texts = [
+                "בודק מרכיבים בתמונה", 
+                "מזהה סוג מזון", 
+                "עוד רגע בבקשה"
+            ];
+            let currentIndex = 0;
+            const textElement = document.getElementById("animated-text");
+
+            setInterval(() => {
+                textElement.classList.add("text-fade-out");
+                
+                setTimeout(() => {
+                    currentIndex = (currentIndex + 1) % texts.length;
+                    textElement.innerText = texts[currentIndex];
+                    
+                    textElement.classList.remove("text-fade-out");
+                    textElement.classList.add("text-fade-in");
+
+                    setTimeout(() => {
+                        textElement.classList.remove("text-fade-in");
+                    }, 500); 
+                }, 500); 
+            }, 3000); 
+        });
+    </script>
+</body>
+</html>

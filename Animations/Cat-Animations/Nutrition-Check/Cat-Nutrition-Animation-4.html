@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אנימציית חתול עושה כושר</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* איפוס בסיסי ורקע שקוף */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Rubik', sans-serif;
+            overflow: hidden;
+        }
+
+        .widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .animation-stage {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        /* החתול צף מעט כל הזמן */
+        .cat-wrapper {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 200px;
+            height: 200px;
+            animation: floatCat 4s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        @keyframes floatCat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* תנועת זנב */
+        .tail {
+            transform-origin: 160px 110px;
+            animation: tailWag 4s infinite alternate ease-in-out;
+        }
+
+        @keyframes tailWag {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(12deg); }
+        }
+
+        /* אנימציית רעד בזמן המאמץ להרים את המשקולת */
+        .body-shake {
+            animation: shakeStruggle 6s infinite;
+        }
+
+        @keyframes shakeStruggle {
+            0%, 19%, 46%, 100% { transform: translateX(0); }
+            20%, 24%, 28%, 32%, 36%, 40%, 44% { transform: translateX(-1.5px); }
+            22%, 26%, 30%, 34%, 38%, 42% { transform: translateX(1.5px); }
+        }
+
+        /* --- אנימציות כפות ידיים ומשקולות --- */
+        /* זמן מחזור: 6 שניות */
+        .arms {
+            animation: liftWeights 6s infinite ease-in-out;
+        }
+
+        @keyframes liftWeights {
+            0%, 10% { transform: translateY(18px); } /* מונח למטה */
+            20%, 35% { transform: translateY(-5px); } /* נתקע באמצע מרוב כובד! (זמן הרעד) */
+            45%, 75% { transform: translateY(-38px); } /* דוחף עד הסוף למעלה! (ניצחון) */
+            82%, 100% { transform: translateY(18px); } /* מוריד חזרה למטה באנחה */
+        }
+
+        /* --- אנימציות פרצופים מתחלפים --- */
+        
+        /* 1. פרצוף נחוש בהתחלה */
+        .face-determined { animation: showDetermined 6s infinite; }
+        @keyframes showDetermined { 
+            0%, 19.9% { opacity: 1; } 
+            20%, 81.9% { opacity: 0; } 
+            82%, 100% { opacity: 1; } 
+        }
+
+        /* 2. פרצוף מתאמץ/רועד באמצע ההרמה */
+        .face-struggle { animation: showStruggle 6s infinite; }
+        @keyframes showStruggle { 
+            0%, 19.9% { opacity: 0; } 
+            20%, 44.9% { opacity: 1; } 
+            45%, 100% { opacity: 0; } 
+        }
+
+        /* 3. פרצוף מאושר על ההצלחה! */
+        .face-triumph { animation: showTriumph 6s infinite; }
+        @keyframes showTriumph { 
+            0%, 44.9% { opacity: 0; } 
+            45%, 81.9% { opacity: 1; } 
+            82%, 100% { opacity: 0; } 
+        }
+
+        /* טיפת זיעה שמטפטפת בזמן המאמץ */
+        .sweat-drop {
+            transform-origin: 130px 90px;
+            animation: sweatDrip 6s infinite;
+        }
+
+        @keyframes sweatDrip {
+            0%, 19% { opacity: 0; transform: translateY(0) scale(0.5); }
+            20% { opacity: 1; transform: translateY(0) scale(1); }
+            40%, 44.9% { opacity: 0.8; transform: translateY(15px) scale(1.2); }
+            45%, 100% { opacity: 0; transform: translateY(15px) scale(1.2); }
+        }
+
+        /* --- אפקטים של ניצחון שמרחפים החוצה --- */
+        .triumph-effects {
+            position: absolute;
+            top: 70px;
+            left: 150px;
+            z-index: 1;
+        }
+
+        .effect-item {
+            position: absolute;
+            opacity: 0;
+            animation: triumphFloat 6s infinite ease-out;
+            animation-delay: var(--delay);
+            transform: translateX(var(--x));
+        }
+
+        @keyframes triumphFloat {
+            0%, 44% { opacity: 0; transform: translate(var(--x), 10px) scale(0.5); }
+            45%, 55% { opacity: 1; transform: translate(var(--x), -15px) scale(1.2) rotate(10deg); }
+            75% { opacity: 0.8; }
+            85%, 100% { transform: translate(calc(var(--x) * 1.5), -80px) scale(1) rotate(-10deg); opacity: 0; }
+        }
+
+        /* עיצוב הטקסט */
+        .text-slider {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff9f43;
+            text-align: center;
+            min-height: 40px;
+            padding: 5px 15px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0px  4px 6px rgba(0,0,0,0.15);
+        }
+
+        .text-fade-out { opacity: 0; transform: translateY(-10px); }
+        .text-fade-in { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="widget-container">
+        <div class="animation-stage">
+            
+            <!-- אפקטים של ניצחון (מופיעים רק בהנפה) -->
+            <div class="triumph-effects">
+                <div class="effect-item" style="--delay: 0s; --x: -55px; font-size: 26px;">💪</div>
+                <div class="effect-item" style="--delay: 0.2s; --x: 35px; font-size: 28px;">🔥</div>
+                <div class="effect-item" style="--delay: 0.5s; --x: -15px; font-size: 24px;">⭐</div>
+            </div>
+
+            <div class="cat-wrapper">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="cat-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity="0.15" />
+                        </filter>
+                    </defs>
+                    
+                    <g filter="url(#cat-shadow)" class="body-shake">
+                        <!-- זנב -->
+                        <path class="tail" d="M 140,160 Q 190,170 185,120 Q 180,95 160,110" fill="none" stroke="#e18b2c" stroke-width="16" stroke-linecap="round" />
+                        
+                        <!-- גוף -->
+                        <path d="M 50,180 Q 100,220 150,180 L 140,110 Q 100,100 60,110 Z" fill="#ffb142" />
+
+                        <!-- אוזניים -->
+                        <polygon points="45,110 25,35 90,65" fill="#ffb142" />
+                        <polygon points="52,100 35,52 82,75" fill="#ffcccc" />
+                        <polygon points="155,110 175,35 110,65" fill="#ffb142" />
+                        <polygon points="148,100 165,52 118,75" fill="#ffcccc" />
+
+                        <!-- ראש -->
+                        <ellipse cx="100" cy="115" rx="75" ry="60" fill="#ffb142" />
+
+                        <!-- סרט זיעה מגניב לכושר (Sweatband) -->
+                        <path d="M 33,95 Q 100,110 167,95" fill="none" stroke="#ff4757" stroke-width="12" stroke-linecap="round" />
+                        <path d="M 35,95 Q 100,110 165,95" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+
+                        <!-- פסים על המצח (מוזזים קצת למעלה בגלל הסרט) -->
+                        <path d="M 100,55 L 100,68 M 82,60 L 86,72 M 118,60 L 114,72" stroke="#e18b2c" stroke-width="5" stroke-linecap="round" />
+
+                        <!-- לחיים לבנות -->
+                        <ellipse cx="78" cy="132" rx="22" ry="16" fill="#ffffff" />
+                        <ellipse cx="122" cy="132" rx="22" ry="16" fill="#ffffff" />
+
+                        <!-- אף -->
+                        <polygon points="94,120 106,120 100,127" fill="#ff7eb3" />
+
+                        <!-- שפם -->
+                        <line x1="10" y1="115" x2="45" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="5"  y1="132" x2="42" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="10" y1="149" x2="45" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="115" x2="155" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="195" y1="132" x2="158" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="149" x2="155" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+                        <!-- ================= פרצופים מתחלפים ================= -->
+                        
+                        <!-- 1. פרצוף נחוש (לפני ההרמה) -->
+                        <g class="face-determined">
+                            <!-- גבות נחושות פונות פנימה -->
+                            <line x1="55" y1="100" x2="72" y2="105" stroke="#d35400" stroke-width="3" stroke-linecap="round" />
+                            <line x1="145" y1="100" x2="128" y2="105" stroke="#d35400" stroke-width="3" stroke-linecap="round" />
+                            <!-- עיניים ממוקדות -->
+                            <ellipse cx="65" cy="110" rx="7" ry="9" fill="#2d3436" />
+                            <ellipse cx="135" cy="110" rx="7" ry="9" fill="#2d3436" />
+                            <circle cx="63" cy="107" r="2.5" fill="#ffffff" />
+                            <circle cx="133" cy="107" r="2.5" fill="#ffffff" />
+                            <!-- פה קפוץ -->
+                            <path d="M 95,133 L 105,133" stroke="#2d3436" stroke-width="3" stroke-linecap="round" />
+                        </g>
+
+                        <!-- 2. פרצוף מתאמץ (בזמן הרעד, כשהמשקולת כבדה) -->
+                        <g class="face-struggle">
+                            <!-- עיניים מכווצות מכאב/מאמץ (< >) -->
+                            <polyline points="55,107 65,112 55,117" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                            <polyline points="145,107 135,112 145,117" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                            <!-- פה גלי מתאמץ -->
+                            <path d="M 90,133 Q 95,128 100,133 T 110,133" fill="none" stroke="#2d3436" stroke-width="3" stroke-linecap="round" />
+                            <!-- זיעה מטפטפת (אנימציה) -->
+                            <path class="sweat-drop" d="M 125,100 Q 130,110 135,100 Q 130,90 125,100" fill="#74b9ff" opacity="0.8" />
+                            <path class="sweat-drop" d="M 128,98 Q 130,105 132,98 Q 130,93 128,98" fill="#ffffff" opacity="0.6" />
+                        </g>
+
+                        <!-- 3. פרצוף מאושר וניצחון (הצליח להרים) -->
+                        <g class="face-triumph">
+                            <!-- עיניים עצומות משמחה ( ^ ^ ) -->
+                            <path d="M 55,112 Q 65,100 75,112" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                            <path d="M 125,112 Q 135,100 145,112" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                            <!-- חיוך ענק פתוח -->
+                            <path d="M 85,130 Q 100,150 115,130 Z" fill="#2d3436" />
+                            <path d="M 90,135 Q 100,150 110,135 Z" fill="#ff7eb3" />
+                            <!-- סומק של הצלחה -->
+                            <ellipse cx="45" cy="120" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                            <ellipse cx="155" cy="120" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                        </g>
+
+                        <!-- ================= ידיים ומשקולות ================= -->
+                        
+                        <!-- רגליים אחוריות נשארות על הקרקע בפיסוק -->
+                        <ellipse cx="50" cy="185" rx="18" ry="12" fill="#e18b2c" />
+                        <ellipse cx="50" cy="185" rx="14" ry="9" fill="#ffb142" />
+                        <ellipse cx="150" cy="185" rx="18" ry="12" fill="#e18b2c" />
+                        <ellipse cx="150" cy="185" rx="14" ry="9" fill="#ffb142" />
+
+                        <!-- קבוצת הידיים והמשקולות (עולה ויורדת יחד בסנכרון) -->
+                        <g class="arms">
+                            <!-- משקולת דמבל שמאלית -->
+                            <g transform="translate(42, 145)">
+                                <rect x="0" y="10" width="56" height="8" rx="4" fill="#b2bec3" /> <!-- מוט -->
+                                <rect x="5" y="0" width="12" height="28" rx="2" fill="#2d3436" /> <!-- צלחת פנימית -->
+                                <rect x="39" y="0" width="12" height="28" rx="2" fill="#2d3436" /> <!-- צלחת חיצונית -->
+                                <!-- פרטי ברזל -->
+                                <line x1="11" y1="2" x2="11" y2="26" stroke="#636e72" stroke-width="2" />
+                                <line x1="45" y1="2" x2="45" y2="26" stroke="#636e72" stroke-width="2" />
+                            </g>
+                            
+                            <!-- כפה שמאלית אוחזת -->
+                            <ellipse cx="70" cy="159" rx="14" ry="11" fill="#e18b2c" />
+                            <ellipse cx="70" cy="157" rx="11" ry="8" fill="#ffb142" />
+
+
+                            <!-- משקולת דמבל ימנית -->
+                            <g transform="translate(102, 145)">
+                                <rect x="0" y="10" width="56" height="8" rx="4" fill="#b2bec3" /> <!-- מוט -->
+                                <rect x="5" y="0" width="12" height="28" rx="2" fill="#2d3436" /> <!-- צלחת פנימית -->
+                                <rect x="39" y="0" width="12" height="28" rx="2" fill="#2d3436" /> <!-- צלחת חיצונית -->
+                                <!-- פרטי ברזל -->
+                                <line x1="11" y1="2" x2="11" y2="26" stroke="#636e72" stroke-width="2" />
+                                <line x1="45" y1="2" x2="45" y2="26" stroke="#636e72" stroke-width="2" />
+                            </g>
+
+                            <!-- כפה ימנית אוחזת -->
+                            <ellipse cx="130" cy="159" rx="14" ry="11" fill="#e18b2c" />
+                            <ellipse cx="130" cy="157" rx="11" ry="8" fill="#ffb142" />
+                        </g>
+
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- אזור הטקסט המתחלף -->
+        <div class="text-slider" id="animated-text">מחשב קלוריות</div>
+    </div>
+
+    <!-- לוגיקת החלפת הטקסט (נשארה זהה) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const texts = [
+                "מחשב קלוריות", 
+                "בודק ערכים תזונתיים", 
+                "בודק חלבון, פחמימות ושומן"
+            ];
+            let currentIndex = 0;
+            const textElement = document.getElementById("animated-text");
+
+            setInterval(() => {
+                textElement.classList.add("text-fade-out");
+                
+                setTimeout(() => {
+                    currentIndex = (currentIndex + 1) % texts.length;
+                    textElement.innerText = texts[currentIndex];
+                    
+                    textElement.classList.remove("text-fade-out");
+                    textElement.classList.add("text-fade-in");
+
+                    setTimeout(() => {
+                        textElement.classList.remove("text-fade-in");
+                    }, 500); 
+                }, 500); 
+            }, 3000); 
+        });
+    </script>
+</body>
+</html>

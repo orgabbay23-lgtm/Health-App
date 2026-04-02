@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אנימציית חתול שף</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* איפוס בסיסי ורקע שקוף */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Rubik', sans-serif;
+            overflow: hidden;
+        }
+
+        .widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .animation-stage {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        /* החתול צף מעט כל הזמן */
+        .cat-wrapper {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 200px;
+            height: 200px;
+            animation: floatCat 4s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        @keyframes floatCat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+
+        /* תנועת זנב (שמח על האוכל) */
+        .tail {
+            transform-origin: 160px 110px;
+            animation: tailWag 3s infinite alternate ease-in-out;
+        }
+
+        @keyframes tailWag {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(15deg); }
+        }
+
+        /* אנימציית הערבוב עם הכף */
+        .stir-arm {
+            transform-origin: 70px 160px;
+            animation: stirring 2s infinite linear;
+        }
+
+        @keyframes stirring {
+            0% { transform: rotate(0deg) translate(0, 0); }
+            25% { transform: rotate(-5deg) translate(-5px, 5px); }
+            50% { transform: rotate(0deg) translate(-10px, 0); }
+            75% { transform: rotate(5deg) translate(-5px, -5px); }
+            100% { transform: rotate(0deg) translate(0, 0); }
+        }
+
+        /* יד ימין מחזיקה את הסיר יציב (עולה ויורדת קצת עם החתול) */
+        .hold-arm {
+            animation: holdPot 4s infinite ease-in-out;
+        }
+        @keyframes holdPot {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-2px); }
+        }
+
+        /* בועות עולות מהסיר (מבעבע) */
+        .soup-bubble {
+            transform-origin: center;
+            animation: bubbleRise 3s infinite ease-in;
+            opacity: 0;
+        }
+
+        .soup-bubble.b1 { animation-delay: 0s; left: 85px; top: 160px; }
+        .soup-bubble.b2 { animation-delay: 1.5s; left: 110px; top: 165px; }
+        .soup-bubble.b3 { animation-delay: 0.8s; left: 95px; top: 155px; }
+
+        @keyframes bubbleRise {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            20% { opacity: 1; }
+            80% { transform: translateY(-20px) scale(1.2); opacity: 0.7; }
+            100% { transform: translateY(-25px) scale(1.5); opacity: 0; }
+        }
+
+        /* --- בועת המחשבה על הקלוריות --- */
+        /* זמן מחזור כולל לבועת המחשבה: 8 שניות */
+        .thought-bubble-container {
+            position: absolute;
+            top: 20px;
+            left: 140px;
+            z-index: 3;
+            animation: showThought 8s infinite;
+        }
+
+        @keyframes showThought {
+            0%, 10% { opacity: 0; transform: scale(0.8) translateY(10px); }
+            15%, 85% { opacity: 1; transform: scale(1) translateY(0); }
+            90%, 100% { opacity: 0; transform: scale(0.8) translateY(-10px); }
+        }
+
+        /* החלפת המספרים בתוך בועת המחשבה (מה הוא חושב?) */
+        .thought-text {
+            font-size: 14px;
+            font-weight: bold;
+            fill: #d35400;
+            font-family: 'Rubik', sans-serif;
+            text-anchor: middle;
+        }
+
+        .think-1 { animation: showT1 8s infinite; }
+        .think-2 { animation: showT2 8s infinite; }
+        .think-3 { animation: showT3 8s infinite; }
+
+        @keyframes showT1 { 0%, 15% { opacity: 0;} 16%, 35% { opacity: 1;} 36%, 100% { opacity: 0;} }
+        @keyframes showT2 { 0%, 35% { opacity: 0;} 36%, 60% { opacity: 1;} 61%, 100% { opacity: 0;} }
+        @keyframes showT3 { 0%, 60% { opacity: 0;} 61%, 85% { opacity: 1;} 86%, 100% { opacity: 0;} }
+
+        /* --- אנימציות פרצופים --- */
+        .face-cooking { animation: showCooking 8s infinite; }
+        @keyframes showCooking { 0%, 15%, 86%, 100% { opacity: 1; } 16%, 85% { opacity: 0; } }
+
+        .face-thinking { animation: showThinkingFace 8s infinite; }
+        @keyframes showThinkingFace { 0%, 15% { opacity: 0; } 16%, 60% { opacity: 1; } 61%, 100% { opacity: 0; } }
+
+        .face-happy { animation: showHappyFace 8s infinite; }
+        @keyframes showHappyFace { 0%, 60% { opacity: 0; } 61%, 85% { opacity: 1; } 86%, 100% { opacity: 0; } }
+
+
+        /* עיצוב הטקסט בתחתית */
+        .text-slider {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff9f43;
+            text-align: center;
+            min-height: 40px;
+            padding: 5px 15px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0px  4px 6px rgba(0,0,0,0.15);
+        }
+
+        .text-fade-out { opacity: 0; transform: translateY(-10px); }
+        .text-fade-in { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="widget-container">
+        <div class="animation-stage">
+            
+            <!-- בועת המחשבה צצה מעל החתול -->
+            <div class="thought-bubble-container">
+                <svg width="120" height="90" viewBox="0 0 120 90">
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.1" />
+                    </filter>
+                    <g filter="url(#shadow)">
+                        <!-- עיגולים קטנים לבועה -->
+                        <circle cx="15" cy="75" r="4" fill="#ffffff" />
+                        <circle cx="30" cy="65" r="8" fill="#ffffff" />
+                        <!-- הבועה המרכזית (כמו ענן) -->
+                        <path d="M 40,45 Q 40,25 65,25 Q 90,25 100,40 Q 115,45 110,60 Q 105,75 80,75 Q 55,75 45,60 Q 30,55 40,45 Z" fill="#ffffff" />
+                        
+                        <!-- הטקסטים המתחלפים בבועה (מסודרים בעברית ומונעים היפוך מספרים) -->
+                        <text class="thought-text think-1" x="75" y="45">
+                            <tspan x="75" dy="0">250</tspan>
+                            <tspan x="75" dy="16">קלוריות?</tspan>
+                        </text>
+                        <text class="thought-text think-2" x="75" y="45">
+                            <tspan x="75" dy="0">320</tspan>
+                            <tspan x="75" dy="16">קלוריות?</tspan>
+                        </text>
+                        <text class="thought-text think-3" x="75" y="45" fill="#27ae60">
+                            <tspan x="75" dy="0">450</tspan>
+                            <tspan x="75" dy="16">קלוריות!</tspan>
+                        </text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- החתול והסיר -->
+            <div class="cat-wrapper">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="cat-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity="0.15" />
+                        </filter>
+                        <!-- חיתוך (Clip) שנועד להסתיר את תחתית הכף בתוך המרק -->
+                        <clipPath id="soup-clip">
+                            <rect x="0" y="0" width="200" height="154" />
+                        </clipPath>
+                    </defs>
+                    
+                    <g filter="url(#cat-shadow)">
+                        <!-- זנב -->
+                        <path class="tail" d="M 140,160 Q 190,170 185,120 Q 180,95 160,110" fill="none" stroke="#e18b2c" stroke-width="16" stroke-linecap="round" />
+                        
+                        <!-- גוף -->
+                        <path d="M 50,180 Q 100,220 150,180 L 140,110 Q 100,100 60,110 Z" fill="#ffb142" />
+
+                        <!-- אוזניים -->
+                        <polygon points="45,110 25,35 90,65" fill="#ffb142" />
+                        <polygon points="52,100 35,52 82,75" fill="#ffcccc" />
+                        <polygon points="155,110 175,35 110,65" fill="#ffb142" />
+                        <polygon points="148,100 165,52 118,75" fill="#ffcccc" />
+
+                        <!-- ראש -->
+                        <ellipse cx="100" cy="115" rx="75" ry="60" fill="#ffb142" />
+
+                        <!-- כובע שף (Chef Toque) -->
+                        <g transform="translate(0, -15)">
+                            <!-- בסיס הכובע -->
+                            <rect x="70" y="50" width="60" height="20" rx="2" fill="#ffffff" />
+                            <line x1="70" y1="65" x2="130" y2="65" stroke="#f1f2f6" stroke-width="2" />
+                            <!-- עננים עליונים של הכובע -->
+                            <circle cx="80" cy="40" r="18" fill="#ffffff" />
+                            <circle cx="120" cy="40" r="18" fill="#ffffff" />
+                            <circle cx="100" cy="30" r="22" fill="#ffffff" />
+                        </g>
+
+                        <!-- פסים על המצח (קצת יותר נמוכים בגלל הכובע) -->
+                        <path d="M 100,60 L 100,75 M 82,65 L 86,75 M 118,65 L 114,75" stroke="#e18b2c" stroke-width="5" stroke-linecap="round" />
+
+                        <!-- לחיים לבנות -->
+                        <ellipse cx="78" cy="132" rx="22" ry="16" fill="#ffffff" />
+                        <ellipse cx="122" cy="132" rx="22" ry="16" fill="#ffffff" />
+
+                        <!-- אף -->
+                        <polygon points="94,120 106,120 100,127" fill="#ff7eb3" />
+
+                        <!-- שפם -->
+                        <line x1="10" y1="115" x2="45" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="5"  y1="132" x2="42" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="10" y1="149" x2="45" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="115" x2="155" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="195" y1="132" x2="158" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="149" x2="155" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+                        <!-- ================= פרצופים מתחלפים ================= -->
+                        
+                        <!-- 1. פרצוף מבשל ונהנה (רגיל) -->
+                        <g class="face-cooking">
+                            <ellipse cx="65" cy="110" rx="7" ry="10" fill="#2d3436" />
+                            <ellipse cx="135" cy="110" rx="7" ry="10" fill="#2d3436" />
+                            <circle cx="63" cy="107" r="2.5" fill="#ffffff" />
+                            <circle cx="133" cy="107" r="2.5" fill="#ffffff" />
+                            <!-- פה מזמר/מבשל -->
+                            <ellipse cx="100" cy="135" rx="5" ry="4" fill="#2d3436" />
+                        </g>
+
+                        <!-- 2. פרצוף חושב על הקלוריות -->
+                        <g class="face-thinking">
+                            <!-- עיניים מביטות למעלה ושמאלה לעבר הבועה -->
+                            <ellipse cx="65" cy="110" rx="10" ry="12" fill="#ffffff" />
+                            <circle cx="63" cy="106" r="4" fill="#2d3436" />
+                            <ellipse cx="135" cy="110" rx="10" ry="12" fill="#ffffff" />
+                            <circle cx="133" cy="106" r="4" fill="#2d3436" />
+                            <!-- פה מתלבט -->
+                            <path d="M 95,135 Q 100,132 105,135" fill="none" stroke="#2d3436" stroke-width="3" stroke-linecap="round" />
+                        </g>
+
+                        <!-- 3. פרצוף שמח שמצא את התשובה (450 קלוריות!) -->
+                        <g class="face-happy">
+                            <path d="M 55,112 Q 65,100 75,112" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                            <path d="M 125,112 Q 135,100 145,112" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                            <path d="M 85,130 Q 100,150 115,130 Z" fill="#2d3436" />
+                            <path d="M 90,135 Q 100,150 110,135 Z" fill="#ff7eb3" />
+                            <!-- סומק מתלהב -->
+                            <ellipse cx="45" cy="120" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                            <ellipse cx="155" cy="120" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                        </g>
+
+                        <!-- ================= בישול: רגליים, סיר וידיים ================= -->
+                        
+                        <!-- רגליים אחוריות (עומד) -->
+                        <ellipse cx="60" cy="185" rx="15" ry="12" fill="#e18b2c" />
+                        <ellipse cx="60" cy="185" rx="12" ry="9" fill="#ffb142" />
+                        <ellipse cx="140" cy="185" rx="15" ry="12" fill="#e18b2c" />
+                        <ellipse cx="140" cy="185" rx="12" ry="9" fill="#ffb142" />
+
+                        <!-- יד ימין מחזיקה את הסיר -->
+                        <g class="hold-arm">
+                            <ellipse cx="135" cy="165" rx="12" ry="10" fill="#e18b2c" />
+                            <ellipse cx="135" cy="163" rx="9" ry="7" fill="#ffb142" />
+                        </g>
+
+                        <!-- סיר בישול שחור במרכז -->
+                        <g transform="translate(65, 150)">
+                            <!-- גוף הסיר -->
+                            <path d="M 10,0 L 60,0 C 70,0 75,15 75,30 C 75,45 65,50 55,50 L 15,50 C 5,50 -5,45 -5,30 C -5,15 0,0 10,0 Z" fill="#2d3436" />
+                            <!-- פס דקורטיבי על הסיר -->
+                            <path d="M -5,30 Q 35,40 75,30" fill="none" stroke="#636e72" stroke-width="2" />
+                            <!-- אוזן/ידית ימין של הסיר (איפה שהיד מחזיקה) -->
+                            <path d="M 72,15 Q 85,15 85,25 Q 85,35 72,35" fill="none" stroke="#2d3436" stroke-width="6" stroke-linecap="round" />
+                            
+                            <!-- מרק מבעבע (כתום/צהוב) בחלק העליון של הסיר -->
+                            <ellipse cx="35" cy="0" rx="35" ry="8" fill="#e67e22" />
+                            <ellipse cx="35" cy="0" rx="25" ry="5" fill="#f39c12" />
+                        </g>
+
+                        <!-- בועות מרק קטנות מעל הסיר -->
+                        <circle class="soup-bubble b1" cx="85" cy="148" r="3" fill="#f39c12" />
+                        <circle class="soup-bubble b2" cx="110" cy="150" r="4" fill="#e67e22" />
+                        <circle class="soup-bubble b3" cx="95" cy="146" r="2.5" fill="#f1c40f" />
+
+                        <!-- קבוצת יד שמאל המערבבת (יחד עם הכף העץ) - חתוכה כדי שתטבע בתוך המרק -->
+                        <g clip-path="url(#soup-clip)">
+                            <g class="stir-arm">
+                                <!-- כף עץ ארוכה -->
+                                <line x1="60" y1="120" x2="85" y2="160" stroke="#d35400" stroke-width="6" stroke-linecap="round" />
+                                <ellipse cx="85" cy="160" rx="8" ry="12" fill="#d35400" transform="rotate(-30 85 160)" /> <!-- ראש הכף במרק -->
+                                
+                                <!-- כפה שמאלית אוחזת בכף באוויר -->
+                                <ellipse cx="70" cy="135" rx="12" ry="10" fill="#e18b2c" transform="rotate(30 70 135)"/>
+                                <ellipse cx="70" cy="133" rx="9" ry="7" fill="#ffb142" transform="rotate(30 70 135)"/>
+                            </g>
+                        </g>
+
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- אזור הטקסט המתחלף -->
+        <div class="text-slider" id="animated-text">מחשב קלוריות</div>
+    </div>
+
+    <!-- לוגיקת החלפת הטקסט -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const texts = [
+                "מחשב קלוריות", 
+                "בודק ערכים תזונתיים", 
+                "בודק חלבון, פחמימות ושומן"
+            ];
+            let currentIndex = 0;
+            const textElement = document.getElementById("animated-text");
+
+            setInterval(() => {
+                textElement.classList.add("text-fade-out");
+                
+                setTimeout(() => {
+                    currentIndex = (currentIndex + 1) % texts.length;
+                    textElement.innerText = texts[currentIndex];
+                    
+                    textElement.classList.remove("text-fade-out");
+                    textElement.classList.add("text-fade-in");
+
+                    setTimeout(() => {
+                        textElement.classList.remove("text-fade-in");
+                    }, 500); 
+                }, 500); 
+            }, 3000); 
+        });
+    </script>
+</body>
+</html>

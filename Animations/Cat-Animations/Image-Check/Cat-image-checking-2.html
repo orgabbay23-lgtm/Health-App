@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אנימציית חתול מצלם אוכל</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* איפוס בסיסי ורקע שקוף */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent; /* רקע שקוף לבקשתך */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Rubik', sans-serif;
+            overflow: hidden;
+        }
+
+        .widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        /* הבמה שמחזיקה את החתול והאוכל */
+        .animation-stage {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        /* הגדרות החתול והתנועה שלו */
+        .cat-wrapper {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 200px;
+            height: 200px;
+            animation: floatCat 3s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        /* אנימציית ציפה לחתול */
+        @keyframes floatCat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+
+        /* אנימציית מצמוץ לעיניים של החתול */
+        .eyes {
+            transform-origin: 100px 105px;
+            animation: blink 4s infinite;
+        }
+
+        @keyframes blink {
+            0%, 95%, 98%, 100% { transform: scaleY(1); }
+            96%, 99% { transform: scaleY(0.1); }
+        }
+
+        /* אנימציית תנועת המצלמה והלחיצה */
+        .camera-wrapper {
+            transform-origin: 100px 162px;
+            animation: clickAnim 3s infinite;
+        }
+
+        @keyframes clickAnim {
+            0%, 80%, 100% { transform: scale(1) rotate(0deg); }
+            85% { transform: scale(1.05) rotate(-3deg); } /* רתיעה קלה של לחיצת מצלמה */
+            90% { transform: scale(1) rotate(0deg); }
+        }
+
+        /* אנימציית הפלאש של המצלמה */
+        .flash-effect {
+            opacity: 0;
+            animation: snap 3s infinite;
+        }
+
+        @keyframes snap {
+            0%, 84%, 100% { opacity: 0; }
+            85% { opacity: 1; }
+            88% { opacity: 0; }
+        }
+
+        /* אנימציות ריחוף לפריטי האוכל */
+        .food-item-1 {
+            animation: floatFood1 3.5s ease-in-out infinite alternate;
+        }
+        
+        .food-item-2 {
+            animation: floatFood2 4s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes floatFood1 {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-8px); }
+        }
+
+        @keyframes floatFood2 {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-10px); }
+        }
+
+        /* עיצוב הטקסט המתחלף */
+        .text-slider {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff9f43; /* צבע כתום תואם לחתול */
+            text-align: center;
+            min-height: 40px;
+            padding: 5px 15px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            /* קו מתאר לבן וצל כדי שהטקסט יהיה קריא על כל רקע */
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0px  4px 6px rgba(0,0,0,0.15);
+        }
+
+        /* מחלקות לאנימציית החלפת הטקסט (מנוהל דרך JS) */
+        .text-fade-out {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        .text-fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="widget-container">
+        <div class="animation-stage">
+            
+            <div class="cat-wrapper">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <!-- צל כללי -->
+                        <filter id="cat-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity="0.15" />
+                        </filter>
+                        <!-- גרדיאנט לפלאש של המצלמה -->
+                        <radialGradient id="flash-grad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
+                            <stop offset="40%" stop-color="#ffffff" stop-opacity="0.9" />
+                            <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                        </radialGradient>
+                    </defs>
+                    
+                    <g filter="url(#cat-shadow)">
+                        <!-- זנב -->
+                        <path d="M 140,160 Q 180,180 180,140 Q 180,110 160,110" fill="none" stroke="#e18b2c" stroke-width="16" stroke-linecap="round" />
+                        
+                        <!-- גוף -->
+                        <path d="M 50,180 Q 100,220 150,180 L 140,110 Q 100,100 60,110 Z" fill="#ffb142" />
+
+                        <!-- אוזניים -->
+                        <polygon points="45,110 25,35 90,65" fill="#ffb142" />
+                        <polygon points="155,110 175,35 110,65" fill="#ffb142" />
+                        <polygon points="52,100 35,52 82,75" fill="#ffcccc" />
+                        <polygon points="148,100 165,52 118,75" fill="#ffcccc" />
+
+                        <!-- ראש -->
+                        <ellipse cx="100" cy="115" rx="75" ry="60" fill="#ffb142" />
+
+                        <!-- פסים על המצח -->
+                        <path d="M 100,55 L 100,75 M 82,60 L 88,75 M 118,60 L 112,75" stroke="#e18b2c" stroke-width="5" stroke-linecap="round" />
+
+                        <!-- לחיים לבנות ופרוותיות -->
+                        <ellipse cx="78" cy="132" rx="22" ry="16" fill="#ffffff" />
+                        <ellipse cx="122" cy="132" rx="22" ry="16" fill="#ffffff" />
+
+                        <!-- אף ורדרד -->
+                        <polygon points="94,122 106,122 100,130" fill="#ff7eb3" />
+
+                        <!-- עיניים מונפשות -->
+                        <g class="eyes">
+                            <ellipse cx="65" cy="105" rx="11" ry="14" fill="#2d3436" />
+                            <ellipse cx="135" cy="105" rx="11" ry="14" fill="#2d3436" />
+                            <!-- השתקפות / ברק בעיניים -->
+                            <circle cx="61" cy="100" r="4.5" fill="#ffffff" />
+                            <circle cx="67" cy="111" r="2" fill="#ffffff" />
+                            <circle cx="131" cy="100" r="4.5" fill="#ffffff" />
+                            <circle cx="137" cy="111" r="2" fill="#ffffff" />
+                        </g>
+
+                        <!-- חיוך -->
+                        <path d="M 85,132 Q 100,148 115,132" stroke="#2d3436" stroke-width="3" fill="transparent" stroke-linecap="round" />
+
+                        <!-- סומק / לחיים ורודות -->
+                        <ellipse cx="45" cy="122" rx="10" ry="6" fill="#ff7eb3" opacity="0.4" />
+                        <ellipse cx="155" cy="122" rx="10" ry="6" fill="#ff7eb3" opacity="0.4" />
+
+                        <!-- שפם -->
+                        <line x1="10" y1="115" x2="45" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="5"  y1="132" x2="42" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="10" y1="149" x2="45" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        
+                        <line x1="190" y1="115" x2="155" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="195" y1="132" x2="158" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="149" x2="155" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+                        <!-- אוכל מרחף מס' 1: המבורגר (שמאל) -->
+                        <g class="food-item-1">
+                            <g transform="translate(10, 145) rotate(-10)">
+                                <!-- צל -->
+                                <ellipse cx="25" cy="38" rx="20" ry="4" fill="#000000" opacity="0.1" />
+                                <!-- לחמניה תחתונה -->
+                                <path d="M 10 30 Q 25 35 40 30 L 38 25 Q 25 28 12 25 Z" fill="#e1b12c" />
+                                <!-- קציצה -->
+                                <rect x="11" y="20" width="28" height="6" rx="3" fill="#8B4513" />
+                                <!-- חסה -->
+                                <path d="M 10 20 Q 15 16 20 20 T 30 20 T 40 20" stroke="#4cd137" stroke-width="3" stroke-linecap="round" fill="none" />
+                                <!-- גבינה -->
+                                <path d="M 15 20 L 20 25 L 25 20 L 30 24 L 35 20" fill="#fbc531" />
+                                <!-- לחמניה עליונה -->
+                                <path d="M 10 16 Q 25 0 40 16 Z" fill="#e1b12c" />
+                                <!-- שומשום -->
+                                <circle cx="20" cy="8" r="1.5" fill="#f5f6fa" />
+                                <circle cx="30" cy="9" r="1.5" fill="#f5f6fa" />
+                                <circle cx="25" cy="5" r="1.5" fill="#f5f6fa" />
+                            </g>
+                        </g>
+
+                        <!-- אוכל מרחף מס' 2: משולש פיצה (ימין) -->
+                        <g class="food-item-2">
+                            <g transform="translate(145, 130) rotate(15)">
+                                <!-- צל -->
+                                <ellipse cx="25" cy="48" rx="20" ry="4" fill="#000000" opacity="0.1" />
+                                <!-- בצק -->
+                                <path d="M 5 10 L 45 20 L 40 12 L 8 2 Z" fill="#e1b12c" />
+                                <!-- גבינה -->
+                                <path d="M 10 12 L 40 20 L 25 45 Z" fill="#fbc531" />
+                                <!-- פפרוני -->
+                                <circle cx="22" cy="22" r="4" fill="#e84118" />
+                                <circle cx="30" cy="28" r="3" fill="#e84118" />
+                                <circle cx="20" cy="35" r="3.5" fill="#e84118" />
+                            </g>
+                        </g>
+
+                        <!-- קבוצת המצלמה המונפשת -->
+                        <g class="camera-wrapper">
+                            <!-- גוף המצלמה -->
+                            <rect x="70" y="145" width="60" height="35" rx="6" fill="#1dd1a1" />
+                            <rect x="70" y="160" width="60" height="20" rx="6" fill="#10ac84" />
+                            
+                            <!-- מבזק (פלאש - החלק העליון) -->
+                            <rect x="75" y="140" width="16" height="6" rx="2" fill="#c8d6e5" />
+                            <circle cx="83" cy="143" r="2" fill="#ffffff" />
+                            
+                            <!-- עדשה -->
+                            <circle cx="100" cy="162" r="14" fill="#222f3e" />
+                            <circle cx="100" cy="162" r="10" fill="#576574" />
+                            <circle cx="96" cy="158" r="2.5" fill="#ffffff" opacity="0.8" />
+                            <circle cx="104" cy="165" r="1" fill="#ffffff" opacity="0.6" />
+
+                            <!-- אפקט הפלאש שנדלק -->
+                            <circle cx="83" cy="143" r="80" fill="url(#flash-grad)" class="flash-effect" />
+                        </g>
+
+                        <!-- כפות רגליים (ידיים) שמחזיקות את המצלמה -->
+                        <!-- כף רגל שמאלית -->
+                        <ellipse cx="65" cy="162" rx="12" ry="15" fill="#e18b2c" transform="rotate(45 65 162)"/>
+                        <ellipse cx="65" cy="162" rx="9" ry="12" fill="#ffb142" transform="rotate(45 65 162)"/>
+                        
+                        <!-- כף רגל ימנית -->
+                        <ellipse cx="135" cy="162" rx="12" ry="15" fill="#e18b2c" transform="rotate(-45 135 162)"/>
+                        <ellipse cx="135" cy="162" rx="9" ry="12" fill="#ffb142" transform="rotate(-45 135 162)"/>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- אזור הטקסט המתחלף -->
+        <div class="text-slider" id="animated-text">בודק מרכיבים בתמונה</div>
+    </div>
+
+    <!-- לוגיקת החלפת הטקסט (נשארה זהה) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const texts = [
+                "בודק מרכיבים בתמונה", 
+                "מחשב כמויות מדויקות", 
+                "עוד רגע בבקשה"
+            ];
+            let currentIndex = 0;
+            const textElement = document.getElementById("animated-text");
+
+            // הפעלת החלפה כל 3 שניות
+            setInterval(() => {
+                // שלב 1: העלמת הטקסט
+                textElement.classList.add("text-fade-out");
+                
+                setTimeout(() => {
+                    // שלב 2: החלפת התוכן והצגתו מחדש
+                    currentIndex = (currentIndex + 1) % texts.length;
+                    textElement.innerText = texts[currentIndex];
+                    
+                    textElement.classList.remove("text-fade-out");
+                    textElement.classList.add("text-fade-in");
+
+                    // שלב 3: ניקוי מחלקת ההופעה
+                    setTimeout(() => {
+                        textElement.classList.remove("text-fade-in");
+                    }, 500); 
+                }, 500); 
+            }, 3000); 
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אנימציית חתול מחשב קלוריות</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* איפוס בסיסי ורקע שקוף */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Rubik', sans-serif;
+            overflow: hidden;
+        }
+
+        .widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .animation-stage {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        /* החתול צף מעט כל הזמן */
+        .cat-wrapper {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 200px;
+            height: 200px;
+            animation: floatCat 4s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        @keyframes floatCat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* תנועת זנב רגועה */
+        .tail {
+            transform-origin: 160px 110px;
+            animation: tailWag 4s infinite alternate ease-in-out;
+        }
+
+        @keyframes tailWag {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(12deg); }
+        }
+
+        /* אוזן קופצת כשהוא חושב (פרט קטן וחמוד) */
+        .ear-left {
+            transform-origin: 45px 110px;
+            animation: earTwitch 6s infinite;
+        }
+
+        @keyframes earTwitch {
+            0%, 28%, 45%, 100% { transform: rotate(0deg); }
+            30%, 34% { transform: rotate(-10deg); }
+            32%, 36% { transform: rotate(5deg); }
+        }
+
+        /* --- אנימציות שלבים: הקלדה (0-30), חשיבה (30-45), סיום ולחיצה (45-50), חיוך (50-80) --- */
+
+        /* החלפת פרצופים לפי שלב (אטימות) */
+        .face-typing {
+            animation: showTyping 6s infinite;
+        }
+        @keyframes showTyping { 
+            0%, 29.9% { opacity: 1; } 
+            30%, 79.9% { opacity: 0; } 
+            80%, 100% { opacity: 1; } 
+        }
+
+        .face-thinking {
+            animation: showThinking 6s infinite;
+        }
+        @keyframes showThinking { 
+            0%, 29.9% { opacity: 0; } 
+            30%, 45.9% { opacity: 1; } 
+            46%, 100% { opacity: 0; } 
+        }
+
+        .face-happy {
+            animation: showHappy 6s infinite;
+        }
+        @keyframes showHappy { 
+            0%, 45.9% { opacity: 0; } 
+            46%, 79.9% { opacity: 1; } 
+            80%, 100% { opacity: 0; } 
+        }
+
+        /* אנימציות כפות ידיים על המחשבון */
+        .paw-left {
+            transform-origin: 75px 168px;
+            animation: tapLeft 6s infinite;
+        }
+        @keyframes tapLeft {
+            0%, 10%, 20%, 30% { transform: translateY(0) scale(1); } /* למטה */
+            5%, 15%, 25% { transform: translateY(-6px) scale(1.05); } /* למעלה מקליד */
+            30.1%, 100% { transform: translateY(0) scale(1); } /* נח */
+        }
+
+        .paw-right {
+            transform-origin: 125px 168px;
+            animation: tapRight 6s infinite;
+        }
+        @keyframes tapRight {
+            0%, 10%, 20% { transform: translateY(-6px) scale(1.05); } /* מתחלף עם השמאל */
+            5%, 15%, 25%, 30% { transform: translateY(0) scale(1); }
+            30.1%, 45% { transform: translateY(0) scale(1); } /* נח בחשיבה */
+            47% { transform: translateY(-15px) scale(1.1); } /* מרים יד ללחיצה הדרמטית */
+            50% { transform: translateY(3px) scale(0.95); } /* לוחץ על שווה! */
+            53%, 100% { transform: translateY(0) scale(1); } /* נח חזרה */
+        }
+
+        /* --- אנימציות למסך המחשבון --- */
+        .screen-typing { animation: showTyping 6s infinite; }
+        .screen-thinking { animation: showThinking 6s infinite; }
+        .screen-happy { animation: showHappy 6s infinite; }
+
+        /* אפקטים שמרחפים החוצה - סמלי חשבון בזמן הקלדה */
+        .typing-effects {
+            position: absolute;
+            top: 100px;
+            left: 150px;
+            z-index: 1;
+            animation: showTyping 6s infinite;
+        }
+
+        /* אפקטים שמרחפים החוצה - הצלחה בזמן חיוך */
+        .result-effects {
+            position: absolute;
+            top: 90px;
+            left: 150px;
+            z-index: 1;
+            animation: showHappy 6s infinite;
+        }
+
+        .effect-item {
+            position: absolute;
+            font-size: 20px;
+            font-weight: 900;
+            opacity: 0;
+            animation: floatUp 2s infinite ease-out;
+            animation-delay: var(--delay);
+            transform: translateX(var(--x));
+            color: var(--color, #ff9f43);
+        }
+
+        @keyframes floatUp {
+            0% { transform: translate(var(--x), 0) scale(0.5); opacity: 0; }
+            20% { opacity: 1; transform: translate(var(--x), -15px) scale(1.1); }
+            80% { opacity: 0.8; }
+            100% { transform: translate(calc(var(--x) * 1.5), -60px) scale(1); opacity: 0; }
+        }
+
+        /* עיצוב הטקסט */
+        .text-slider {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff9f43;
+            text-align: center;
+            min-height: 40px;
+            padding: 5px 15px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0px  4px 6px rgba(0,0,0,0.15);
+        }
+
+        .text-fade-out { opacity: 0; transform: translateY(-10px); }
+        .text-fade-in { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="widget-container">
+        <div class="animation-stage">
+            
+            <!-- אפקטים של הקלדה (סמלי חשבון קטנים) -->
+            <div class="typing-effects">
+                <div class="effect-item" style="--delay: 0s; --x: -50px; --color: #2bcbba; font-size: 24px;">+</div>
+                <div class="effect-item" style="--delay: 0.5s; --x: 35px; --color: #fd9644; font-size: 24px;">-</div>
+                <div class="effect-item" style="--delay: 1.2s; --x: -20px; --color: #45aaf2; font-size: 20px;">%</div>
+            </div>
+
+            <!-- אפקטים של תוצאה שמחה (הצלחה!) -->
+            <div class="result-effects">
+                <div class="effect-item" style="--delay: 0s; --x: -60px; --color: #20bf6b; font-size: 22px;">kcal</div>
+                <div class="effect-item" style="--delay: 0.3s; --x: 40px; --color: #eb3b5a; font-size: 24px;">❤️</div>
+                <div class="effect-item" style="--delay: 0.6s; --x: -15px; --color: #f7b731; font-size: 22px;">100%</div>
+            </div>
+
+            <div class="cat-wrapper">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="cat-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity="0.15" />
+                        </filter>
+                        <!-- פונט מובנה למחשבון -->
+                        <style>
+                            .calc-text { font-family: monospace; font-weight: bold; }
+                        </style>
+                    </defs>
+                    
+                    <g filter="url(#cat-shadow)">
+                        <!-- זנב -->
+                        <path class="tail" d="M 140,160 Q 190,170 185,120 Q 180,95 160,110" fill="none" stroke="#e18b2c" stroke-width="16" stroke-linecap="round" />
+                        
+                        <!-- גוף -->
+                        <path d="M 50,180 Q 100,220 150,180 L 140,110 Q 100,100 60,110 Z" fill="#ffb142" />
+
+                        <!-- אוזניים (עם קלאס לאוזן שמאל שקופצת בחשיבה) -->
+                        <g class="ear-left">
+                            <polygon points="45,110 25,35 90,65" fill="#ffb142" />
+                            <polygon points="52,100 35,52 82,75" fill="#ffcccc" />
+                        </g>
+                        <polygon points="155,110 175,35 110,65" fill="#ffb142" />
+                        <polygon points="148,100 165,52 118,75" fill="#ffcccc" />
+
+                        <!-- ראש -->
+                        <ellipse cx="100" cy="115" rx="75" ry="60" fill="#ffb142" />
+
+                        <!-- פסים על המצח -->
+                        <path d="M 100,55 L 100,75 M 82,60 L 88,75 M 118,60 L 112,75" stroke="#e18b2c" stroke-width="5" stroke-linecap="round" />
+
+                        <!-- לחיים לבנות -->
+                        <ellipse cx="78" cy="132" rx="22" ry="16" fill="#ffffff" />
+                        <ellipse cx="122" cy="132" rx="22" ry="16" fill="#ffffff" />
+
+                        <!-- אף -->
+                        <polygon points="94,120 106,120 100,127" fill="#ff7eb3" />
+
+                        <!-- שפם -->
+                        <line x1="10" y1="115" x2="45" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="5"  y1="132" x2="42" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="10" y1="149" x2="45" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="115" x2="155" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="195" y1="132" x2="158" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="149" x2="155" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+
+                        <!-- ================= פרצופים מתחלפים ================= -->
+                        
+                        <!-- 1. פרצוף הקלדה / עבודה -->
+                        <g class="face-typing">
+                            <!-- עיניים מרוכזות -->
+                            <ellipse cx="65" cy="105" rx="9" ry="12" fill="#2d3436" />
+                            <ellipse cx="135" cy="105" rx="9" ry="12" fill="#2d3436" />
+                            <!-- ברק בעיניים -->
+                            <circle cx="62" cy="101" r="3.5" fill="#ffffff" />
+                            <circle cx="132" cy="101" r="3.5" fill="#ffffff" />
+                            <!-- פה מרוכז קטן -->
+                            <path d="M 95,133 Q 100,135 105,133" fill="none" stroke="#2d3436" stroke-width="3" stroke-linecap="round" />
+                            <!-- סומק עדין -->
+                            <ellipse cx="45" cy="120" rx="10" ry="6" fill="#ff7eb3" opacity="0.3"/>
+                            <ellipse cx="155" cy="120" rx="10" ry="6" fill="#ff7eb3" opacity="0.3"/>
+                        </g>
+
+                        <!-- 2. פרצוף חשיבה (הפסקה בהקלדה) -->
+                        <g class="face-thinking">
+                            <!-- עיניים מסתכלות למעלה בחשיבה -->
+                            <ellipse cx="65" cy="105" rx="11" ry="14" fill="#ffffff" />
+                            <circle cx="65" cy="98" r="5" fill="#2d3436" />
+                            <circle cx="63" cy="96" r="2" fill="#ffffff" />
+                            
+                            <ellipse cx="135" cy="105" rx="11" ry="14" fill="#ffffff" />
+                            <circle cx="135" cy="98" r="5" fill="#2d3436" />
+                            <circle cx="133" cy="96" r="2" fill="#ffffff" />
+                            <!-- פה עקום/חושב -->
+                            <path d="M 92,133 Q 100,128 108,135" fill="none" stroke="#2d3436" stroke-width="3" stroke-linecap="round" />
+                            <!-- זיעה/התאמצות (טיפה קטנה מעל הגבה) -->
+                            <path d="M 125,80 Q 130,85 125,90 Q 120,85 125,80" fill="#74b9ff" opacity="0.7" />
+                        </g>
+
+                        <!-- 3. פרצוף מאושר (תוצאה) -->
+                        <g class="face-happy">
+                            <!-- עיניים עצומות משמחה -->
+                            <path d="M 55,105 Q 65,92 75,105" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                            <path d="M 125,105 Q 135,92 145,105" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                            <!-- חיוך ענק -->
+                            <path d="M 85,130 Q 100,150 115,130 Z" fill="#2d3436" />
+                            <path d="M 90,135 Q 100,150 110,135 Z" fill="#ff7eb3" />
+                            <!-- סומק חזק יותר -->
+                            <ellipse cx="45" cy="118" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                            <ellipse cx="155" cy="118" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                        </g>
+
+                        <!-- משקפי ראייה חמודים (מעדנתי את המסגרת שתיראה טבעית יותר) -->
+                        <g opacity="0.8">
+                            <!-- זגוגיות (חצי שקופות כדי לא להסתיר את העיניים) -->
+                            <circle cx="65" cy="105" r="18" fill="#f1f2f6" opacity="0.15" />
+                            <circle cx="135" cy="105" r="18" fill="#f1f2f6" opacity="0.15" />
+                            <!-- מסגרת שחורה -->
+                            <circle cx="65" cy="105" r="18" fill="none" stroke="#2d3436" stroke-width="2.5" />
+                            <circle cx="135" cy="105" r="18" fill="none" stroke="#2d3436" stroke-width="2.5" />
+                            <!-- גשר המשקפיים -->
+                            <path d="M 83,105 Q 100,102 117,105" fill="none" stroke="#2d3436" stroke-width="2.5" stroke-linecap="round" />
+                            <!-- קצוות/ידיות בצדדים -->
+                            <line x1="47" y1="105" x2="35" y2="100" stroke="#2d3436" stroke-width="2.5" stroke-linecap="round" />
+                            <line x1="153" y1="105" x2="165" y2="100" stroke="#2d3436" stroke-width="2.5" stroke-linecap="round" />
+                            <!-- ברק קטן על העדשה -->
+                            <line x1="55" y1="95" x2="62" y2="92" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+                            <line x1="125" y1="95" x2="132" y2="92" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+                        </g>
+
+
+                        <!-- ================= מחשבון שולחני וכפות רגליים ================= -->
+                        
+                        <!-- רגליים אחוריות יושבות -->
+                        <ellipse cx="60" cy="185" rx="18" ry="12" fill="#e18b2c" />
+                        <ellipse cx="60" cy="185" rx="14" ry="9" fill="#ffb142" />
+                        <ellipse cx="140" cy="185" rx="18" ry="12" fill="#e18b2c" />
+                        <ellipse cx="140" cy="185" rx="14" ry="9" fill="#ffb142" />
+
+                        <!-- המחשבון עצמו מונח מקדימה -->
+                        <g transform="translate(45, 145)">
+                            <!-- בסיס המחשבון -->
+                            <rect x="0" y="5" width="110" height="55" rx="6" fill="#2d3436" />
+                            <rect x="0" y="0" width="110" height="55" rx="6" fill="#b2bec3" />
+                            <rect x="2" y="2" width="106" height="51" rx="4" fill="#dfe6e9" />
+                            
+                            <!-- מסך דיגיטלי (ירוק בהיר) -->
+                            <rect x="8" y="8" width="94" height="18" rx="3" fill="#a8e6cf" />
+                            <!-- פאנל סולארי קטן למעלה בצד -->
+                            <rect x="10" y="11" width="20" height="6" rx="1" fill="#2d3436" />
+                            <line x1="15" y1="11" x2="15" y2="17" stroke="#636e72" stroke-width="0.5" />
+                            <line x1="20" y1="11" x2="20" y2="17" stroke="#636e72" stroke-width="0.5" />
+                            <line x1="25" y1="11" x2="25" y2="17" stroke="#636e72" stroke-width="0.5" />
+
+                            <!-- טקסט דינמי על המסך לפי שלב! תוקן: נוספה הגדרת כיווניות LTR כדי שהמספרים לא יברחו החוצה בגלל העברית -->
+                            <g class="calc-text" font-size="12" fill="#2d3436" text-anchor="end" style="direction: ltr; unicode-bidi: isolate;">
+                                <text class="screen-typing" x="98" y="21">125 + 45</text>
+                                <text class="screen-thinking" x="98" y="21">125 + 480</text>
+                                <text class="screen-happy" x="98" y="22" font-size="14" fill="#1b9c56">1,240</text>
+                            </g>
+
+                            <!-- שורת כפתורים עליונה -->
+                            <rect x="10" y="32" width="18" height="8" rx="2" fill="#636e72" />
+                            <rect x="34" y="32" width="18" height="8" rx="2" fill="#636e72" />
+                            <rect x="58" y="32" width="18" height="8" rx="2" fill="#636e72" />
+                            <rect x="82" y="32" width="18" height="8" rx="2" fill="#ff7675" /> <!-- כפתור מחיקה C -->
+
+                            <!-- שורת כפתורים תחתונה -->
+                            <rect x="10" y="44" width="18" height="8" rx="2" fill="#636e72" />
+                            <rect x="34" y="44" width="18" height="8" rx="2" fill="#636e72" />
+                            <rect x="58" y="44" width="18" height="8" rx="2" fill="#636e72" />
+                            <rect x="82" y="44" width="18" height="8" rx="2" fill="#0984e3" /> <!-- כפתור שווה כחול בולט! -->
+                        </g>
+
+                        <!-- כפות ידיים קדמיות מקלידות מעל המחשבון -->
+                        <g class="paw-left">
+                            <ellipse cx="70" cy="178" rx="14" ry="11" fill="#e18b2c" transform="rotate(15 70 178)"/>
+                            <ellipse cx="70" cy="176" rx="11" ry="8" fill="#ffb142" transform="rotate(15 70 178)"/>
+                        </g>
+                        
+                        <g class="paw-right">
+                            <ellipse cx="130" cy="178" rx="14" ry="11" fill="#e18b2c" transform="rotate(-15 130 178)"/>
+                            <ellipse cx="130" cy="176" rx="11" ry="8" fill="#ffb142" transform="rotate(-15 130 178)"/>
+                        </g>
+
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- אזור הטקסט המתחלף -->
+        <div class="text-slider" id="animated-text">מחשב קלוריות</div>
+    </div>
+
+    <!-- לוגיקת החלפת הטקסט (נשארה זהה) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const texts = [
+                "מחשב קלוריות", 
+                "בודק ערכים תזונתיים", 
+                "בודק חלבון, פחמימות ושומן"
+            ];
+            let currentIndex = 0;
+            const textElement = document.getElementById("animated-text");
+
+            setInterval(() => {
+                textElement.classList.add("text-fade-out");
+                
+                setTimeout(() => {
+                    currentIndex = (currentIndex + 1) % texts.length;
+                    textElement.innerText = texts[currentIndex];
+                    
+                    textElement.classList.remove("text-fade-out");
+                    textElement.classList.add("text-fade-in");
+
+                    setTimeout(() => {
+                        textElement.classList.remove("text-fade-in");
+                    }, 500); 
+                }, 500); 
+            }, 3000); 
+        });
+    </script>
+</body>
+</html>

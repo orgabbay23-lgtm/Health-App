@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אנימציית חתול אוכל המבורגר</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* איפוס בסיסי ורקע שקוף */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Rubik', sans-serif;
+            overflow: hidden;
+        }
+
+        .widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .animation-stage {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        /* החתול הראשי צף מעט */
+        .cat-wrapper {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 200px;
+            height: 200px;
+            animation: floatCat 4s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        @keyframes floatCat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* --- אנימציות האכילה וההמבורגר --- */
+        /* זמן מחזור מלא: 6 שניות */
+
+        /* הידיים נחות למטה על הבטן, ועולות בדיוק עד הפה (לא גבוה מדי) */
+        .arms-and-burger {
+            animation: armMovement 6s infinite ease-in-out;
+        }
+
+        @keyframes armMovement {
+            0%, 10% { transform: translateY(24px); } /* מנוחה למטה בבטן */
+            15%, 27% { transform: translateY(8px); } /* הידיים עולות בדיוק למרכז הפה הפתוח */
+            32%, 100% { transform: translateY(24px); } /* יורדות חזרה ריקות */
+        }
+
+        /* ההמבורגר נעלם בדיוק בביס וצץ מחדש בסוף */
+        .burger-only {
+            transform-origin: 100px 136px;
+            animation: burgerVanish 6s infinite;
+        }
+
+        @keyframes burgerVanish {
+            0%, 23.9% { opacity: 1; transform: scale(1); }
+            24%, 85% { opacity: 0; transform: scale(0); } /* היעלמות מיידית בדיוק כשנוגס */
+            86% { opacity: 1; transform: scale(0); }
+            90%, 100% { opacity: 1; transform: scale(1); } /* קסם! המבורגר חדש צומח ביד */
+        }
+
+        /* החיוך הרגיל נעלם כשהוא פותח את הפה */
+        .smile-path {
+            animation: hideSmile 6s infinite;
+        }
+
+        @keyframes hideSmile {
+            0%, 13% { opacity: 1; }
+            14%, 71% { opacity: 0; }
+            72%, 100% { opacity: 1; }
+        }
+
+        /* הפה נפתח ענק ולמטה - כדי לבלוע את ההמבורגר בלי להסתיר את העיניים */
+        .eating-mouth {
+            transform-origin: 100px 132px;
+            animation: mouthChomp 6s infinite;
+        }
+
+        @keyframes mouthChomp {
+            0%, 13% { opacity: 0; transform: scale(0.5); }
+            /* הפה נפתח רחב יותר מההמבורגר וקצת כלפי מטה כדי שההמבורגר ייכנס בדיוק לחושך! */
+            15%, 23.9% { opacity: 1; transform: translateY(12px) scaleY(1.8) scaleX(2.5); } 
+            /* תנועות לעיסה קטנות יותר למטה */
+            24%, 32%, 40%, 48%, 56%, 64% { opacity: 1; transform: translateY(4px) scaleY(1.0) scaleX(1.1); } 
+            28%, 36%, 44%, 52%, 60%, 68% { opacity: 1; transform: translateY(4px) scaleY(0.4) scaleX(1.2); } 
+            /* מסיים ללעוס */
+            72%, 100% { opacity: 0; transform: scale(0.5); }
+        }
+
+        /* מסמיק חזק יותר כשהוא אוכל */
+        .blush {
+            animation: blushPulse 6s infinite;
+        }
+
+        @keyframes blushPulse {
+            0%, 13% { opacity: 0.3; }
+            15%, 75% { opacity: 0.8; } /* מואר יותר בזמן הלעיסה */
+            76%, 100% { opacity: 0.3; }
+        }
+
+        /* --- מערכת הלבבות וההפתעות שמרחפים בזמן הלעיסה --- */
+        .hearts-wrapper {
+            position: absolute;
+            top: 70px;
+            left: 150px;
+            z-index: 1;
+            /* מופיעים רק בזמן הלעיסה */
+            animation: showHearts 6s infinite ease-in-out;
+        }
+
+        @keyframes showHearts {
+            0%, 20% { opacity: 0; }
+            25%, 70% { opacity: 1; } /* נראים לעין כשזה טעים! */
+            75%, 100% { opacity: 0; }
+        }
+
+        .effect-item {
+            position: absolute;
+            font-size: 24px;
+            opacity: 0;
+            animation: floatBubble 1.5s infinite ease-in;
+            animation-delay: var(--delay);
+            transform: translateX(var(--x));
+        }
+
+        @keyframes floatBubble {
+            0% { transform: translate(var(--x), 0) scale(0.5) rotate(0deg); opacity: 0; }
+            20% { opacity: 1; transform: translate(var(--x), -20px) scale(1.1) rotate(10deg); }
+            80% { opacity: 0.8; }
+            100% { transform: translate(calc(var(--x) * 1.5), -80px) scale(1) rotate(-10deg); opacity: 0; }
+        }
+
+        /* --- עיצוב הטקסט --- */
+        .text-slider {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff9f43;
+            text-align: center;
+            min-height: 40px;
+            padding: 5px 15px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0px  4px 6px rgba(0,0,0,0.15);
+        }
+
+        .text-fade-out {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        .text-fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="widget-container">
+        <div class="animation-stage">
+            
+            <!-- מערכת הלבבות וההפתעות -->
+            <div class="hearts-wrapper">
+                <div class="effect-item" style="--delay: 0s; --x: -45px;">🍔</div>
+                <div class="effect-item" style="--delay: 0.4s; --x: 30px;">💖</div>
+                <div class="effect-item" style="--delay: 0.8s; --x: -15px;">✨</div>
+            </div>
+
+            <div class="cat-wrapper">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="cat-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity="0.15" />
+                        </filter>
+                    </defs>
+                    
+                    <g filter="url(#cat-shadow)">
+                        <!-- זנב שמח -->
+                        <path d="M 140,160 Q 190,170 185,120 Q 180,95 160,110" fill="none" stroke="#e18b2c" stroke-width="16" stroke-linecap="round" />
+                        
+                        <!-- גוף -->
+                        <path d="M 50,180 Q 100,220 150,180 L 140,110 Q 100,100 60,110 Z" fill="#ffb142" />
+
+                        <!-- אוזניים -->
+                        <polygon points="45,110 25,35 90,65" fill="#ffb142" />
+                        <polygon points="155,110 175,35 110,65" fill="#ffb142" />
+                        <polygon points="52,100 35,52 82,75" fill="#ffcccc" />
+                        <polygon points="148,100 165,52 118,75" fill="#ffcccc" />
+
+                        <!-- ראש -->
+                        <ellipse cx="100" cy="115" rx="75" ry="60" fill="#ffb142" />
+
+                        <!-- פסים על המצח -->
+                        <path d="M 100,55 L 100,75 M 82,60 L 88,75 M 118,60 L 112,75" stroke="#e18b2c" stroke-width="5" stroke-linecap="round" />
+
+                        <!-- לחיים לבנות ופרוותיות -->
+                        <ellipse cx="78" cy="132" rx="22" ry="16" fill="#ffffff" />
+                        <ellipse cx="122" cy="132" rx="22" ry="16" fill="#ffffff" />
+
+                        <!-- עיניים שמחות -->
+                        <path d="M 55,105 Q 65,92 75,105" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                        <path d="M 125,105 Q 135,92 145,105" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+
+                        <!-- סומק בלחיים -->
+                        <g class="blush">
+                            <ellipse cx="45" cy="118" rx="12" ry="7" fill="#ff7eb3" />
+                            <ellipse cx="155" cy="118" rx="12" ry="7" fill="#ff7eb3" />
+                        </g>
+
+                        <!-- שפם -->
+                        <line x1="10" y1="115" x2="45" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="5"  y1="132" x2="42" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="10" y1="149" x2="45" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        
+                        <line x1="190" y1="115" x2="155" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="195" y1="132" x2="158" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="149" x2="155" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+                        <!-- רגליים אחוריות נשארות מקורקעות -->
+                        <ellipse cx="60" cy="185" rx="18" ry="12" fill="#e18b2c" />
+                        <ellipse cx="60" cy="185" rx="14" ry="9" fill="#ffb142" />
+                        <ellipse cx="140" cy="185" rx="18" ry="12" fill="#e18b2c" />
+                        <ellipse cx="140" cy="185" rx="14" ry="9" fill="#ffb142" />
+
+                        <!-- פה ענק שלועס (הרקע השחור ממוקם מאחורי ההמבורגר אבל מספיק גדול כדי להכיל אותו) -->
+                        <g class="eating-mouth">
+                            <ellipse cx="100" cy="132" rx="10" ry="12" fill="#2d3436" />
+                            <ellipse cx="100" cy="138" rx="6" ry="5" fill="#ff7eb3" /> <!-- לשון חמודה -->
+                        </g>
+
+                        <!-- קבוצת הידיים וההמבורגר (נכנסים אל תוך השטח השחור של הפה) -->
+                        <g class="arms-and-burger">
+                            
+                            <g class="burger-only">
+                                <!-- לחמניה תחתונה -->
+                                <rect x="80" y="148" width="40" height="8" rx="4" fill="#e58e26" />
+                                <!-- קציצה -->
+                                <rect x="77" y="140" width="46" height="10" rx="3" fill="#596275" />
+                                <!-- חסה וגבינה -->
+                                <path d="M 76,138 L 84,142 L 95,138 L 106,142 L 116,138 L 124,140 L 124,143 L 76,143 Z" fill="#badc58" />
+                                <polygon points="85,142 95,146 105,142" fill="#fbc531" />
+                                <!-- לחמניה עליונה עסיסית -->
+                                <path d="M 78,138 Q 100,116 122,138 Z" fill="#e58e26" />
+                                <!-- שומשום -->
+                                <ellipse cx="90" cy="132" rx="1.5" ry="2.5" fill="#f5f6fa" transform="rotate(15 90 132)"/>
+                                <ellipse cx="100" cy="126" rx="1.5" ry="2.5" fill="#f5f6fa" transform="rotate(45 100 126)"/>
+                                <ellipse cx="110" cy="132" rx="1.5" ry="2.5" fill="#f5f6fa" transform="rotate(-15 110 132)"/>
+                            </g>
+
+                            <!-- כפות קדמיות שמחזיקות הכל באהבה -->
+                            <ellipse cx="78" cy="151" rx="13" ry="10" fill="#e18b2c" transform="rotate(20 78 151)"/>
+                            <ellipse cx="78" cy="149" rx="10" ry="7" fill="#ffb142" transform="rotate(20 78 151)"/>
+                            
+                            <ellipse cx="122" cy="151" rx="13" ry="10" fill="#e18b2c" transform="rotate(-20 122 151)"/>
+                            <ellipse cx="122" cy="149" rx="10" ry="7" fill="#ffb142" transform="rotate(-20 122 151)"/>
+                        </g>
+
+                        <!-- קווי מתאר של חיוך רגיל (נעלם כשפותח פה) -->
+                        <path class="smile-path" d="M 85,129 Q 100,136 115,129" stroke="#2d3436" stroke-width="3" fill="transparent" stroke-linecap="round" />
+
+                        <!-- פתרון הקסם: האף מצויר אחרון בסדר השכבות, ולכן הוא תמיד מסתיר את החלק העליון של ההמבורגר ונראה כמו שפה עליונה! -->
+                        <polygon points="94,120 106,120 100,127" fill="#ff7eb3" />
+
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- אזור הטקסט המתחלף -->
+        <div class="text-slider" id="animated-text">מחשב קלוריות</div>
+    </div>
+
+    <!-- לוגיקת החלפת הטקסט -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const texts = [
+                "מחשב קלוריות", 
+                "בודק ערכים תזונתיים", 
+                "בודק חלבון, פחמימות ושומן"
+            ];
+            let currentIndex = 0;
+            const textElement = document.getElementById("animated-text");
+
+            setInterval(() => {
+                textElement.classList.add("text-fade-out");
+                
+                setTimeout(() => {
+                    currentIndex = (currentIndex + 1) % texts.length;
+                    textElement.innerText = texts[currentIndex];
+                    
+                    textElement.classList.remove("text-fade-out");
+                    textElement.classList.add("text-fade-in");
+
+                    setTimeout(() => {
+                        textElement.classList.remove("text-fade-in");
+                    }, 500); 
+                }, 500); 
+            }, 3000); 
+        });
+    </script>
+</body>
+</html>

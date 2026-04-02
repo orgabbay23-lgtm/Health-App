@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אנימציית חתול וגור כלבים</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* גרונטלעכע באַשטעטיקונג און טראַנספּאַרענטער הינטערגרונט */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Rubik', sans-serif;
+            overflow: hidden;
+        }
+
+        .widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        /* די בינע וואָס כּולל די גאנצע אַנימאַציע */
+        .animation-stage {
+            position: relative;
+            width: 350px;
+            height: 250px;
+        }
+
+        /* --- דער שרעקלעכער בילן בלאָז --- */
+        .bark-bubble {
+            position: absolute;
+            top: 20px;
+            right: 0px;
+            background: #ff4757;
+            color: white;
+            font-weight: 900;
+            font-size: 32px;
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 15px rgba(255, 71, 87, 0.4);
+            transform-origin: bottom right;
+            z-index: 5;
+            animation: showBark 8s infinite;
+        }
+        .bark-bubble::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            right: 20px;
+            border: 15px solid transparent;
+            border-top-color: #ff4757;
+        }
+
+        @keyframes showBark {
+            0%, 10% { transform: scale(0); opacity: 0; }
+            11%, 14% { transform: scale(1.2) rotate(-5deg); opacity: 1; }
+            15%, 18% { transform: scale(1) rotate(5deg); opacity: 1; }
+            19%, 100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* --- דער הונט (הינטל) --- */
+        .puppy-wrapper {
+            position: absolute;
+            top: 130px;
+            left: 215px; /* גערוקט מער צו דער זײַט (רעכטס) */
+            width: 100px;
+            height: 100px;
+            z-index: 3; /* פֿאַר דער קאַץ, אָבער הינטער דער האַנט */
+            animation: puppyStory 8s infinite;
+        }
+
+        @keyframes puppyStory {
+            0%, 15% { transform: translateX(200px); opacity: 0; }
+            16% { transform: translateX(200px); opacity: 1; }
+            35%, 94% { transform: translateX(0px); opacity: 1; } /* קומט אַרײַן און בלײַבט */
+            95%, 100% { transform: translateX(0px); opacity: 0; }
+        }
+
+        /* גיין באַוועגונגען פֿון דעם הינטל בעת אַרײַנגאַנג */
+        .puppy-body {
+            animation: puppyWaddle 8s infinite;
+        }
+        @keyframes puppyWaddle {
+            16%, 35% { transform: translateY(-5px) rotate(5deg); }
+            0%, 15%, 36%, 100% { transform: translateY(0) rotate(0); }
+        }
+
+        /* וויידל וואַקלט זיך גיך */
+        .puppy-tail {
+            transform-origin: 20px 60px;
+            animation: puppyWag 0.15s infinite alternate;
+        }
+        @keyframes puppyWag {
+            0% { transform: rotate(-15deg); }
+            100% { transform: rotate(15deg); }
+        }
+
+        /* צונג העכט */
+        .puppy-tongue {
+            transform-origin: 30px 45px;
+            animation: pant 0.2s infinite alternate;
+        }
+        @keyframes pant {
+            0% { transform: scaleY(0.8); }
+            100% { transform: scaleY(1.2); }
+        }
+
+
+        /* --- די קאַץ --- */
+        .cat-wrapper {
+            position: absolute;
+            top: 50px;
+            left: 75px; /* פּערפֿעקט צענטרירט (75 + 100 = 175) אין 350px בינע */
+            width: 200px;
+            height: 200px;
+            z-index: 2; /* הינטער דעם הינטל */
+            animation: catStory 8s infinite;
+        }
+
+        @keyframes catStory {
+            0%, 10% { transform: translateX(0); opacity: 1; }
+            12%, 14% { transform: translateX(0) translateY(-30px); opacity: 1; } /* שפּרינגט פֿון שרעק אויפֿן אָרט */
+            16%, 94% { transform: translateX(0) translateY(0); opacity: 1; } /* לאַנדט און בלײַבט פֿאַרפֿרוירן/קוקט/גלעט אויפֿן אָרט */
+            95%, 100% { transform: translateX(0); opacity: 0; } /* סוף און שלייף */
+        }
+
+        /* קאַץ וויידל באַוועגונג */
+        .tail {
+            transform-origin: 160px 110px;
+            animation: tailWag 2s infinite alternate ease-in-out;
+        }
+        @keyframes tailWag {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(15deg); }
+        }
+
+        /* --- קאַץ פּנים און גלידער צושטאַנדן (אַקטיווירט דורך דורכזיכטיקייט) --- */
+        
+        /* 1. רויִק */
+        .cat-chill { animation: showChill 8s infinite; }
+        @keyframes showChill { 0%, 10%, 95%, 100% { opacity: 1; } 11%, 94% { opacity: 0; } }
+
+        /* 2. דערשראָקן (פֿרירט אויפֿן אָרט נאָך דעם שפּרונג) */
+        .cat-shock { animation: showShock 8s infinite; }
+        @keyframes showShock { 0%, 10% { opacity: 0; } 11%, 35% { opacity: 1; } 36%, 100% { opacity: 0; } }
+
+        /* 3. קוקט פֿון דער זײַט מיט פֿאַרדאַכט (פּרוּווט דאָס הינטל) */
+        .cat-peek { animation: showPeek 8s infinite; }
+        @keyframes showPeek { 0%, 35% { opacity: 0; } 36%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+        /* 4. פֿריילעך און פֿאַרגלײַכט */
+        .cat-happy { animation: showHappy 8s infinite; }
+        @keyframes showHappy { 0%, 50% { opacity: 0; } 51%, 94% { opacity: 1; } 95%, 100% { opacity: 0; } }
+
+
+        /* גלעטנדיקער אָרעם (אויף-און-אָפּ באַוועגונג) */
+        .arm-petting {
+            transform-origin: 130px 150px;
+            animation: showPetting 8s infinite;
+            z-index: 4; /* העכער דעם הינטל */
+        }
+        @keyframes showPetting {
+            0%, 50% { opacity: 0; transform: rotate(0deg) translateY(0); }
+            51%, 90% { opacity: 1; transform: rotate(-20deg) translateY(-10px); }
+            54%, 58%, 62%, 66%, 70%, 74%, 78%, 82%, 86% { transform: rotate(10deg) translateY(5px); } /* קליינע קלאַפּן */
+            91%, 100% { opacity: 0; transform: rotate(0deg) translateY(0); }
+        }
+
+        /* באַהאַלטן די נאָרמאַלע רעכטע האַנט בעת דעם גלעטן */
+        .right-paw-normal { animation: hideRightPaw 8s infinite; }
+        @keyframes hideRightPaw { 0%, 50%, 91%, 100% { opacity: 1; } 51%, 90% { opacity: 0; } }
+
+
+        /* --- ליבע עפֿעקטן פֿון דעם הינטל --- */
+        .hearts-effect {
+            position: absolute;
+            top: 80px;
+            left: 210px; /* גערוקט רעכטס לויט דעם הינטלס נײַ אָרט */
+            z-index: 4;
+            opacity: 0;
+            animation: showHearts 8s infinite;
+        }
+        @keyframes showHearts { 0%, 52% { opacity: 0; } 53%, 88% { opacity: 1; } 89%, 100% { opacity: 0; } }
+
+        .heart { font-size: 20px; position: absolute; animation: floatUp 1.5s infinite ease-out; }
+        .h1 { left: 0px; animation-delay: 0s; }
+        .h2 { left: 30px; animation-delay: 0.3s; font-size: 24px; }
+        .h3 { left: 15px; animation-delay: 0.6s; font-size: 16px; }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
+        }
+
+
+        /* טעקסט פּלאַן אין דנאָ */
+        .text-slider {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff9f43;
+            text-align: center;
+            min-height: 40px;
+            padding: 5px 15px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0px  4px 6px rgba(0,0,0,0.15);
+        }
+
+        .text-fade-out { opacity: 0; transform: translateY(-10px); }
+        .text-fade-in { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="widget-container">
+        <div class="animation-stage">
+            
+            <!-- דער בילן בלאָז וואָס באַווײַזט זיך פּלוצעם! -->
+            <div class="bark-bubble">האו!!!</div>
+
+            <!-- ליבע הערצער פֿון דעם הינטל -->
+            <div class="hearts-effect">
+                <div class="heart h1">❤️</div>
+                <div class="heart h2">💖</div>
+                <div class="heart h3">✨</div>
+            </div>
+
+            <!-- ================= דאָס הינטל ================= -->
+            <div class="puppy-wrapper">
+                <g class="puppy-body">
+                    <svg viewBox="0 0 100 100" width="100" height="100">
+                        <defs>
+                            <filter id="pup-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.15" />
+                            </filter>
+                        </defs>
+                        <g filter="url(#pup-shadow)">
+                            <!-- פֿריילעכער וויידל -->
+                            <polygon class="puppy-tail" points="25,65 5,55 15,75" fill="#f1c40f" />
+                            
+                            <!-- קערפּער -->
+                            <ellipse cx="50" cy="70" rx="25" ry="18" fill="#f5f6fa" />
+                            <ellipse cx="40" cy="65" rx="12" ry="18" fill="#f1c40f" /> <!-- פֿלעק -->
+
+                            <!-- קליינע פֿיס -->
+                            <ellipse cx="35" cy="85" rx="6" ry="5" fill="#e1b12c" />
+                            <ellipse cx="65" cy="85" rx="6" ry="5" fill="#e1b12c" />
+
+                            <!-- קאָפּ -->
+                            <circle cx="65" cy="45" r="22" fill="#f5f6fa" />
+                            
+                            <!-- זיסע הענגענדיקע אויערן -->
+                            <path d="M 50,30 Q 35,35 45,55 Q 55,40 50,30" fill="#f1c40f" />
+                            <path d="M 80,30 Q 95,35 85,55 Q 75,40 80,30" fill="#f1c40f" />
+
+                            <!-- גרויסע און אומשולדיקע אויגן -->
+                            <circle cx="58" cy="40" r="4" fill="#2d3436" />
+                            <circle cx="57" cy="39" r="1.5" fill="#ffffff" />
+                            <circle cx="72" cy="40" r="4" fill="#2d3436" />
+                            <circle cx="71" cy="39" r="1.5" fill="#ffffff" />
+
+                            <!-- קליינער נאָז -->
+                            <ellipse cx="65" cy="48" rx="4" ry="3" fill="#2d3436" />
+
+                            <!-- מויל און העכנדיקע צונג -->
+                            <path d="M 60,52 Q 65,55 70,52" fill="none" stroke="#2d3436" stroke-width="2" stroke-linecap="round" />
+                            <path class="puppy-tongue" d="M 63,53 Q 65,65 67,53 Z" fill="#ff7eb3" />
+                        </g>
+                    </svg>
+                </g>
+            </div>
+
+            <!-- ================= די קאַץ ================= -->
+            <div class="cat-wrapper">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="cat-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity="0.15" />
+                        </filter>
+                    </defs>
+                    
+                    <g filter="url(#cat-shadow)">
+                        <!-- וויידל -->
+                        <path class="tail" d="M 140,160 Q 190,170 185,120 Q 180,95 160,110" fill="none" stroke="#e18b2c" stroke-width="16" stroke-linecap="round" />
+                        
+                        <!-- קערפּער -->
+                        <path d="M 50,180 Q 100,220 150,180 L 140,110 Q 100,100 60,110 Z" fill="#ffb142" />
+
+                        <!-- אויערן -->
+                        <polygon points="45,110 25,35 90,65" fill="#ffb142" />
+                        <polygon points="52,100 35,52 82,75" fill="#ffcccc" />
+                        <polygon points="155,110 175,35 110,65" fill="#ffb142" />
+                        <polygon points="148,100 165,52 118,75" fill="#ffcccc" />
+
+                        <!-- קאָפּ -->
+                        <ellipse cx="100" cy="115" rx="75" ry="60" fill="#ffb142" />
+
+                        <!-- שטרײַפֿן אויפֿן שטערן -->
+                        <path d="M 100,55 L 100,75 M 82,60 L 88,75 M 118,60 L 112,75" stroke="#e18b2c" stroke-width="5" stroke-linecap="round" />
+
+                        <!-- ווײַסע באַקן -->
+                        <ellipse cx="78" cy="132" rx="22" ry="16" fill="#ffffff" />
+                        <ellipse cx="122" cy="132" rx="22" ry="16" fill="#ffffff" />
+
+                        <!-- וואָנצעס -->
+                        <line x1="10" y1="115" x2="45" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="5"  y1="132" x2="42" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="10" y1="149" x2="45" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="115" x2="155" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="195" y1="132" x2="158" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="149" x2="155" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+
+                        <!-- ======== זיך-בײַטנדיקע פּנימער ======== -->
+                        
+                        <!-- 1. רויִקער צושטאַנד (אָנהייב) -->
+                        <g class="cat-chill">
+                            <ellipse cx="65" cy="105" rx="7" ry="10" fill="#2d3436" />
+                            <ellipse cx="135" cy="105" rx="7" ry="10" fill="#2d3436" />
+                            <polygon points="94,120 106,120 100,127" fill="#ff7eb3" /> <!-- נאָז -->
+                            <path d="M 90,132 Q 100,138 110,132" stroke="#2d3436" stroke-width="3" fill="transparent" stroke-linecap="round" />
+                        </g>
+
+                        <!-- 2. גאַנצער שויק צושטאַנד (דער בילן!) -->
+                        <g class="cat-shock">
+                            <!-- אָפֿענע אויגן צום ברייט -->
+                            <ellipse cx="65" cy="100" rx="16" ry="16" fill="#ffffff" />
+                            <circle cx="65" cy="100" r="3" fill="#2d3436" />
+                            <ellipse cx="135" cy="100" rx="16" ry="16" fill="#ffffff" />
+                            <circle cx="135" cy="100" r="3" fill="#2d3436" />
+                            <polygon points="94,115 106,115 100,122" fill="#ff7eb3" /> <!-- אויפֿגעהויבענער נאָז -->
+                            <!-- שרײַענדיקער מויל -->
+                            <ellipse cx="100" cy="135" rx="12" ry="18" fill="#2d3436" />
+                            <!-- שטעכנדיקע האָר (שאַרפֿע ליניעס אַרום דעם קאָפּ) -->
+                            <path d="M 25,115 L 10,110 L 22,100 L 5,90 L 25,85" stroke="#e18b2c" stroke-width="4" fill="none" stroke-linecap="round" />
+                            <path d="M 175,115 L 190,110 L 178,100 L 195,90 L 175,85" stroke="#e18b2c" stroke-width="4" fill="none" stroke-linecap="round" />
+                        </g>
+
+                        <!-- 3. קוקט פֿון דער זײַט (פֿאַרדאַכטיק / פּרוּווט פֿאַרשטיין) -->
+                        <g class="cat-peek">
+                            <polygon points="94,120 106,120 100,127" fill="#ff7eb3" /> <!-- נאָז -->
+                            <!-- פֿאַרצויגענע אויגן קוקן רעכטס צום הינטל -->
+                            <ellipse cx="65" cy="105" rx="12" ry="8" fill="#ffffff" />
+                            <circle cx="70" cy="105" r="4" fill="#2d3436" />
+                            <ellipse cx="135" cy="105" rx="12" ry="8" fill="#ffffff" />
+                            <circle cx="140" cy="105" r="4" fill="#2d3436" />
+                            <!-- דערשראָקענער מויל -->
+                            <path d="M 95,135 Q 100,132 105,135" stroke="#2d3436" stroke-width="3" fill="transparent" stroke-linecap="round" />
+                        </g>
+
+                        <!-- 4. זיס און פֿאַרגלײַכט (גלעט) -->
+                        <g class="cat-happy">
+                            <polygon points="94,120 106,120 100,127" fill="#ff7eb3" /> <!-- נאָז -->
+                            <path d="M 55,108 Q 65,95 75,108" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" /> 
+                            <path d="M 125,108 Q 135,95 145,108" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" /> 
+                            <path d="M 85,130 Q 100,150 115,130 Z" fill="#2d3436" />
+                            <path d="M 90,135 Q 100,150 110,135 Z" fill="#ff7eb3" />
+                            <ellipse cx="45" cy="120" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                            <ellipse cx="155" cy="120" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                        </g>
+
+
+                        <!-- ======== גלידער (פֿיס און הענט) ======== -->
+
+                        <!-- פֿיס שטייען נאָרמאַל די גאַנצע צײַט -->
+                        <g class="legs-normal">
+                            <ellipse cx="60" cy="185" rx="18" ry="12" fill="#e18b2c" />
+                            <ellipse cx="60" cy="185" rx="14" ry="9" fill="#ffb142" />
+                            <ellipse cx="140" cy="185" rx="18" ry="12" fill="#e18b2c" />
+                            <ellipse cx="140" cy="185" rx="14" ry="9" fill="#ffb142" />
+                        </g>
+
+                        <!-- פֿאָדערשטע לאַפּעס -->
+                        <g class="left-paw">
+                            <ellipse cx="70" cy="155" rx="14" ry="11" fill="#e18b2c" />
+                            <ellipse cx="70" cy="153" rx="11" ry="8" fill="#ffb142" />
+                        </g>
+
+                        <!-- רעכטע האַנט רוט (פֿאַרשווינדט בעת גלעטן) -->
+                        <g class="right-paw-normal">
+                            <ellipse cx="130" cy="155" rx="14" ry="11" fill="#e18b2c" />
+                            <ellipse cx="130" cy="153" rx="11" ry="8" fill="#ffb142" />
+                        </g>
+
+                        <!-- רעכטע האַנט גלעט (באַווײַזט זיך און שטרעקט זיך פֿאָרויס צו רעכטס צו דערגרייכן דאָס הינטל, און באַוועגט זיך אויף-און-אָפּ) -->
+                        <g class="arm-petting">
+                            <path d="M 110,145 Q 160,130 205,150" fill="none" stroke="#e18b2c" stroke-width="18" stroke-linecap="round" />
+                            <path d="M 110,145 Q 160,130 205,150" fill="none" stroke="#ffb142" stroke-width="12" stroke-linecap="round" />
+                            <ellipse cx="205" cy="150" rx="14" ry="11" fill="#e18b2c" transform="rotate(-30 205 150)"/>
+                            <ellipse cx="205" cy="150" rx="11" ry="8" fill="#ffb142" transform="rotate(-30 205 150)"/>
+                        </g>
+
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- דער זיך-בײַטנדיקער טעקסט געגנט -->
+        <div class="text-slider" id="animated-text">מחשב קלוריות</div>
+    </div>
+
+    <!-- לאָגיק פֿון טעקסט בײַטן -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const texts = [
+                "מחשב קלוריות", 
+                "בודק ערכים תזונתיים", 
+                "בודק חלבון, פחמימות ושומן"
+            ];
+            let currentIndex = 0;
+            const textElement = document.getElementById("animated-text");
+
+            // אַקטיווירן בײַטן יעדע 3 סעקונדעס
+            setInterval(() => {
+                // שריט 1: באַהאַלטן דעם טעקסט
+                textElement.classList.add("text-fade-out");
+                
+                setTimeout(() => {
+                    // שריט 2: בײַטן דעם אינהאַלט און פֿאָרשטעלן עס פֿון דאָס נײַ בשעת עס איז באַהאַלטן
+                    currentIndex = (currentIndex + 1) % texts.length;
+                    textElement.innerText = texts[currentIndex];
+                    
+                    textElement.classList.remove("text-fade-out");
+                    textElement.classList.add("text-fade-in");
+
+                    // שריט 3: רייניקן דעם אויסזען-קלאַס כּדי די אַנימאַציע זאָל קענען לויפֿן ווידער
+                    setTimeout(() => {
+                        textElement.classList.remove("text-fade-in");
+                    }, 500); 
+                }, 500); 
+            }, 3000); 
+        });
+    </script>
+</body>
+</html>

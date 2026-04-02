@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אנימציית חתול שותה חלב</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* איפוס בסיסי ורקע שקוף */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Rubik', sans-serif;
+            overflow: hidden;
+        }
+
+        .widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .animation-stage {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+
+        /* החתול צף מעט כל הזמן */
+        .cat-wrapper {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 200px;
+            height: 200px;
+            animation: floatCat 4s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        @keyframes floatCat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+
+        /* תנועת זנב */
+        .tail {
+            transform-origin: 160px 110px;
+            animation: tailWag 5s infinite alternate ease-in-out;
+        }
+
+        @keyframes tailWag {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(15deg); }
+        }
+
+        /* --- אנימציות העלילה: 10 שניות --- */
+
+        /* בועת המחשבה על החלבון */
+        .thought-bubble-container {
+            position: absolute;
+            top: 15px;
+            left: 140px;
+            z-index: 3;
+            animation: showThought 10s infinite;
+        }
+        @keyframes showThought {
+            0%, 2% { opacity: 0; transform: scale(0.8) translateY(10px); }
+            5%, 40% { opacity: 1; transform: scale(1) translateY(0); }
+            43%, 100% { opacity: 0; transform: scale(0.8) translateY(-10px); }
+        }
+
+        /* טקסטים מתחלפים בתוך הבועה */
+        .thought-text {
+            font-size: 14px;
+            font-weight: bold;
+            fill: #d35400;
+            font-family: 'Rubik', sans-serif;
+            text-anchor: middle;
+        }
+        .think-1 { animation: showT1 10s infinite; }
+        .think-2 { animation: showT2 10s infinite; }
+        @keyframes showT1 { 0%, 5% { opacity: 0;} 6%, 22% { opacity: 1;} 23%, 100% { opacity: 0;} }
+        @keyframes showT2 { 0%, 23% { opacity: 0;} 24%, 40% { opacity: 1;} 41%, 100% { opacity: 0;} }
+
+
+        /* ספל הקפה מונח ואז עף! (Yeet) */
+        .coffee-mug {
+            transform-origin: 50px 160px;
+            animation: yeetCoffee 10s infinite ease-in;
+        }
+        @keyframes yeetCoffee {
+            0%, 43% { transform: translate(0, 0) rotate(0); opacity: 1; }
+            44% { transform: translate(-10px, -5px) rotate(-20deg); opacity: 1; } /* מקבל מכה */
+            48% { transform: translate(-120px, 30px) rotate(-150deg); opacity: 0; } /* עף מהמסך */
+            95% { transform: translate(0, 0) rotate(0); opacity: 0; } /* ממתין בסתר */
+            100% { transform: translate(0, 0) rotate(0); opacity: 1; } /* מופיע חזרה ללופ */
+        }
+
+        /* שפריץ של קפה כשהוא עף */
+        .coffee-splash { opacity: 0; animation: splashCoffee 10s infinite; }
+        @keyframes splashCoffee {
+            0%, 43% { opacity: 0; transform: translate(0,0) scale(0.5); }
+            45% { opacity: 1; transform: translate(-30px, -20px) scale(1.5); }
+            48%, 100% { opacity: 0; transform: translate(-60px, -10px) scale(1); }
+        }
+
+        /* קרטון החלב מתרומם לפה */
+        .milk-carton {
+            transform-origin: 135px 160px; /* ציר סיבוב מהתחתית */
+            animation: chugMilk 10s infinite ease-in-out;
+        }
+        @keyframes chugMilk {
+            0%, 48% { transform: translate(0, 0) rotate(0); } /* מונח על השולחן */
+            52%, 82% { transform: translate(-20px, -35px) rotate(-65deg); } /* מתרומם ונוטה אל הפה */
+            88%, 100% { transform: translate(0, 0) rotate(0); } /* חוזר לשולחן */
+        }
+
+        /* ידיים של החתול */
+        .left-paw { animation: leftPawAction 10s infinite; }
+        @keyframes leftPawAction {
+            0%, 42% { transform: translate(0, 0); } /* נח */
+            44%, 46% { transform: translate(-25px, -5px); } /* מכת קראטה שמאל לקפה! */
+            52%, 82% { transform: translate(25px, -35px); } /* זז ימינה לעזור להחזיק את הקרטון */
+            88%, 100% { transform: translate(0, 0); }
+        }
+
+        .right-paw { animation: rightPawAction 10s infinite; }
+        @keyframes rightPawAction {
+            0%, 48% { transform: translate(0, 0); } /* נח */
+            52%, 82% { transform: translate(-20px, -45px); } /* מרים את הקרטון לפה */
+            88%, 100% { transform: translate(0, 0); }
+        }
+
+        /* שפריצים של חלב מסביב לפה בזמן השתייה */
+        .milk-spill { opacity: 0; animation: showSpill 10s infinite; }
+        @keyframes showSpill {
+            0%, 53% { opacity: 0; }
+            54%, 80% { opacity: 1; }
+            82%, 100% { opacity: 0; }
+        }
+        .drop { animation: drip 0.8s infinite linear; }
+        .d1 { animation-delay: 0s; }
+        .d2 { animation-delay: 0.3s; }
+        .d3 { animation-delay: 0.6s; }
+        @keyframes drip {
+            0% { transform: translateY(0) scale(1.2); opacity: 1; }
+            100% { transform: translateY(25px) scale(0.5); opacity: 0; }
+        }
+
+        /* --- אנימציות פרצופים --- */
+        .face-thinking { animation: showThinking 10s infinite; }
+        @keyframes showThinking { 0%, 42%, 95%, 100% { opacity: 1; } 43%, 94% { opacity: 0; } }
+
+        .face-swat { animation: showSwat 10s infinite; }
+        @keyframes showSwat { 0%, 42% { opacity: 0; } 43%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+        .face-chug { animation: showChug 10s infinite; }
+        @keyframes showChug { 0%, 49% { opacity: 0; } 50%, 84% { opacity: 1; } 85%, 100% { opacity: 0; } }
+
+        .face-satisfied { animation: showSatisfied 10s infinite; }
+        @keyframes showSatisfied { 0%, 84% { opacity: 0; } 85%, 94% { opacity: 1; } 95%, 100% { opacity: 0; } }
+
+
+        /* עיצוב הטקסט בתחתית */
+        .text-slider {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff9f43;
+            text-align: center;
+            min-height: 40px;
+            padding: 5px 15px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0px  4px 6px rgba(0,0,0,0.15);
+        }
+
+        .text-fade-out { opacity: 0; transform: translateY(-10px); }
+        .text-fade-in { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="widget-container">
+        <div class="animation-stage">
+            
+            <!-- בועת המחשבה (מתלבט לגבי החלבון) -->
+            <div class="thought-bubble-container">
+                <svg width="120" height="90" viewBox="0 0 120 90">
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.1" />
+                    </filter>
+                    <g filter="url(#shadow)">
+                        <circle cx="15" cy="75" r="4" fill="#ffffff" />
+                        <circle cx="30" cy="65" r="8" fill="#ffffff" />
+                        <path d="M 40,45 Q 40,25 65,25 Q 90,25 100,40 Q 115,45 110,60 Q 105,75 80,75 Q 55,75 45,60 Q 30,55 40,45 Z" fill="#ffffff" />
+                        
+                        <!-- מחשבה 1 -->
+                        <text class="thought-text think-1" x="75" y="45">
+                            <tspan x="75" dy="0">חסר פה</tspan>
+                            <tspan x="75" dy="16">חלבון...</tspan>
+                        </text>
+                        <!-- מחשבה 2 -->
+                        <text class="thought-text think-2" x="75" y="45">
+                            <tspan x="75" dy="0">אולי נשתה</tspan>
+                            <tspan x="75" dy="16">ישר?</tspan>
+                        </text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- החתול, הקפה והחלב -->
+            <div class="cat-wrapper">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="cat-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity="0.15" />
+                        </filter>
+                    </defs>
+                    
+                    <g filter="url(#cat-shadow)">
+                        <!-- זנב -->
+                        <path class="tail" d="M 140,160 Q 190,170 185,120 Q 180,95 160,110" fill="none" stroke="#e18b2c" stroke-width="16" stroke-linecap="round" />
+                        
+                        <!-- גוף -->
+                        <path d="M 50,180 Q 100,220 150,180 L 140,110 Q 100,100 60,110 Z" fill="#ffb142" />
+
+                        <!-- אוזניים -->
+                        <polygon points="45,110 25,35 90,65" fill="#ffb142" />
+                        <polygon points="52,100 35,52 82,75" fill="#ffcccc" />
+                        <polygon points="155,110 175,35 110,65" fill="#ffb142" />
+                        <polygon points="148,100 165,52 118,75" fill="#ffcccc" />
+
+                        <!-- ראש -->
+                        <ellipse cx="100" cy="115" rx="75" ry="60" fill="#ffb142" />
+
+                        <!-- פסים על המצח -->
+                        <path d="M 100,55 L 100,75 M 82,60 L 88,75 M 118,60 L 112,75" stroke="#e18b2c" stroke-width="5" stroke-linecap="round" />
+
+                        <!-- לחיים לבנות -->
+                        <ellipse cx="78" cy="132" rx="22" ry="16" fill="#ffffff" />
+                        <ellipse cx="122" cy="132" rx="22" ry="16" fill="#ffffff" />
+
+                        <!-- אף -->
+                        <polygon points="94,120 106,120 100,127" fill="#ff7eb3" />
+
+                        <!-- שפם -->
+                        <line x1="10" y1="115" x2="45" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="5"  y1="132" x2="42" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="10" y1="149" x2="45" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="115" x2="155" y2="122" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="195" y1="132" x2="158" y2="132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="190" y1="149" x2="155" y2="142" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+                        <!-- ================= פרצופים מתחלפים ================= -->
+                        
+                        <!-- 1. חושב / מביט על הבועה -->
+                        <g class="face-thinking">
+                            <ellipse cx="65" cy="110" rx="9" ry="12" fill="#ffffff" />
+                            <circle cx="63" cy="106" r="4" fill="#2d3436" />
+                            <ellipse cx="135" cy="110" rx="9" ry="12" fill="#ffffff" />
+                            <circle cx="133" cy="106" r="4" fill="#2d3436" />
+                            <path d="M 95,135 L 105,135" stroke="#2d3436" stroke-width="3" stroke-linecap="round" />
+                        </g>
+
+                        <!-- 2. מעיף את הקפה בעצבים! -->
+                        <g class="face-swat">
+                            <!-- גבות כועסות -->
+                            <line x1="55" y1="100" x2="72" y2="105" stroke="#d35400" stroke-width="3" stroke-linecap="round" />
+                            <line x1="145" y1="100" x2="128" y2="105" stroke="#d35400" stroke-width="3" stroke-linecap="round" />
+                            <!-- עיניים חדות -->
+                            <polygon points="55,108 75,108 65,115" fill="#2d3436" />
+                            <polygon points="125,108 145,108 135,115" fill="#2d3436" />
+                            <!-- פה כועס -->
+                            <path d="M 95,135 Q 100,132 105,135" fill="none" stroke="#2d3436" stroke-width="3" stroke-linecap="round" />
+                        </g>
+
+                        <!-- 3. שותה מהקרטון בהנאה -->
+                        <g class="face-chug">
+                            <path d="M 55,112 Q 65,100 75,112" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                            <path d="M 125,112 Q 135,100 145,112" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                            <!-- פה פתוח ועגול לקבל את החלב -->
+                            <ellipse cx="100" cy="132" rx="12" ry="16" fill="#2d3436" />
+                            <ellipse cx="45" cy="120" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                            <ellipse cx="155" cy="120" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                        </g>
+
+                        <!-- 4. מלקק שפתיים בסוף -->
+                        <g class="face-satisfied">
+                            <path d="M 55,112 Q 65,100 75,112" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                            <path d="M 125,112 Q 135,100 145,112" fill="none" stroke="#2d3436" stroke-width="4" stroke-linecap="round" />
+                            <!-- לשון בחוץ -->
+                            <path d="M 85,130 Q 100,150 115,130 Z" fill="#2d3436" />
+                            <path d="M 98,135 Q 110,125 115,135 Z" fill="#ff7eb3" /> 
+                            <ellipse cx="45" cy="120" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                            <ellipse cx="155" cy="120" rx="12" ry="7" fill="#ff7eb3" opacity="0.8"/>
+                        </g>
+
+
+                        <!-- ================= חפצים וגפיים ================= -->
+                        
+                        <!-- רגליים אחוריות (יושב) -->
+                        <ellipse cx="60" cy="185" rx="18" ry="12" fill="#e18b2c" />
+                        <ellipse cx="60" cy="185" rx="14" ry="9" fill="#ffb142" />
+                        <ellipse cx="140" cy="185" rx="18" ry="12" fill="#e18b2c" />
+                        <ellipse cx="140" cy="185" rx="14" ry="9" fill="#ffb142" />
+
+                        <!-- קפה עף ושפריץ של קפה -->
+                        <g class="coffee-splash">
+                            <circle cx="35" cy="150" r="4" fill="#4b3832" />
+                            <circle cx="25" cy="140" r="3" fill="#4b3832" />
+                            <circle cx="45" cy="135" r="2.5" fill="#4b3832" />
+                        </g>
+
+                        <!-- ספל קפה חמוד בצד שמאל -->
+                        <g class="coffee-mug">
+                            <!-- ידית -->
+                            <path d="M 45,155 Q 35,155 35,165 Q 35,170 45,170" fill="none" stroke="#f5f6fa" stroke-width="5" />
+                            <!-- כוס -->
+                            <rect x="40" y="145" width="28" height="30" rx="4" fill="#f5f6fa" /> 
+                            <ellipse cx="54" cy="145" rx="12" ry="4" fill="#dcdde1" /> 
+                            <ellipse cx="54" cy="146" rx="10" ry="3" fill="#4b3832" /> <!-- נוזל -->
+                            <!-- אדים -->
+                            <path d="M 50,138 Q 45,128 53,118" fill="none" stroke="#b2bec3" stroke-width="2" opacity="0.6"/>
+                            <path d="M 58,138 Q 63,128 55,118" fill="none" stroke="#b2bec3" stroke-width="2" opacity="0.6"/>
+                        </g>
+
+                        <!-- טיפות חלב נוזלות בזמן השתייה -->
+                        <g class="milk-spill">
+                            <circle class="drop d1" cx="85" cy="140" r="3" fill="#ffffff" />
+                            <circle class="drop d2" cx="115" cy="145" r="2.5" fill="#ffffff" />
+                            <circle class="drop d3" cx="95" cy="150" r="2" fill="#ffffff" />
+                        </g>
+
+                        <!-- קרטון חלב גדול בצד ימין (מתרומם לפה) -->
+                        <g class="milk-carton">
+                            <!-- גוף הקרטון -->
+                            <rect x="110" y="125" width="36" height="55" rx="2" fill="#0984e3" />
+                            <!-- משולש עליון -->
+                            <polygon points="110,125 128,105 146,125" fill="#74b9ff" />
+                            <polygon points="110,125 128,105 128,125" fill="#0984e3" />
+                            <!-- פיית מזיגה פתוחה (שמאלה) -->
+                            <polygon points="110,125 105,112 120,115" fill="#dfe6e9" />
+                            <!-- תווית ענקית לבנה -->
+                            <rect x="114" y="135" width="28" height="35" fill="#ffffff" rx="2" />
+                            <!-- טקסט / כתם פרה על התווית -->
+                            <circle cx="128" cy="160" r="6" fill="#2d3436" />
+                            <text x="128" y="148" font-size="10" font-weight="bold" fill="#0984e3" text-anchor="middle">MILK</text>
+                        </g>
+
+                        <!-- ידיים קידמיות (אחת מעיפה ואחת מרימה) -->
+                        <g class="left-paw">
+                            <ellipse cx="70" cy="175" rx="14" ry="11" fill="#e18b2c" transform="rotate(15 70 175)"/>
+                            <ellipse cx="70" cy="173" rx="11" ry="8" fill="#ffb142" transform="rotate(15 70 175)"/>
+                        </g>
+                        
+                        <g class="right-paw">
+                            <ellipse cx="130" cy="175" rx="14" ry="11" fill="#e18b2c" transform="rotate(-15 130 175)"/>
+                            <ellipse cx="130" cy="173" rx="11" ry="8" fill="#ffb142" transform="rotate(-15 130 175)"/>
+                        </g>
+
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- אזור הטקסט המתחלף -->
+        <div class="text-slider" id="animated-text">מחשב קלוריות</div>
+    </div>
+
+    <!-- לוגיקת החלפת הטקסט -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const texts = [
+                "מחשב קלוריות", 
+                "בודק ערכים תזונתיים", 
+                "בודק חלבון, פחמימות ושומן"
+            ];
+            let currentIndex = 0;
+            const textElement = document.getElementById("animated-text");
+
+            setInterval(() => {
+                textElement.classList.add("text-fade-out");
+                
+                setTimeout(() => {
+                    currentIndex = (currentIndex + 1) % texts.length;
+                    textElement.innerText = texts[currentIndex];
+                    
+                    textElement.classList.remove("text-fade-out");
+                    textElement.classList.add("text-fade-in");
+
+                    setTimeout(() => {
+                        textElement.classList.remove("text-fade-in");
+                    }, 500); 
+                }, 500); 
+            }, 3000); 
+        });
+    </script>
+</body>
+</html>
