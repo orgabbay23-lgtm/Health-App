@@ -6,7 +6,7 @@ import * as z from "zod";
 import { Trash2, Plus, Heart, WandSparkles, Pencil, PlusCircle, Camera, Image as ImageIcon, CalendarPlus, ChevronDown, Calculator, Loader2, Scale, Check, X } from "lucide-react";
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../../utils/cropImage';
-import { cn } from "../../utils/utils";
+import { cn, generateId } from "../../utils/utils";
 import { toast } from "sonner";
 import { useActiveSavedMeals, useAppStore } from "../../store";
 import { getLogicalDayKey } from "../../utils/nutrition-utils";
@@ -26,6 +26,8 @@ import {
 import { EditFavoriteModal } from "./EditFavoriteModal";
 import { FoodTypeahead } from "./FoodTypeahead";
 import { FastCalorieCalculator } from "./FastCalorieCalculator";
+import { CatLoadingAnimation } from "./CatLoadingAnimation";
+import { CatImageCheckingAnimation } from "./CatImageCheckingAnimation";
 import type { SavedMeal } from "../../store";
 
 const aiSchema = z.object({
@@ -65,7 +67,7 @@ export function MealLogModal({
   const [activeTab, setActiveTab] = useState("ai");
   const [targetDate, setTargetDate] = useState<string>(getLogicalDayKey());
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAiCalculating, setIsAiCalculating] = useState(false);
+  const [, setIsAiCalculating] = useState(false);
   const [isByokOpen, setIsByokOpen] = useState(false);
   const [pendingDescription, setPendingDescription] = useState<string | null>(null);
   const [editingMeal, setEditingMeal] = useState<SavedMeal | null>(null);
@@ -167,7 +169,7 @@ export function MealLogModal({
     try {
       const parsedData = await parseMealDescription(description);
       const alerts = await addMealLog(targetDate, {
-        id: crypto.randomUUID(),
+        id: generateId(),
         timestamp: new Date().toISOString(),
         meal_name: parsedData.meal_name,
         calories: parsedData.calories,
@@ -454,7 +456,6 @@ export function MealLogModal({
             </TabsTrigger>
           </TabsList>
 
-          <AnimatePresence mode="wait">
             <TabsContent value="ai" className="mt-8">
               {/* Hidden file input for camera (with capture) */}
               <input
@@ -538,20 +539,28 @@ export function MealLogModal({
                     </div>
                   </motion.div>
                 ) : isAnalyzingImage ? (
-                  /* Image analyzing shimmer */
+                  /* Image analyzing — cat animation */
                   <motion.div
                     key="image-analyzing"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex flex-col items-center gap-4 py-12 rounded-3xl glass-shimmer"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: "spring", duration: 0.5 }}
+                    className="flex flex-col items-center py-6 rounded-3xl glass-shimmer"
                   >
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-10 h-10 border-3 border-emerald-200 border-t-emerald-500 rounded-full"
-                    />
-                    <p className="text-[14px] font-bold text-emerald-600">מזהה את המאכלים בתמונה...</p>
+                    <CatImageCheckingAnimation />
+                  </motion.div>
+                ) : isSubmitting ? (
+                  /* AI submission — cat animation */
+                  <motion.div
+                    key="ai-submitting"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: "spring", duration: 0.5 }}
+                    className="flex flex-col items-center py-6 rounded-3xl bg-gradient-to-br from-blue-50/80 to-violet-50/50 border border-blue-200/40 glass-shimmer"
+                  >
+                    <CatLoadingAnimation />
                   </motion.div>
                 ) : (
                   /* Normal AI form */
@@ -933,23 +942,17 @@ export function MealLogModal({
                   )}
                 </div>
 
-                {/* Loading shimmer when executing a favorite template */}
+                {/* Loading — cat animation when executing a favorite template */}
                 <AnimatePresence>
                   {isSubmitting && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="p-6 rounded-3xl bg-gradient-to-br from-blue-50/80 to-violet-50/50 border border-blue-200/40 flex flex-col items-center gap-3 glass-shimmer"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ type: "spring", duration: 0.5 }}
+                      className="py-4 rounded-3xl bg-gradient-to-br from-blue-50/80 to-violet-50/50 border border-blue-200/40 flex flex-col items-center glass-shimmer"
                     >
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-8 h-8 border-3 border-blue-200 border-t-blue-500 rounded-full"
-                      />
-                      <p className="text-[14px] font-bold text-blue-600">
-                        {isAiCalculating ? "מחשב ערכים תזונתיים עם AI..." : "שומר ארוחה..."}
-                      </p>
+                      <CatLoadingAnimation />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -959,7 +962,6 @@ export function MealLogModal({
             <TabsContent value="calculator" className="mt-8">
               <FastCalorieCalculator />
             </TabsContent>
-          </AnimatePresence>
         </Tabs>
 
         {/* Image Cropper Overlay */}

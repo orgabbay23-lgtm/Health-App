@@ -203,4 +203,13 @@
     0% { transform: translateX(100%); }
     100% { transform: translateX(-100%); }
   }
+
+  /* Cat eye blink animation */
+  .animate-cat-blink {
+    animation: catBlink 4s infinite;
+  }
+  @keyframes catBlink {
+    0%, 95%, 98%, 100% { transform: scaleY(1); }
+    96%, 99% { transform: scaleY(0.1); }
+  }
 }

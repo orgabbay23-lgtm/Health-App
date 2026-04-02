@@ -5,6 +5,7 @@ import { isToday } from "date-fns";
 import { supabase } from "../lib/supabase";
 import { parseMealDescription } from "../utils/gemini";
 import { getLogicalDayKey as getHydrationDayKey } from "../utils/nutrition-utils";
+import { generateId } from "../utils/utils";
 import {
   ActivityLevel,
   EMPTY_MICRONUTRIENTS,
@@ -148,7 +149,7 @@ function normalizeUserProfile(
 
 function normalizeMealItem(meal: Partial<MealItem>): MealItem {
   return {
-    id: String(meal.id ?? crypto.randomUUID()),
+    id: String(meal.id ?? generateId()),
     timestamp: typeof meal.timestamp === "string" ? meal.timestamp : new Date().toISOString(),
     meal_name: typeof meal.meal_name === "string" ? meal.meal_name : "ארוחה",
     calories: toFiniteNumber(meal.calories, 0),
@@ -818,7 +819,7 @@ export const useAppStore = create<AppState>()(
     }
 
     const newSavedMeal: SavedMeal = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       savedAt: new Date().toISOString(),
       signature,
       meal: normalizedMeal,
@@ -917,14 +918,14 @@ export const useAppStore = create<AppState>()(
       const parsed = await parseMealDescription(mealText);
       const completeMeal = normalizeMealItem({
         ...parsed,
-        id: crypto.randomUUID(),
+        id: generateId(),
         timestamp: new Date().toISOString(),
         meal_name: name,
         mealText,
       });
 
       const newSavedMeal: SavedMeal = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         savedAt: new Date().toISOString(),
         signature: createMealSignature(completeMeal),
         meal: completeMeal,
@@ -1158,7 +1159,7 @@ export const useAppStore = create<AppState>()(
     return get().addMealLog(dayKey, {
       ...savedMeal.meal,
       mealText: savedMeal.mealText || savedMeal.meal.mealText,
-      id: crypto.randomUUID(),
+      id: generateId(),
       timestamp: new Date().toISOString(),
       isFavorite: true,
     });

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useFormContext } from "react-hook-form";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Input } from "../../components/ui/input";
 import { foodSuggestions } from "../../utils/food-suggestions";
 import { useAppStore } from "../../store";
@@ -262,40 +262,37 @@ export function FoodTypeahead({
       {/* Inline dropdown — rendered in normal document flow below the input.
           No portal, no fixed positioning, no coordinate math.
           Always physically below the input regardless of iOS keyboard state. */}
-      <AnimatePresence>
-        {isOpen && suggestions.length > 0 && (
-          <motion.ul
-            ref={listRef}
-            initial={{ opacity: 0, scaleY: 0.9 }}
-            animate={{ opacity: 1, scaleY: 1 }}
-            exit={{ opacity: 0, scaleY: 0.9 }}
-            style={{ transformOrigin: "top" }}
-            transition={{ duration: 0.15 }}
-            dir="rtl"
-            className="mt-2 py-2 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-soft-2xl rounded-2xl text-right overflow-y-auto overscroll-contain touch-pan-y max-h-[200px] relative z-[50] scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-200/60"
-            onPointerDown={(e) => {
-              // Prevent input blur on both desktop and iOS touch.
-              // pointerdown fires BEFORE blur on all platforms (unlike
-              // mousedown which fires after touchstart-induced blur on iOS).
-              e.preventDefault();
-            }}
-          >
-            {suggestions.map((suggestion, idx) => (
-              <li
-                key={suggestion}
-                className={cn(
-                  "px-6 py-3.5 text-[15px] font-bold cursor-pointer transition-all flex items-center justify-start border-b border-slate-50 last:border-none active:bg-blue-50/50 select-none",
-                  idx === activeIndex ? "bg-blue-50 text-blue-600" : "text-slate-700"
-                )}
-                onClick={() => selectSuggestion(suggestion)}
-                onMouseEnter={() => setActiveIndex(idx)}
-              >
-                <span className="whitespace-normal break-words">{suggestion}</span>
-              </li>
-            ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
+      {isOpen && suggestions.length > 0 && (
+        <motion.ul
+          ref={listRef}
+          initial={{ opacity: 0, scaleY: 0.9 }}
+          animate={{ opacity: 1, scaleY: 1 }}
+          style={{ transformOrigin: "top" }}
+          transition={{ duration: 0.15 }}
+          dir="rtl"
+          className="mt-2 py-2 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-soft-2xl rounded-2xl text-right overflow-y-auto overscroll-contain touch-pan-y max-h-[200px] relative z-[50] scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-200/60"
+          onPointerDown={(e) => {
+            // Prevent input blur on both desktop and iOS touch.
+            // pointerdown fires BEFORE blur on all platforms (unlike
+            // mousedown which fires after touchstart-induced blur on iOS).
+            e.preventDefault();
+          }}
+        >
+          {suggestions.map((suggestion, idx) => (
+            <li
+              key={`${suggestion}-${idx}`}
+              className={cn(
+                "px-6 py-3.5 text-[15px] font-bold cursor-pointer transition-all flex items-center justify-start border-b border-slate-50 last:border-none active:bg-blue-50/50 select-none",
+                idx === activeIndex ? "bg-blue-50 text-blue-600" : "text-slate-700"
+              )}
+              onClick={() => selectSuggestion(suggestion)}
+              onMouseEnter={() => setActiveIndex(idx)}
+            >
+              <span className="whitespace-normal break-words">{suggestion}</span>
+            </li>
+          ))}
+        </motion.ul>
+      )}
     </div>
   );
 }
