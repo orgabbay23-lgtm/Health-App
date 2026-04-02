@@ -42,7 +42,10 @@ export function CatLoadingAnimation({
     <div className={`relative flex flex-col items-center justify-center w-full max-w-[320px] h-[250px] overflow-hidden mx-auto ${className}`}>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[400px] flex items-center justify-center scale-[0.6] sm:scale-[0.65]">
         <iframe 
-          srcDoc={htmlContent} 
+          srcDoc={htmlContent.replace(
+            '</head>',
+            '<style>.text-slider { font-size: 38px !important; margin-top: 10px !important; }</style></head>'
+          )} 
           className="w-full h-full border-none overflow-hidden"
           scrolling="no"
           title="Cat Nutrition Checking Animation"
