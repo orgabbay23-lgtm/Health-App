@@ -96,6 +96,7 @@ export function FoodTypeahead({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout>();
 
   const dailyLogs = useAppStore((state) => state.dailyLogs);
 
@@ -140,7 +141,16 @@ export function FoodTypeahead({
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        // Delay closing to prevent swallowing clicks on external buttons (like submit)
+        // because the dropdown unmounting shifts the layout up before the click registers.
+        closeTimeoutRef.current = setTimeout(() => {
+          setIsOpen(false);
+        }, 150);
+      } else {
+        // Cancel close if user clicked back inside the component
+        if (closeTimeoutRef.current) {
+          clearTimeout(closeTimeoutRef.current);
+        }
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -148,6 +158,9 @@ export function FoodTypeahead({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
     };
   }, []);
 
