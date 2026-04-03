@@ -44,7 +44,7 @@ export function CatLoadingAnimation({
         <iframe 
           srcDoc={htmlContent.replace(
             '</head>',
-            '<style>.text-slider { font-size: 38px !important; margin-top: 15px !important; line-height: 1.2 !important; }</style></head>'
+            '<style>.text-slider { font-size: 38px !important; margin-top: 15px !important; line-height: 1.2 !important; min-height: 100px !important; display: flex !important; align-items: center !important; justify-content: center !important; }</style></head>'
           )} 
           className="w-full h-full border-none overflow-hidden"
           scrolling="no"
