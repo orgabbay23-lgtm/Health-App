@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { ModalShell } from "../../components/ui/modal-shell";
 import { Button } from "../../components/ui/button";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { Sparkles, Check, UtensilsCrossed, Pencil, Plus, Trash2 } from "lucide-react";
+import { Sparkles, Check, UtensilsCrossed, Pencil, Plus, Trash2, RotateCcw } from "lucide-react";
 import { Input } from "../../components/ui/input";
 
 interface ConfirmMealModalProps {
@@ -61,10 +61,83 @@ const highlightFoodQuantities = (text: string) => {
 export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: ConfirmMealModalProps) {
   const parseMealToItems = (text: string) => {
     if (!text) return [];
-    // Split by "עם", "בתוספת", "פלוס", "+", ",", "\n", and "ו" as conjunction
-    const regex = /(?:\s+עם\s+)|(?:\s+בתוספת\s+)|(?:\s+פלוס\s+)|(?:\s*\+\s*)|(?:,\s*(?:ו(?=[\u0590-\u05FFa-zA-Z0-9]))?)|(?:\n\s*(?:ו(?=[\u0590-\u05FFa-zA-Z0-9]))?)|(?:\s+ו(?=[\u0590-\u05FFa-zA-Z0-9]))/g;
-    return text.split(regex)
-      .filter(item => item !== undefined)
+    
+    // 1. Normalize 'ועם' to 'עם'
+    let normalizedText = text.replace(/(?:\s+ועם\s+)/g, ' עם ');
+    
+    // 2. Define regex patterns for identification
+    const containers = /^(?:פיתה|לחמניה|באגט|לאפה|טורטיה|טוסט|כריך|סנדוויץ|סנדוויץ'|בייגל|פיתות|לחמניות|באגטים|לאפות|טורטיות|טוסטים|כריכים|בייגלים|פיצה|משולש|משולשי|המבורגר|פסטה|סלט|סלטים|מוקפץ)$/;
+    const units = /^(?:כף|כפות|כפית|כפיות|גרם|קילו|ק"ג|מ"ל|חצי|רבע|שליש|פרוסה|פרוסות|קצת|מעט|טיפה|כוס|כוסות|בקבוק|פחית|קופסה|גביע|גביעים|מנה|מנות|חתיכה|חתיכות|שקית|שקיות)$/;
+    const numbers = /^(?:אחת|אחד|שתי|שני|שניים|שלוש|שלושה|ארבע|ארבעה|חמש|חמישה|שש|שישה|שבע|שבעה|שמונה|תשע|תשעה|עשר|עשרה|כמה|הרבה)$/;
+    
+    // 3. Basic split by strong separators (comma, plus, newline, etc.)
+    const basicRegex = /(?:\s+בתוספת\s+)|(?:\s+פלוס\s+)|(?:\s*\+\s*)|(?:,)|(?:\n)/g;
+    const intermediateParts = normalizedText.split(basicRegex).filter(item => item !== undefined);
+    
+    // 4. Conditional split for 'ו' (vav) to avoid breaking pairs like "עגבניות ומלפפונים"
+    const parts: string[] = [];
+    for (const p of intermediateParts) {
+      // Split by ' ו' (space + vav) only if followed by a unit, container, or number
+      const vavParts = p.split(/(?:\s+ו(?=[\u0590-\u05FFa-zA-Z0-9]))/g);
+      if (vavParts.length === 1) {
+        parts.push(vavParts[0]);
+        continue;
+      }
+      
+      let current = vavParts[0];
+      for (let i = 1; i < vavParts.length; i++) {
+        const next = vavParts[i].trim();
+        const nextWords = next.split(/\s+/);
+        const firstNextWord = nextWords[0];
+        
+        if (units.test(firstNextWord) || containers.test(firstNextWord) || /^\d/.test(firstNextWord) || numbers.test(firstNextWord)) {
+          parts.push(current);
+          current = next;
+        } else {
+          current += ' ו' + next;
+        }
+      }
+      parts.push(current);
+    }
+
+    // 5. Final split logic for 'עם' (with)
+    const finalItems: string[] = [];
+    for (const part of parts) {
+      if (!part) continue;
+      
+      const withParts = part.split(/(?:\s+עם\s+)/);
+      if (withParts.length === 1) {
+        finalItems.push(withParts[0]);
+        continue;
+      }
+      
+      let currentItem = withParts[0];
+      for (let i = 1; i < withParts.length; i++) {
+        const prev = currentItem.trim();
+        const next = withParts[i].trim();
+        
+        const prevWords = prev.split(/\s+/);
+        const lastPrevWord = prevWords[prevWords.length - 1];
+        
+        const nextWords = next.split(/\s+/);
+        const firstNextWord = nextWords[0];
+        
+        const isContainer = containers.test(lastPrevWord);
+        const isUnit = units.test(firstNextWord) || /^\d/.test(firstNextWord) || numbers.test(firstNextWord);
+        
+        // Don't split if it's a base dish (container) with a main filling, 
+        // unless a clear unit/amount follows the 'עם'
+        if (isContainer && !isUnit) {
+          currentItem += ' עם ' + next;
+        } else {
+          finalItems.push(currentItem);
+          currentItem = next;
+        }
+      }
+      finalItems.push(currentItem);
+    }
+    
+    return finalItems
       .map(item => item.trim().replace(/^[-*•]+\s*/, ''))
       .filter(item => item.length > 0);
   };
@@ -127,6 +200,12 @@ const handleAddItem = () => {
   setItems([...items, ""]);
   setEditingIndex(items.length);
   setEditValue("");
+};
+
+const handleResetToOriginal = () => {
+  if (!canInteract) return;
+  setItems([mealText]);
+  setEditingIndex(null);
 };
 
 const handleDeleteItem = (index: number) => {
@@ -284,14 +363,14 @@ const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
                   </motion.li>
                 ))}
 
-                {/* Add Item Button */}
+                {/* Action Buttons */}
                 <motion.li
                   custom={items.length}
                   variants={itemVariants}
                   initial="hidden"
                   animate="show"
                   exit="exit"
-                  className="flex justify-center pt-2 pb-1"
+                  className="flex items-center justify-center gap-2 pt-2 pb-1 flex-wrap"
                 >
                   <Button
                     type="button"
@@ -301,6 +380,18 @@ const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
                   >
                     <Plus strokeWidth={3} className="w-5 h-5" />
                     הוספת מרכיב
+                  </Button>
+
+                  <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block" />
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={handleResetToOriginal}
+                    className="h-10 text-[14px] sm:text-[15px] text-slate-400 hover:text-slate-600 hover:bg-slate-100 font-bold rounded-xl gap-2 transition-all active:scale-95"
+                  >
+                    <RotateCcw strokeWidth={2.5} className="w-4 h-4" />
+                    חזור למקור
                   </Button>
                 </motion.li>
               </AnimatePresence>
