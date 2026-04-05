@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { ModalShell } from "../../components/ui/modal-shell";
 import { Button } from "../../components/ui/button";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { Sparkles, Check, UtensilsCrossed, Pencil, Plus } from "lucide-react";
+import { Sparkles, Check, UtensilsCrossed, Pencil, Plus, Trash2 } from "lucide-react";
 import { Input } from "../../components/ui/input";
 
 interface ConfirmMealModalProps {
@@ -127,6 +127,17 @@ const handleAddItem = () => {
   setItems([...items, ""]);
   setEditingIndex(items.length);
   setEditValue("");
+};
+
+const handleDeleteItem = (index: number) => {
+  const newItems = [...items];
+  newItems.splice(index, 1);
+  setItems(newItems);
+  if (editingIndex === index) {
+    setEditingIndex(null);
+  } else if (editingIndex !== null && editingIndex > index) {
+    setEditingIndex(editingIndex - 1);
+  }
 };
 
 const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
@@ -254,6 +265,21 @@ const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
                     {/* Performance-friendly hover gradient */}
                     {editingIndex !== index && (
                       <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-transparent opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl" />
+                    )}
+                    
+                    {/* Delete button */}
+                    {editingIndex !== index && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteItem(index);
+                        }}
+                        className="relative z-20 p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 lg:opacity-0 lg:group-hover:opacity-100 sm:opacity-100"
+                        aria-label="מחק מרכיב"
+                      >
+                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
                     )}
                   </motion.li>
                 ))}
