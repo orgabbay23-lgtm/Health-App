@@ -167,9 +167,9 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
         const nextWords = next.split(/\s+/);
         const firstNextWord = nextWords[0];
         
-        // Always split unless it's a known word where 'ו' is part of the root
-        // (e.g., 'וניל' becomes 'ניל' after split, which is usually not a conjunction)
-        const isVavRootWord = /^(?:ניל|ודקה|יסקי|רמוט|סאבי|רד|רוד|ולדורף|ולדורך|ורמוט|וינר)$/.test(firstNextWord);
+        // Expanded list of known food/drink words where 'ו' is part of the root.
+        // We match the "remainder" of the word after the split (e.g., 'וניל' -> 'ניל').
+        const isVavRootWord = /^(?:ניל|ודקה|דקה|יסקי|ויסקי|רמוט|ורמוט|סאבי|ואסבי|אסבי|פל|ופל|אפל|ופלים|אפלים|פלים|יניגרט|יטמינצ'יק|ינשטפן|יינשטפן|ונטון|ולינגטון|ינדלו|יסוצקי|ינה|ינר|וק|ול|ולדורף|ולדורך|ולנסיה|יטמין|יטלו|ינרשניצל|ולקאנו|פלס)$/.test(firstNextWord);
         
         if (!isVavRootWord) {
           parts.push(current);
