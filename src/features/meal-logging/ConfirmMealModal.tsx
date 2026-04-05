@@ -149,10 +149,10 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     const basicRegex = /(?:\s+בתוספת\s+)|(?:\s+פלוס\s+)|(?:\s*\+\s*)|(?:,)|(?:\n)/g;
     const intermediateParts = normalizedText.split(basicRegex).filter(item => item !== undefined);
     
-    // 5. Conditional split for 'ו' (vav) to avoid breaking pairs like "עגבניות ומלפפונים"
+    // 5. Conditional split for 'ו' (vav) conjunction
     const parts: string[] = [];
     for (const p of intermediateParts) {
-      // Split by ' ו' (space + vav) only if followed by a unit, container, or number
+      // Split by ' ו' (space + vav) 
       const vavParts = p.split(/(?:\s+ו(?=[\u0590-\u05FFa-zA-Z0-9]))/g);
       if (vavParts.length === 1) {
         parts.push(vavParts[0]);
@@ -162,13 +162,20 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
       let current = vavParts[0];
       for (let i = 1; i < vavParts.length; i++) {
         const next = vavParts[i].trim();
+        if (!next) continue;
+        
         const nextWords = next.split(/\s+/);
         const firstNextWord = nextWords[0];
         
-        if (units.test(firstNextWord) || containers.test(firstNextWord) || /^\d/.test(firstNextWord) || numbers.test(firstNextWord)) {
+        // Always split unless it's a known word where 'ו' is part of the root
+        // (e.g., 'וניל' becomes 'ניל' after split, which is usually not a conjunction)
+        const isVavRootWord = /^(?:ניל|ודקה|יסקי|רמוט|סאבי|רד|רוד|ולדורף|ולדורך|ורמוט|וינר)$/.test(firstNextWord);
+        
+        if (!isVavRootWord) {
           parts.push(current);
           current = next;
         } else {
+          // If it's a vav-root word (like vanilla/vodka), keep it together
           current += ' ו' + next;
         }
       }
