@@ -24,6 +24,7 @@ import {
   TabsTrigger,
 } from "../../components/ui/tabs";
 import { EditFavoriteModal } from "./EditFavoriteModal";
+import { ConfirmMealModal } from "./ConfirmMealModal";
 import { FoodTypeahead } from "./FoodTypeahead";
 import { FastCalorieCalculator } from "./FastCalorieCalculator";
 import { CatLoadingAnimation } from "./CatLoadingAnimation";
@@ -76,6 +77,8 @@ export function MealLogModal({
   const [newFavText, setNewFavText] = useState("");
   const [isCreatingFav, setIsCreatingFav] = useState(false);
   const [uploadingMealId, setUploadingMealId] = useState<string | null>(null);
+
+  const [confirmMealData, setConfirmMealData] = useState<{ text: string, onConfirm: (updatedText: string) => void } | null>(null);
 
   // Image Crop states
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
@@ -240,12 +243,13 @@ export function MealLogModal({
   };
 
   const onAiSubmit = (data: AiFormValues) => {
-    if (!window.confirm('האם אתה בטוח?')) return;
-    processMealSubmission(data.description);
+    setConfirmMealData({
+      text: data.description,
+      onConfirm: (updatedText: string) => processMealSubmission(updatedText)
+    });
   };
 
   const onManualSubmit = (data: ManualFormValues) => {
-    if (!window.confirm('האם אתה בטוח?')) return;
     const description = data.ingredients
       .map(
         (ingredient) =>
@@ -253,7 +257,10 @@ export function MealLogModal({
       )
       .join(" עם ");
 
-    processMealSubmission(description);
+    setConfirmMealData({
+      text: description,
+      onConfirm: (updatedText: string) => processMealSubmission(updatedText)
+    });
   };
 
   // Execute favorite template through AI flow OR zero-cost
@@ -299,9 +306,13 @@ export function MealLogModal({
 
   // Calculate & log from EditFavoriteModal (one-time, doesn't save template)
   const handleCalculateAndLog = (text: string) => {
-    if (!window.confirm('האם אתה בטוח?')) return;
-    setEditingMeal(null);
-    processMealSubmission(text);
+    setConfirmMealData({
+      text: text,
+      onConfirm: (updatedText: string) => {
+        setEditingMeal(null);
+        processMealSubmission(updatedText);
+      }
+    });
   };
 
   // NEW: Create favorite template handler
@@ -335,7 +346,6 @@ export function MealLogModal({
     // Reset input so the same file can be re-selected
     e.target.value = "";
 
-    if (!window.confirm('האם אתה בטוח?')) return;
     setIsAnalyzingImage(true);
     try {
       const base64 = await fileToBase64(file);
@@ -355,10 +365,14 @@ export function MealLogModal({
 
   const handleImageReviewConfirm = () => {
     if (!imageReviewText?.trim()) return;
-    if (!window.confirm('האם אתה בטוח?')) return;
     const text = imageReviewText.trim();
-    setImageReviewText(null);
-    processMealSubmission(text);
+    setConfirmMealData({
+      text: text,
+      onConfirm: () => {
+        setImageReviewText(null);
+        processMealSubmission(text);
+      }
+    });
   };
 
   const handleImageReviewCancel = () => {
@@ -1021,6 +1035,15 @@ export function MealLogModal({
         onCalculateAndLog={handleCalculateAndLog}
         onZeroCostLog={handleZeroCostLog}
       />
+
+      {confirmMealData && (
+        <ConfirmMealModal
+          isOpen={true}
+          onClose={() => setConfirmMealData(null)}
+          onConfirm={confirmMealData.onConfirm}
+          mealText={confirmMealData.text}
+        />
+      )}
     </>
   );
 }
