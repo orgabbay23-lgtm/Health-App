@@ -2,7 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { ModalShell } from "../../components/ui/modal-shell";
 import { Button } from "../../components/ui/button";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { Sparkles, Check, UtensilsCrossed, Pencil, Plus, Trash2, RotateCcw, CupSoda } from "lucide-react";
+import { 
+  Sparkles, Check, UtensilsCrossed, Pencil, Plus, Trash2, RotateCcw, 
+  CupSoda, Pizza, Sandwich, Salad, Drumstick, Fish, Egg, 
+  Coffee, Wine, Beer, Apple, Banana, Cherry, Carrot, CakeSlice, Cookie, 
+  IceCreamBowl, Donut, Croissant, Popcorn, Soup, Candy, Milk, Beef,
+  Bean, Wheat, Grape, Citrus, Leaf, Ham, GlassWater
+} from "lucide-react";
 import { Input } from "../../components/ui/input";
 
 interface ConfirmMealModalProps {
@@ -12,12 +18,66 @@ interface ConfirmMealModalProps {
   mealText: string;
 }
 
-const isDrink = (text: string) => {
-  const drinkKeywords = [
-    'קפה', 'נס', 'תה', 'מים', 'מיץ', 'קולה', 'זירו', 'פנטה', 'ספרייט', 'פיוזטי', 'משקה', 'שוקו', 'בירה', 'יין', 'סודה', 'אייס', 'שייק', 'ערק', 'וודקה', 'וויסקי', 'ג׳ין', 'רום', 'טקילה', 'פחית', 'בקבוק', 'כוס'
-  ];
+const getFoodIcon = (text: string) => {
   const lowerText = text.toLowerCase();
-  return drinkKeywords.some(keyword => lowerText.includes(keyword));
+  
+  // Robust Hebrew word matching:
+  // - Handles prefixes (ו,ה,ב,ל,מ,ש,כ)
+  // - Ensures word boundaries to avoid sub-word matches (like 'תה' in 'חביתה')
+  const match = (keywords: string[]) => {
+    const pattern = new RegExp(`(?<![א-ת])(?:[ובהלמשכ]?)(?:${keywords.join('|')})(?![א-ת])`, 'g');
+    return pattern.test(lowerText);
+  };
+
+  // 1. DRINKS (Categorized by type)
+  if (match(['קפה', 'אספרסו', 'לאטה', 'הפוך', 'בוץ', 'מקיאטו', 'קפוצ׳ינו', 'נס', 'תה', 'חליטה', 'צ׳אי'])) return Coffee;
+  if (match(['מים', 'סודה'])) return GlassWater;
+  if (match(['יין', 'וודקה', 'ערק', 'וויסקי', 'ג׳ין', 'רום', 'טקילה', 'אלכוהול', 'קוקטייל', 'צ׳ייסר'])) return Wine;
+  if (match(['בירה', 'לאגר', 'אייל', 'היינקן', 'קורונה', 'קרלסברג', 'גולדסטאר', 'מכבי'])) return Beer;
+  if (match(['קולה', 'זירו', 'פנטה', 'ספרייט', 'פיוזטי', 'משקה', 'שוקו', 'אייס', 'שייק', 'מיץ', 'ענבים', 'תפוזים', 'לימונדה', 'נקטר', 'בקבוק', 'פחית', 'כוס'])) return CupSoda;
+  
+  // 2. PROTEINS (Meat, Poultry, Fish, Eggs)
+  if (match(['ביצה', 'חביתה', 'עין', 'מקושקשת', 'שקשוקה', 'אומלט', 'ביצים', 'ביצה קשה'])) return Egg;
+  if (match(['המבורגר', 'בורגר', 'קציצה', 'קציצות', 'קבב', 'בשר', 'סטייק', 'אנטריקוט', 'צלעות', 'סינטה', 'פילה', 'כבד', 'לבבות', 'מעורב', 'טחון', 'צלי', 'קרפצ׳יו'])) return Beef;
+  if (match(['חזיר', 'בייקון', 'לבן', 'שינקן', 'האם', 'לרד'])) return Ham;
+  if (match(['עוף', 'שניצל', 'כנפיים', 'פרגית', 'חזה עוף', 'כרעיים', 'פולקע', 'הודו', 'נאגטס', 'חזה הודו', 'פסטרמה', 'נקניק', 'נקניקיה', 'נקניקייה'])) return Drumstick;
+  if (match(['דג', 'סלמון', 'טונה', 'אמנון', 'מושט', 'לברק', 'דניס', 'מוסר', 'סושי', 'סשימי', 'חריימה', 'גפילטע', 'סרדינים', 'אנשובי'])) return Fish;
+  
+  // 3. CARBS, GRAINS & LEGUMES
+  if (match(['פיצה', 'משולש', 'פוקאצ׳ה'])) return Pizza;
+  if (match(['כריך', 'סנדוויץ', 'באגט', 'פיתה', 'לאפה', 'טורטיה', 'טוסט', 'בייגל', 'לחמניה', 'לחם', 'פרוסה', 'חלה', 'בייגלה', 'קרקר', 'פתית', 'פריכית', 'לחמית'])) return Sandwich;
+  if (match(['אורז', 'פתיתים', 'בורגול', 'קינואה', 'כוסמת', 'קוסקוס', 'חומוס', 'פלאפל', 'עדשים', 'שעועית', 'פול', 'גרגירים', 'טחינה', 'מג׳דרה', 'נזיד', 'מרק'])) return Bean;
+  if (match(['שיבולת שועל', 'קורנפלקס', 'דגנים', 'גרנולה', 'דייסה', 'קוואקר', 'ברנפלקס'])) return Wheat;
+  if (match(['פסטה', 'ספגטי', 'מקרוני', 'לזניה', 'רביולי', 'ניוקי', 'טורטליני', 'פנה', 'פטוצ׳יני'])) return UtensilsCrossed;
+  
+  // 4. DAIRY
+  if (match(['גבינה', 'קוטג׳', 'קוטג', 'יוגורט', 'חלב', 'שמנת', 'חמאה', 'מעדן', 'לאבנה', 'פודינג', 'ריקוטה', 'מוצרלה', 'צהובה', 'לבנה', 'צפתית', 'בולגרית'])) return Milk;
+  
+  // 5. VEGETABLES
+  if (match(['סלט', 'חסה', 'כרוב', 'פטרוזיליה', 'כוסברה', 'תרד', 'שמיר', 'נענע', 'עלי', 'רוקט', 'בזיליקום', 'אורגנו'])) return Leaf;
+  if (match(['גזר', 'בטטה', 'תפוח אדמה', 'תפו"א', 'פירה', 'צ׳יפס', 'שורש', 'צנונית', 'לפת'])) return Carrot;
+  if (match(['עגבניה', 'מלפפון', 'פלפל', 'גמבה', 'בצל', 'שום', 'תירס', 'אפונה', 'קישוא', 'חציל', 'פטריות', 'דלעת', 'ברוקולי', 'כרובית', 'חצילים', 'קישואים'])) return Salad;
+  
+  // 6. FRUITS
+  if (match(['תפוז', 'קלמנטינה', 'לימון', 'אשכולית', 'פומלה', 'ליים', 'הדרים'])) return Citrus;
+  if (match(['ענבים', 'צימוקים'])) return Grape;
+  if (match(['בננה'])) return Banana;
+  if (match(['דובדבן', 'תות', 'פטל', 'אוכמניות', 'פירות יער', 'חמוציות'])) return Cherry;
+  if (match(['תפוח', 'פרי', 'פירות', 'אבטיח', 'מלון', 'אפרסק', 'משמש', 'אגס', 'מנגו', 'שזיף', 'תמר', 'אפרסמון', 'רימון', 'תאנה', 'אבוקדו', 'קיווי', 'אננס'])) return Apple;
+  
+  // 7. SWEETS, BAKERY & SNACKS
+  if (match(['עוגה', 'פאי', 'טארט', 'מוס', 'עוגת'])) return CakeSlice;
+  if (match(['עוגיה', 'עוגייה', 'ביסקוויט', 'וופל', 'נשיקות', 'מקרון'])) return Cookie;
+  if (match(['גלידה', 'ארטיק', 'שלגון', 'סורבה', 'פרוזן', 'יוגורטיה'])) return IceCreamBowl;
+  if (match(['דונאט', 'סופגניה', 'סופגנייה', 'ברלינר'])) return Donut;
+  if (match(['קרואסון', 'בורקס', 'מאפה', 'פחזנית', 'רוגלך', 'ג׳חנון', 'מלוואח', 'זיווה', 'שניצלונים'])) return Croissant;
+  if (match(['פופקורן', 'חטיף', 'במבה', 'ביסלי', 'דוריטוס', 'תפוצ׳יפס', 'פרינגלס', 'צ׳יטוס'])) return Popcorn;
+  if (match(['ממתק', 'סוכריה', 'סוכרייה', 'שוקולד', 'קינוח', 'ריבה', 'דבש', 'סילאן', 'חלווה', 'נוטלה', 'מרשמלו', 'גומי'])) return Candy;
+  
+  // 8. OTHERS
+  if (match(['מרק', 'חמין', 'נזיד', 'ציר'])) return Soup;
+
+  return Check; // Default fallback
 };
 
 const itemVariants: Variants = {
@@ -336,16 +396,15 @@ const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
                     className={`group relative flex items-center gap-3 sm:gap-4 text-slate-700 font-black text-base sm:text-lg bg-white p-4 rounded-2xl border ${editingIndex === index ? 'border-blue-400 shadow-md ring-2 ring-blue-100' : 'border-slate-200/80 shadow-sm'} ${editingIndex === index ? '' : 'cursor-pointer'} shrink-0 will-change-transform`}
                     style={{ WebkitTransform: "translateZ(0)" }}
                   >
-                    {/* Check/Drink icon circle */}
+                    {/* Check/Food icon circle */}
                     <div className={`flex-shrink-0 relative z-10 transition-transform duration-200 ${editingIndex === index ? 'scale-90 opacity-50' : ''}`}>
                       <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-50 lg:group-hover:bg-blue-500 transition-colors duration-300 flex items-center justify-center">
                         {editingIndex === index ? (
                            <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 transition-colors duration-300" strokeWidth={2.5} />
-                        ) : isDrink(item) ? (
-                           <CupSoda className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 lg:group-hover:text-white transition-colors duration-300" strokeWidth={3} />
-                        ) : (
-                           <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 lg:group-hover:text-white transition-colors duration-300" strokeWidth={3} />
-                        )}
+                        ) : (() => {
+                           const FoodIcon = getFoodIcon(item);
+                           return <FoodIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 lg:group-hover:text-white transition-colors duration-300" strokeWidth={3} />;
+                        })()}
                       </div>
                     </div>
                     
