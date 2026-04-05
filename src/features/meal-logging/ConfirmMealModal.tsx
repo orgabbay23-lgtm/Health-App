@@ -174,7 +174,7 @@ const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
              >
                 <motion.div
                    animate={{ y: [0, -4, 0] }}
-                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
                    className="will-change-transform"
                 >
                   <UtensilsCrossed className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600 drop-shadow-sm" />
@@ -322,8 +322,8 @@ const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
               {/* Shimmer overlay */}
               <motion.div 
                 className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
-                animate={{ translateX: ['-150%', '250%'] }}
-                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut", repeatDelay: 1.5 }}
+                animate={{ x: ['-150%', '250%'] }}
+                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut", repeatDelay: 1.5, delay: 1.5 }}
               />
               <Sparkles className="w-5 h-5 sm:w-7 sm:h-7 animate-pulse relative z-10" />
               <span className="relative z-10 leading-tight">אשר והוסף לארוחות</span>
@@ -355,7 +355,7 @@ const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
               <motion.div 
                 className="absolute inset-0 rounded-full bg-white/20"
                 animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
-                transition={{ repeat: Infinity, duration: 2 }}
+                transition={{ repeat: Infinity, duration: 2, delay: 1.5 }}
               />
             </motion.button>
           )}
