@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { ModalShell } from "../../components/ui/modal-shell";
 import { Button } from "../../components/ui/button";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { Sparkles, Check, UtensilsCrossed, Pencil, Plus, Trash2, RotateCcw } from "lucide-react";
+import { Sparkles, Check, UtensilsCrossed, Pencil, Plus, Trash2, RotateCcw, CupSoda } from "lucide-react";
 import { Input } from "../../components/ui/input";
 
 interface ConfirmMealModalProps {
@@ -11,6 +11,14 @@ interface ConfirmMealModalProps {
   onConfirm: (updatedText: string) => void;
   mealText: string;
 }
+
+const isDrink = (text: string) => {
+  const drinkKeywords = [
+    'קפה', 'נס', 'תה', 'מים', 'מיץ', 'קולה', 'זירו', 'פנטה', 'ספרייט', 'פיוזטי', 'משקה', 'שוקו', 'בירה', 'יין', 'סודה', 'אייס', 'שייק', 'ערק', 'וודקה', 'וויסקי', 'ג׳ין', 'רום', 'טקילה', 'פחית', 'בקבוק', 'כוס'
+  ];
+  const lowerText = text.toLowerCase();
+  return drinkKeywords.some(keyword => lowerText.includes(keyword));
+};
 
 const itemVariants: Variants = {
   hidden: { opacity: 0, y: 40, scale: 0.9 },
@@ -65,16 +73,23 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     // 1. Normalize 'ועם' to 'עם'
     let normalizedText = text.replace(/(?:\s+ועם\s+)/g, ' עם ');
     
-    // 2. Define regex patterns for identification
+    // 2. Protect content inside parentheses
+    const protectedPairs: string[] = [];
+    normalizedText = normalizedText.replace(/\(([^)]+)\)/g, (match) => {
+      protectedPairs.push(match);
+      return `__PAREN_${protectedPairs.length - 1}__`;
+    });
+    
+    // 3. Define regex patterns for identification
     const containers = /^(?:פיתה|לחמניה|באגט|לאפה|טורטיה|טוסט|כריך|סנדוויץ|סנדוויץ'|בייגל|פיתות|לחמניות|באגטים|לאפות|טורטיות|טוסטים|כריכים|בייגלים|פיצה|משולש|משולשי|המבורגר|פסטה|סלט|סלטים|מוקפץ)$/;
     const units = /^(?:כף|כפות|כפית|כפיות|גרם|קילו|ק"ג|מ"ל|חצי|רבע|שליש|פרוסה|פרוסות|קצת|מעט|טיפה|כוס|כוסות|בקבוק|פחית|קופסה|גביע|גביעים|מנה|מנות|חתיכה|חתיכות|שקית|שקיות)$/;
     const numbers = /^(?:אחת|אחד|שתי|שני|שניים|שלוש|שלושה|ארבע|ארבעה|חמש|חמישה|שש|שישה|שבע|שבעה|שמונה|תשע|תשעה|עשר|עשרה|כמה|הרבה)$/;
     
-    // 3. Basic split by strong separators (comma, plus, newline, etc.)
+    // 4. Basic split by strong separators (comma, plus, newline, etc.)
     const basicRegex = /(?:\s+בתוספת\s+)|(?:\s+פלוס\s+)|(?:\s*\+\s*)|(?:,)|(?:\n)/g;
     const intermediateParts = normalizedText.split(basicRegex).filter(item => item !== undefined);
     
-    // 4. Conditional split for 'ו' (vav) to avoid breaking pairs like "עגבניות ומלפפונים"
+    // 5. Conditional split for 'ו' (vav) to avoid breaking pairs like "עגבניות ומלפפונים"
     const parts: string[] = [];
     for (const p of intermediateParts) {
       // Split by ' ו' (space + vav) only if followed by a unit, container, or number
@@ -100,7 +115,7 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
       parts.push(current);
     }
 
-    // 5. Final split logic for 'עם' (with)
+    // 6. Final split logic for 'עם' (with)
     const finalItems: string[] = [];
     for (const part of parts) {
       if (!part) continue;
@@ -138,7 +153,14 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     }
     
     return finalItems
-      .map(item => item.trim().replace(/^[-*•]+\s*/, ''))
+      .map(item => {
+        let restored = item.trim().replace(/^[-*•]+\s*/, '');
+        // Restore parentheses
+        protectedPairs.forEach((content, i) => {
+          restored = restored.replace(`__PAREN_${i}__`, content);
+        });
+        return restored;
+      })
       .filter(item => item.length > 0);
   };
 
@@ -314,11 +336,13 @@ const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
                     className={`group relative flex items-center gap-3 sm:gap-4 text-slate-700 font-black text-base sm:text-lg bg-white p-4 rounded-2xl border ${editingIndex === index ? 'border-blue-400 shadow-md ring-2 ring-blue-100' : 'border-slate-200/80 shadow-sm'} ${editingIndex === index ? '' : 'cursor-pointer'} shrink-0 will-change-transform`}
                     style={{ WebkitTransform: "translateZ(0)" }}
                   >
-                    {/* Check icon circle */}
+                    {/* Check/Drink icon circle */}
                     <div className={`flex-shrink-0 relative z-10 transition-transform duration-200 ${editingIndex === index ? 'scale-90 opacity-50' : ''}`}>
                       <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-blue-50 lg:group-hover:bg-blue-500 transition-colors duration-300 flex items-center justify-center">
                         {editingIndex === index ? (
                            <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 transition-colors duration-300" strokeWidth={2.5} />
+                        ) : isDrink(item) ? (
+                           <CupSoda className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 lg:group-hover:text-white transition-colors duration-300" strokeWidth={3} />
                         ) : (
                            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 lg:group-hover:text-white transition-colors duration-300" strokeWidth={3} />
                         )}
