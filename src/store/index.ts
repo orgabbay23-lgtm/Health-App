@@ -47,10 +47,17 @@ export interface UserProfile extends NutritionProfileInput {
   targets: NutritionTargets;
 }
 
+export interface MealIngredient {
+  name: string;
+  calories: number;
+  protein: number;
+}
+
 export interface MealItem {
   id: string;
   timestamp: string;
   meal_name: string;
+  ingredients?: MealIngredient[];
   calories: number;
   macronutrients: {
     protein: number;
@@ -152,6 +159,7 @@ function normalizeMealItem(meal: Partial<MealItem>): MealItem {
     id: String(meal.id ?? generateId()),
     timestamp: typeof meal.timestamp === "string" ? meal.timestamp : new Date().toISOString(),
     meal_name: typeof meal.meal_name === "string" ? meal.meal_name : "ארוחה",
+    ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : undefined,
     calories: toFiniteNumber(meal.calories, 0),
     macronutrients: {
       protein: toFiniteNumber(meal.macronutrients?.protein, 0),

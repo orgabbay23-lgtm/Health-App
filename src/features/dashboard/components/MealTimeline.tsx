@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, ChevronDown, Sparkles, Trash2, Coffee, Utensils, Sandwich, Apple, Moon, Pill, Pencil, Plus, Minus } from "lucide-react";
+import { Heart, ChevronDown, Sparkles, Trash2, Coffee, Utensils, Sandwich, Apple, Moon, Pill, Pencil, Plus, Minus, List } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { NUTRIENT_META } from "../../../utils/nutritional-tips";
@@ -111,6 +111,7 @@ const MealTimelineItem = memo(function MealTimelineItem({
   isSaved,
 }: MealTimelineItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isIngredientsExpanded, setIsIngredientsExpanded] = useState(false);
   const Icon = getMealIcon(meal.meal_name, meal.sourceType);
 
   const scrollToTop = () => {
@@ -148,7 +149,7 @@ const MealTimelineItem = memo(function MealTimelineItem({
       whileTap={{ scale: 0.96, transition: { type: "spring", stiffness: 400, damping: 17 } }}
     >
       <Card className="rounded-[2rem] border border-white/60 bg-white/50 backdrop-blur-md shadow-soft-xl transition-all duration-300">
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-hidden rounded-[2rem]">
           <div className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="flex gap-4">
@@ -288,22 +289,68 @@ const MealTimelineItem = memo(function MealTimelineItem({
                 ))}
               </div>
 
-              {canDelete && onDelete && (
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200/60 text-rose-500 hover:bg-rose-100 hover:text-rose-600 active:scale-95 transition-all text-[11px] font-bold shrink-0"
-                  onClick={() => {
-                    if (window.confirm("האם אתה בטוח שברצונך למחוק את הארוחה מההיסטוריה?")) {
-                      onDelete(meal.id);
-                    }
-                  }}
-                >
-                  <Trash2 size={13} />
-                  <span>מחיקה</span>
-                </button>
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                {meal.ingredients && meal.ingredients.length > 0 && (
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full border active:scale-95 transition-all text-[11px] font-bold shrink-0",
+                      isIngredientsExpanded
+                        ? "bg-indigo-100 border-indigo-300 text-indigo-700"
+                        : "bg-indigo-50 border-indigo-200/60 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700"
+                    )}
+                    onClick={() => setIsIngredientsExpanded((curr) => !curr)}
+                  >
+                    <List size={13} />
+                    <span>פירוט</span>
+                  </button>
+                )}
+                {canDelete && onDelete && (
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200/60 text-rose-500 hover:bg-rose-100 hover:text-rose-600 active:scale-95 transition-all text-[11px] font-bold shrink-0"
+                    onClick={() => {
+                      if (window.confirm("האם אתה בטוח שברצונך למחוק את הארוחה מההיסטוריה?")) {
+                        onDelete(meal.id);
+                      }
+                    }}
+                  >
+                    <Trash2 size={13} />
+                    <span>מחיקה</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
+
+          <AnimatePresence>
+            {isIngredientsExpanded && meal.ingredients && meal.ingredients.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                className="overflow-hidden bg-white/40 border-t border-indigo-100"
+              >
+                <div className="p-5 flex flex-col gap-3">
+                  {meal.ingredients.map((ing, idx) => (
+                    <div key={idx} className="flex items-center gap-3 bg-white/80 p-3 rounded-xl shadow-sm border border-indigo-50">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                      <div className="flex-1 text-sm font-bold text-slate-800">{ing.name}</div>
+                      <div className="flex items-center gap-3 text-[13px] font-bold text-left shrink-0 whitespace-nowrap">
+                        <span className="text-slate-600">{formatNutritionValue(ing.calories)} קק"ל</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-200 hidden sm:block" />
+                        <span className="text-orange-500 hidden sm:inline">{formatNutritionValue(ing.protein)} ג' חלבון</span>
+                      </div>
+                      <div className="sm:hidden text-[12px] font-bold text-orange-500 shrink-0 whitespace-nowrap text-left pl-1">
+                        {formatNutritionValue(ing.protein)} גרם חלבון
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <AnimatePresence>
             {isExpanded && (

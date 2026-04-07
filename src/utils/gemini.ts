@@ -60,6 +60,19 @@ const mealResponseSchema: Schema = {
       type: SchemaType.STRING,
       description: "Short Hebrew meal name.",
     },
+    ingredients: {
+      type: SchemaType.ARRAY,
+      description: "List of individual ingredients making up the meal.",
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          name: { type: SchemaType.STRING, description: "Name of the ingredient (e.g. '100g Rice')." },
+          calories: { type: SchemaType.NUMBER, description: "Calories in this specific ingredient." },
+          protein: { type: SchemaType.NUMBER, description: "Protein in grams in this specific ingredient." },
+        },
+        required: ["name", "calories", "protein"],
+      },
+    },
     calories: {
       type: SchemaType.NUMBER,
       description: "Total estimated calories for the meal.",
@@ -126,6 +139,13 @@ const mealResponseSchema: Schema = {
 
 const mealResponseParser = z.object({
   meal_name: z.string().min(1),
+  ingredients: z.array(
+    z.object({
+      name: z.string(),
+      calories: z.number().finite().nonnegative(),
+      protein: z.number().finite().nonnegative(),
+    })
+  ).min(1),
   calories: z.number().finite().nonnegative(),
   macronutrients: z.object({
     protein: z.number().finite().nonnegative(),

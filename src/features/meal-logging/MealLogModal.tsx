@@ -175,6 +175,7 @@ export function MealLogModal({
         id: generateId(),
         timestamp: new Date().toISOString(),
         meal_name: parsedData.meal_name,
+        ingredients: parsedData.ingredients,
         calories: parsedData.calories,
         macronutrients: {
           protein: parsedData.macronutrients.protein,

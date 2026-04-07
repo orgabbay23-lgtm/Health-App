@@ -242,7 +242,7 @@ export function Dashboard() {
         transition={{ duration: 0.8 }}
         className="relative mx-auto max-w-2xl bg-white/20 backdrop-blur-[2px] border-x border-white/10 shadow-2xl"
       >
-        <div className="space-y-8 px-4 py-6 pt-safe-top pb-32 pb-safe-bottom">
+        <div className="space-y-8 px-4 py-6 pt-safe-top pb-64 pb-safe-bottom">
           <DashboardTopBar
             periodMode={periodMode}
             onPeriodChange={setPeriodMode}

@@ -38,10 +38,11 @@ export function EditLoggedMealModal({ isOpen, onClose, meal, dayKey }: EditLogge
     setIsSaving(true);
     try {
       const parsedData = await parseMealDescription(textToProcess);
-      
+
       const updatedMeal: MealItem = {
         ...meal,
         meal_name: parsedData.meal_name,
+        ingredients: parsedData.ingredients,
         calories: parsedData.calories,
         macronutrients: {
           protein: parsedData.macronutrients.protein,
@@ -51,7 +52,6 @@ export function EditLoggedMealModal({ isOpen, onClose, meal, dayKey }: EditLogge
         micronutrients: parsedData.micronutrients,
         mealText: textToProcess, // Keep the new text
       };
-
       const alerts = await updateMealLog(dayKey, meal.id, updatedMeal);
       
       toast.success("הארוחה עודכנה בהצלחה");
