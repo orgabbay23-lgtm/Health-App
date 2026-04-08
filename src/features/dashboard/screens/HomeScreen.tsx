@@ -62,6 +62,8 @@ interface HomeScreenProps {
   onEditMeal: (dayKey: string, meal: MealItem) => void;
   onIncrementMeal: (dayKey: string, mealId: string) => void;
   onDecrementMeal: (dayKey: string, mealId: string) => void;
+  onDeleteIngredient: (dayKey: string, meal: MealItem, ingredientIndex: number) => void;
+  onEditIngredients: (dayKey: string, meal: MealItem, edits: { index: number; newText: string }[]) => Promise<void>;
 }
 
 export function HomeScreen({
@@ -78,6 +80,8 @@ export function HomeScreen({
   onEditMeal,
   onIncrementMeal,
   onDecrementMeal,
+  onDeleteIngredient,
+  onEditIngredients,
 }: HomeScreenProps) {
   const meals = selectedDailyLog?.meals ?? [];
 
@@ -210,6 +214,8 @@ export function HomeScreen({
                 onEdit={(meal) => onEditMeal(periodDetails.startKey, meal)}
                 onIncrement={(mealId) => onIncrementMeal(periodDetails.startKey, mealId)}
                 onDecrement={(mealId) => onDecrementMeal(periodDetails.startKey, mealId)}
+                onDeleteIngredient={(meal, idx) => onDeleteIngredient(periodDetails.startKey, meal, idx)}
+                onEditIngredients={(meal, edits) => onEditIngredients(periodDetails.startKey, meal, edits)}
                 savedSignatures={savedSignatures}
                 emptyText="עוד לא רשמת כלום היום..."
               />
@@ -222,6 +228,8 @@ export function HomeScreen({
                 onEditMeal={onEditMeal}
                 onIncrementMeal={onIncrementMeal}
                 onDecrementMeal={onDecrementMeal}
+                onDeleteIngredient={onDeleteIngredient}
+                onEditIngredients={onEditIngredients}
               />
             )}
           </CardContent>

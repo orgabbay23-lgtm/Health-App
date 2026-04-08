@@ -45,6 +45,8 @@ interface HistoryScreenProps {
   onEditMeal: (dayKey: string, meal: MealItem) => void;
   onIncrementMeal: (dayKey: string, mealId: string) => void;
   onDecrementMeal: (dayKey: string, mealId: string) => void;
+  onDeleteIngredient: (dayKey: string, meal: MealItem, ingredientIndex: number) => void;
+  onEditIngredients: (dayKey: string, meal: MealItem, edits: { index: number; newText: string }[]) => Promise<void>;
 }
 
 export function HistoryScreen({
@@ -64,6 +66,8 @@ export function HistoryScreen({
   onEditMeal,
   onIncrementMeal,
   onDecrementMeal,
+  onDeleteIngredient,
+  onEditIngredients,
 }: HistoryScreenProps) {
   return (
     <motion.div
@@ -128,6 +132,8 @@ export function HistoryScreen({
                 onEdit={(meal) => onEditMeal(selectedDayKey, meal)}
                 onIncrement={(mealId) => onIncrementMeal(selectedDayKey, mealId)}
                 onDecrement={(mealId) => onDecrementMeal(selectedDayKey, mealId)}
+                onDeleteIngredient={(meal, idx) => onDeleteIngredient(selectedDayKey, meal, idx)}
+                onEditIngredients={(meal, edits) => onEditIngredients(selectedDayKey, meal, edits)}
                 savedSignatures={savedSignatures}
                 emptyText="אין תיעוד לתאריך זה."
               />
@@ -140,6 +146,8 @@ export function HistoryScreen({
                 onEditMeal={onEditMeal}
                 onIncrementMeal={onIncrementMeal}
                 onDecrementMeal={onDecrementMeal}
+                onDeleteIngredient={onDeleteIngredient}
+                onEditIngredients={onEditIngredients}
               />
             )}
           </CardContent>

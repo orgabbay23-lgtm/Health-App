@@ -4,9 +4,11 @@ import { toast } from "sonner";
 import {
   EMPTY_MICRONUTRIENTS,
   MICRONUTRIENT_KEYS,
+  type MicronutrientTotals,
   type NutritionSafetyAlert,
   evaluateMicronutrientSafety,
 } from "../../utils/nutrition-utils";
+import { parseMealDescription } from "../../utils/gemini";
 import {
   aggregatePeriodLogs,
   createEmptyAggregations,
@@ -112,6 +114,7 @@ export function Dashboard() {
 
   const activeUser = useActiveUser();
   const removeMealLog = useAppStore((state) => state.removeMealLog);
+  const updateMealLog = useAppStore((state) => state.updateMealLog);
   const saveMealAsFavorite = useAppStore((state) => state.saveMealAsFavorite);
   const removeSavedMeal = useAppStore((state) => state.removeSavedMeal);
   const incrementMealQuantity = useAppStore((state) => state.incrementMealQuantity);
@@ -221,6 +224,81 @@ export function Dashboard() {
     setEditingLog({ dayKey, meal });
   }, []);
 
+  const onDeleteIngredient = useCallback(async (dayKey: string, meal: MealItem, ingredientIndex: number) => {
+    if (!meal.ingredients) return;
+    const ingredient = meal.ingredients[ingredientIndex];
+
+    // If it's the last ingredient, remove the entire meal
+    if (meal.ingredients.length <= 1) {
+      removeMealLog(dayKey, meal.id);
+      toast.success("הארוחה נמחקה");
+      return;
+    }
+
+    const calorieFraction = meal.calories > 0 ? ingredient.calories / meal.calories : 0;
+    const keepFraction = Math.max(0, 1 - calorieFraction);
+    const remainingIngredients = meal.ingredients.filter((_, i) => i !== ingredientIndex);
+
+    const updatedMicros = MICRONUTRIENT_KEYS.reduce((acc, key) => {
+      acc[key] = Math.max(0, meal.micronutrients[key] * keepFraction);
+      return acc;
+    }, { ...EMPTY_MICRONUTRIENTS } as MicronutrientTotals);
+
+    const updatedMeal: MealItem = {
+      ...meal,
+      ingredients: remainingIngredients,
+      calories: Math.max(0, meal.calories - ingredient.calories),
+      macronutrients: {
+        protein: Math.max(0, meal.macronutrients.protein - ingredient.protein),
+        carbs: Math.max(0, meal.macronutrients.carbs * keepFraction),
+        fat: Math.max(0, meal.macronutrients.fat * keepFraction),
+      },
+      micronutrients: updatedMicros,
+    };
+
+    const alerts = await updateMealLog(dayKey, meal.id, updatedMeal);
+    toast.success(`"${ingredient.name}" הוסר מהארוחה`);
+    alerts.forEach((alert) => {
+      toast.warning(alert.title, {
+        id: `${dayKey}-${alert.id}-del-ing`,
+        description: alert.message,
+        duration: 7000,
+      });
+    });
+  }, [removeMealLog, updateMealLog]);
+
+  const onEditIngredients = useCallback(async (dayKey: string, meal: MealItem, edits: { index: number; newText: string }[]) => {
+    if (!meal.ingredients) return;
+
+    // Build full description from all ingredients (original names + edited texts)
+    const allTexts = meal.ingredients.map((ing, i) => {
+      const edit = edits.find((e) => e.index === i);
+      return edit ? edit.newText : ing.name;
+    });
+    const description = allTexts.join(", ");
+
+    const parsedData = await parseMealDescription(description);
+
+    const updatedMeal: MealItem = {
+      ...meal,
+      ingredients: parsedData.ingredients,
+      calories: parsedData.calories,
+      macronutrients: parsedData.macronutrients,
+      micronutrients: parsedData.micronutrients,
+      mealText: description,
+    };
+
+    const alerts = await updateMealLog(dayKey, meal.id, updatedMeal);
+    toast.success("המרכיבים עודכנו בהצלחה");
+    alerts.forEach((alert) => {
+      toast.warning(alert.title, {
+        id: `${dayKey}-${alert.id}-edit-ing`,
+        description: alert.message,
+        duration: 7000,
+      });
+    });
+  }, [updateMealLog]);
+
   const onOpenMealModal = useCallback(() => setIsMealModalOpen(true), []);
   const onCloseMealModal = useCallback(() => setIsMealModalOpen(false), []);
   const onOpenProfileModal = useCallback(() => setIsProfileModalOpen(true), []);
@@ -271,6 +349,8 @@ export function Dashboard() {
                 onEditMeal={onEditMeal}
                 onIncrementMeal={incrementMealQuantity}
                 onDecrementMeal={decrementMealQuantity}
+                onDeleteIngredient={onDeleteIngredient}
+                onEditIngredients={onEditIngredients}
               />
             ) : null}
 
@@ -292,6 +372,8 @@ export function Dashboard() {
                 onEditMeal={onEditMeal}
                 onIncrementMeal={onHistoryIncrement}
                 onDecrementMeal={onHistoryDecrement}
+                onDeleteIngredient={onDeleteIngredient}
+                onEditIngredients={onEditIngredients}
               />
             ) : null}
 

@@ -14,6 +14,8 @@ interface PeriodBreakdownProps {
   onEditMeal?: (dayKey: string, meal: MealItem) => void;
   onIncrementMeal?: (dayKey: string, mealId: string) => void;
   onDecrementMeal?: (dayKey: string, mealId: string) => void;
+  onDeleteIngredient?: (dayKey: string, meal: MealItem, ingredientIndex: number) => void;
+  onEditIngredients?: (dayKey: string, meal: MealItem, edits: { index: number; newText: string }[]) => Promise<void>;
 }
 
 export function PeriodBreakdown({
@@ -24,6 +26,8 @@ export function PeriodBreakdown({
   onEditMeal,
   onIncrementMeal,
   onDecrementMeal,
+  onDeleteIngredient,
+  onEditIngredients,
 }: PeriodBreakdownProps) {
   return (
     <div className="space-y-3">
@@ -37,6 +41,8 @@ export function PeriodBreakdown({
           onEditMeal={onEditMeal}
           onIncrementMeal={onIncrementMeal}
           onDecrementMeal={onDecrementMeal}
+          onDeleteIngredient={onDeleteIngredient}
+          onEditIngredients={onEditIngredients}
         />
       ))}
     </div>
@@ -51,6 +57,8 @@ interface PeriodBreakdownItemProps {
   onEditMeal?: (dayKey: string, meal: MealItem) => void;
   onIncrementMeal?: (dayKey: string, mealId: string) => void;
   onDecrementMeal?: (dayKey: string, mealId: string) => void;
+  onDeleteIngredient?: (dayKey: string, meal: MealItem, ingredientIndex: number) => void;
+  onEditIngredients?: (dayKey: string, meal: MealItem, edits: { index: number; newText: string }[]) => Promise<void>;
 }
 
 function PeriodBreakdownItem({
@@ -61,6 +69,8 @@ function PeriodBreakdownItem({
   onEditMeal,
   onIncrementMeal,
   onDecrementMeal,
+  onDeleteIngredient,
+  onEditIngredients,
 }: PeriodBreakdownItemProps) {
   const [isOpen, setIsOpen] = useState(Boolean(day.log));
 
@@ -126,6 +136,16 @@ function PeriodBreakdownItem({
                 onDecrement={
                   onDecrementMeal
                     ? (mealId) => onDecrementMeal(day.dayKey, mealId)
+                    : undefined
+                }
+                onDeleteIngredient={
+                  onDeleteIngredient
+                    ? (meal, idx) => onDeleteIngredient(day.dayKey, meal, idx)
+                    : undefined
+                }
+                onEditIngredients={
+                  onEditIngredients
+                    ? (meal, edits) => onEditIngredients(day.dayKey, meal, edits)
                     : undefined
                 }
                 savedSignatures={savedSignatures}

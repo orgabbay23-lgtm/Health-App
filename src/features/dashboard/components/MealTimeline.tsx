@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, ChevronDown, Sparkles, Trash2, Coffee, Utensils, Sandwich, Apple, Moon, Pill, Pencil, Plus, Minus, List } from "lucide-react";
+import { Heart, ChevronDown, Sparkles, Trash2, Coffee, Utensils, Sandwich, Apple, Moon, Pill, Pencil, Plus, Minus, List, X, Check, WandSparkles, Loader2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { NUTRIENT_META } from "../../../utils/nutritional-tips";
@@ -15,6 +15,8 @@ interface MealTimelineProps {
   onEdit?: (meal: MealItem) => void;
   onIncrement?: (mealId: string) => void;
   onDecrement?: (mealId: string) => void;
+  onDeleteIngredient?: (meal: MealItem, ingredientIndex: number) => void;
+  onEditIngredients?: (meal: MealItem, edits: { index: number; newText: string }[]) => Promise<void>;
   savedSignatures: Set<string>;
   emptyText: string;
 }
@@ -39,6 +41,8 @@ export function MealTimeline({
   onEdit,
   onIncrement,
   onDecrement,
+  onDeleteIngredient,
+  onEditIngredients,
   savedSignatures,
   emptyText,
 }: MealTimelineProps) {
@@ -79,6 +83,8 @@ export function MealTimeline({
             onEdit={onEdit}
             onIncrement={onIncrement}
             onDecrement={onDecrement}
+            onDeleteIngredient={onDeleteIngredient}
+            onEditIngredients={onEditIngredients}
             isSaved={savedSignatures.has(createMealSignature(meal))}
           />
         ))}
@@ -96,6 +102,8 @@ interface MealTimelineItemProps {
   onEdit?: (meal: MealItem) => void;
   onIncrement?: (mealId: string) => void;
   onDecrement?: (mealId: string) => void;
+  onDeleteIngredient?: (meal: MealItem, ingredientIndex: number) => void;
+  onEditIngredients?: (meal: MealItem, edits: { index: number; newText: string }[]) => Promise<void>;
   isSaved: boolean;
 }
 
@@ -108,10 +116,14 @@ const MealTimelineItem = memo(function MealTimelineItem({
   onEdit,
   onIncrement,
   onDecrement,
+  onDeleteIngredient,
+  onEditIngredients,
   isSaved,
 }: MealTimelineItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isIngredientsExpanded, setIsIngredientsExpanded] = useState(false);
+  const [editingIngredients, setEditingIngredients] = useState<Record<number, string>>({});
+  const [isSavingIngredients, setIsSavingIngredients] = useState(false);
   const Icon = getMealIcon(meal.meal_name, meal.sourceType);
 
   const scrollToTop = () => {
@@ -231,7 +243,7 @@ const MealTimelineItem = memo(function MealTimelineItem({
                     size="icon"
                     className={cn(
                       "rounded-xl h-9 w-9 transition-all",
-                      isSaved ? "text-rose-500 bg-rose-50" : "text-slate-300 hover:text-rose-400 hover:bg-rose-50/50"
+                      isSaved ? "text-rose-500 bg-rose-50" : "text-slate-400 bg-slate-50/80 border border-slate-100 hover:text-rose-400 hover:bg-rose-50/50 hover:border-rose-200/50"
                     )}
                     onClick={() => onSaveFavorite(meal)}
                   >
@@ -244,7 +256,7 @@ const MealTimelineItem = memo(function MealTimelineItem({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="rounded-xl h-9 w-9 text-slate-300 hover:text-blue-500 hover:bg-blue-50"
+                    className="rounded-xl h-9 w-9 text-slate-400 bg-slate-50/80 border border-slate-100 hover:text-blue-500 hover:bg-blue-50 hover:border-blue-200/50"
                     onClick={() => onEdit(meal)}
                   >
                     <Pencil size={16} />
@@ -255,7 +267,7 @@ const MealTimelineItem = memo(function MealTimelineItem({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="rounded-xl h-9 w-9 text-slate-300 hover:text-slate-600 hover:bg-slate-50"
+                  className="rounded-xl h-9 w-9 text-slate-400 bg-slate-50/80 border border-slate-100 hover:text-slate-600 hover:bg-slate-100 hover:border-slate-200/50"
                   onClick={() => setIsExpanded((current) => !current)}
                 >
                   <ChevronDown
@@ -333,20 +345,155 @@ const MealTimelineItem = memo(function MealTimelineItem({
                 className="overflow-hidden bg-white/40 border-t border-indigo-100"
               >
                 <div className="p-5 flex flex-col gap-3">
-                  {meal.ingredients.map((ing, idx) => (
-                    <div key={idx} className="flex items-center gap-3 bg-white/80 p-3 rounded-xl shadow-sm border border-indigo-50">
-                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-                      <div className="flex-1 text-sm font-bold text-slate-800">{ing.name}</div>
-                      <div className="flex items-center gap-3 text-[13px] font-bold text-left shrink-0 whitespace-nowrap">
-                        <span className="text-slate-600">{formatNutritionValue(ing.calories)} קק"ל</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-200 hidden sm:block" />
-                        <span className="text-orange-500 hidden sm:inline">{formatNutritionValue(ing.protein)} ג' חלבון</span>
+                  {meal.ingredients.map((ing, idx) => {
+                    const isEditing = idx in editingIngredients;
+
+                    return (
+                      <div key={idx} className={cn(
+                        "rounded-xl shadow-sm border p-3 transition-all",
+                        isEditing ? "bg-blue-50/80 border-blue-200" : "bg-white/80 border-indigo-50",
+                      )}>
+                        {isEditing ? (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={editingIngredients[idx]}
+                              onChange={(e) => setEditingIngredients((prev) => ({ ...prev, [idx]: e.target.value }))}
+                              className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-300/50"
+                              dir="rtl"
+                              autoFocus
+                            />
+                            <div className="flex items-center gap-2 justify-end">
+                              <button
+                                type="button"
+                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold text-slate-500 hover:bg-slate-100 transition-colors"
+                                onClick={() => setEditingIngredients((prev) => {
+                                  const next = { ...prev };
+                                  delete next[idx];
+                                  return next;
+                                })}
+                              >
+                                <X size={12} />
+                                <span>ביטול</span>
+                              </button>
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold text-blue-500">
+                                <Check size={12} />
+                                <span>נערך</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className={cn(
+                              "flex items-center gap-3",
+                              onEditIngredients && "cursor-pointer",
+                            )}
+                            onClick={() => {
+                              if (onEditIngredients) {
+                                setEditingIngredients((prev) => ({ ...prev, [idx]: ing.name }));
+                              }
+                            }}
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-bold text-slate-800">{ing.name}</div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[12px] font-bold text-slate-500">{formatNutritionValue(ing.calories)} קק"ל</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-200" />
+                                <span className="text-[12px] font-bold text-orange-500">{formatNutritionValue(ing.protein)} ג' חלבון</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {onEditIngredients && (
+                                <button
+                                  type="button"
+                                  className="p-1.5 rounded-lg text-slate-400 bg-slate-50 border border-slate-100 hover:text-blue-500 hover:bg-blue-50 hover:border-blue-200/50 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingIngredients((prev) => ({ ...prev, [idx]: ing.name }));
+                                  }}
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                              )}
+                              {onDeleteIngredient && (
+                                <button
+                                  type="button"
+                                  className="p-1.5 rounded-lg text-slate-400 bg-slate-50 border border-slate-100 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-200/50 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (meal.ingredients!.length <= 1) {
+                                      if (window.confirm("זהו המרכיב האחרון. מחיקתו תמחק את הארוחה כולה. להמשיך?")) {
+                                        onDeleteIngredient(meal, idx);
+                                      }
+                                    } else if (window.confirm(`למחוק את "${ing.name}" מהארוחה?`)) {
+                                      onDeleteIngredient(meal, idx);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="sm:hidden text-[12px] font-bold text-orange-500 shrink-0 whitespace-nowrap text-left pl-1">
-                        {formatNutritionValue(ing.protein)} גרם חלבון
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+
+                  {/* Save button when there are edits */}
+                  {Object.keys(editingIngredients).length > 0 && onEditIngredients && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="pt-1"
+                    >
+                      <button
+                        type="button"
+                        disabled={isSavingIngredients}
+                        className={cn(
+                          "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black transition-all",
+                          isSavingIngredients
+                            ? "bg-slate-100 text-slate-400 cursor-wait"
+                            : "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg hover:shadow-xl active:scale-[0.98]",
+                        )}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          // Only save if there are actual text changes
+                          const edits = Object.entries(editingIngredients)
+                            .filter(([idx, text]) => text.trim() !== meal.ingredients![Number(idx)].name)
+                            .map(([idx, text]) => ({ index: Number(idx), newText: text.trim() }));
+
+                          if (edits.length === 0) {
+                            setEditingIngredients({});
+                            return;
+                          }
+
+                          setIsSavingIngredients(true);
+                          try {
+                            await onEditIngredients(meal, edits);
+                            setEditingIngredients({});
+                          } catch {
+                            // Error toast is handled by the parent
+                          } finally {
+                            setIsSavingIngredients(false);
+                          }
+                        }}
+                      >
+                        {isSavingIngredients ? (
+                          <>
+                            <Loader2 size={15} className="animate-spin" />
+                            <span>מעדכן מרכיבים...</span>
+                          </>
+                        ) : (
+                          <>
+                            <WandSparkles size={15} />
+                            <span>שמור שינויים</span>
+                          </>
+                        )}
+                      </button>
+                    </motion.div>
+                  )}
                 </div>
               </motion.div>
             )}
