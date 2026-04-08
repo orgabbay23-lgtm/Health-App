@@ -12,15 +12,6 @@ const FALLBACK_MODEL = "gemini-3.1-flash-lite-preview";
 // SECONDARY_FALLBACK: Used if both PRIMARY and FALLBACK fail
 const SECONDARY_FALLBACK_MODEL = "gemini-2.5-flash";
 
-// Global High Thinking configuration — applied to ALL models
-export interface GeminiThinkingConfig {
-  thinkingConfig: { thinkingLevel: "high" | "low" };
-}
-
-const GLOBAL_THINKING_CONFIG: GeminiThinkingConfig = {
-  thinkingConfig: { thinkingLevel: "high" },
-};
-
 export interface GeminiUserProfile {
   name: string;
   age: number;
@@ -242,12 +233,8 @@ export async function analyzeMealImage(
     const model = genAI.getGenerativeModel({
       model: modelName,
       systemInstruction: VISION_SYSTEM_INSTRUCTION,
-      generationConfig: {
-        ...GLOBAL_THINKING_CONFIG,
-      } as any,
     });
-    const result = await model.generateContent([
-      { inlineData: { data: base64Image, mimeType } },
+    const result = await model.generateContent([      { inlineData: { data: base64Image, mimeType } },
       VISION_PROMPT,
     ]);
     // Extract only the final text answer, ignoring any "thoughts" parts
@@ -368,9 +355,6 @@ ${JSON.stringify(nutritionData)}
     const model = genAI.getGenerativeModel({
       model: FALLBACK_MODEL,
       systemInstruction: INSIGHT_SYSTEM_INSTRUCTION,
-      generationConfig: {
-        ...GLOBAL_THINKING_CONFIG,
-      } as any,
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
@@ -418,9 +402,6 @@ export async function generateCustomAnswer(
     const model = genAI.getGenerativeModel({
       model: FALLBACK_MODEL,
       systemInstruction: CUSTOM_ANSWER_SYSTEM_INSTRUCTION,
-      generationConfig: {
-        ...GLOBAL_THINKING_CONFIG,
-      } as any,
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
@@ -473,9 +454,6 @@ export async function generateSupplementRecommendations(
     const model = genAI.getGenerativeModel({
       model: FALLBACK_MODEL,
       systemInstruction: SUPPLEMENT_SYSTEM_INSTRUCTION,
-      generationConfig: {
-        ...GLOBAL_THINKING_CONFIG,
-      } as any,
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
@@ -519,9 +497,6 @@ ${userQuestion}`;
     const model = genAI.getGenerativeModel({
       model: FALLBACK_MODEL,
       systemInstruction: FOLLOWUP_SYSTEM_INSTRUCTION,
-      generationConfig: {
-        ...GLOBAL_THINKING_CONFIG,
-      } as any,
     });
     const result = await model.generateContent(userPrompt);
     const text = result.response.text().trim();
@@ -552,7 +527,6 @@ export async function parseMealDescription(
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: mealResponseSchema,
-          ...GLOBAL_THINKING_CONFIG,
         } as any,
       });
       const result = await model.generateContent(description.trim());
@@ -691,7 +665,6 @@ export async function parseEditedIngredients(
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: editedIngredientsSchema,
-          ...GLOBAL_THINKING_CONFIG,
         } as any,
       });
       const result = await model.generateContent(prompt);
@@ -701,26 +674,18 @@ export async function parseEditedIngredients(
     };
 
     try {
-      return await performRequest(PRIMARY_MODEL);
-    } catch (primaryError: any) {
-      if (checkIsAuthError(primaryError)) throw new Error("API_KEY_INVALID");
-      if (checkIsInvalidKeyError(primaryError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+      return await performRequest(FALLBACK_MODEL);
+    } catch (fallbackError: any) {
+      if (checkIsAuthError(fallbackError)) throw new Error("API_KEY_INVALID");
+      if (checkIsInvalidKeyError(fallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
 
-      console.warn('[Gemini] Primary model failed on parseEditedIngredients, falling back to Lite...', primaryError);
+      console.warn('[Gemini] Lite model failed on parseEditedIngredients, falling back to Secondary Lite...', fallbackError);
       try {
-        return await performRequest(FALLBACK_MODEL);
-      } catch (fallbackError: any) {
-        if (checkIsAuthError(fallbackError)) throw new Error("API_KEY_INVALID");
-        if (checkIsInvalidKeyError(fallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
-        
-        console.warn('[Gemini] Lite model failed on parseEditedIngredients, falling back to Secondary Lite...', fallbackError);
-        try {
-          return await performRequest(SECONDARY_FALLBACK_MODEL);
-        } catch (secondFallbackError: any) {
-          if (checkIsAuthError(secondFallbackError)) throw new Error("API_KEY_INVALID");
-          if (checkIsInvalidKeyError(secondFallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
-          throw new Error("שגיאה בניתוח המרכיבים, אנא נסו שוב מאוחר יותר.");
-        }
+        return await performRequest(SECONDARY_FALLBACK_MODEL);
+      } catch (secondFallbackError: any) {
+        if (checkIsAuthError(secondFallbackError)) throw new Error("API_KEY_INVALID");
+        if (checkIsInvalidKeyError(secondFallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+        throw new Error("שגיאה בניתוח המרכיבים, אנא נסו שוב מאוחר יותר.");
       }
     }
   } catch (error: any) {
