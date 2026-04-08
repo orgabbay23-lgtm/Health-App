@@ -7,7 +7,7 @@ import { MICRONUTRIENT_KEYS, EMPTY_MICRONUTRIENTS, type MicronutrientTotals } fr
 import { Button } from "../../components/ui/button";
 import { Label } from "../../components/ui/label";
 import { ModalShell } from "../../components/ui/modal-shell";
-import { parseMealDescription } from "../../utils/gemini";
+import { parseMealDescription, parseEditedIngredients } from "../../utils/gemini";
 import { formatNutritionValue } from "../../utils/nutrition-utils";
 import { ByokModal } from "../dashboard/components/ByokModal";
 
@@ -235,25 +235,54 @@ export function EditLoggedMealModal({ isOpen, onClose, meal, dayKey }: EditLogge
 
     setIsSaving(true);
     try {
-      // Build full ingredient list: use edited text for changed ones, original name for the rest
-      const allIngredientTexts = originalIngredients
-        .filter((_, i) => !deletedIndices.has(i))
-        .map((ing, _filteredIdx, _arr) => {
-          // Find the original index of this ingredient
-          const origIdx = originalIngredients.indexOf(ing);
-          const edit = editedEntries.find((e) => e.index === origIdx);
-          return edit ? edit.newText : ing.name;
-        });
+      const editedTexts = editedEntries.map(e => e.newText);
+      let newIngredientsData = null;
+      
+      if (editedTexts.length > 0) {
+        newIngredientsData = await parseEditedIngredients(editedTexts);
+      }
 
-      const description = allIngredientTexts.join(", ");
-      const parsedData = await parseMealDescription(description);
+      let deltaCalories = 0;
+      let deltaProtein = 0;
+      
+      // Calculate deletions
+      deletedIndices.forEach(idx => {
+         const oldIng = originalIngredients[idx];
+         deltaCalories -= oldIng.calories;
+         deltaProtein -= oldIng.protein;
+      });
+
+      const finalIngredients = [];
+      let editIndex = 0;
+      
+      for (let i = 0; i < originalIngredients.length; i++) {
+        if (deletedIndices.has(i)) continue;
+        
+        const edit = editedEntries.find(e => e.index === i);
+        if (edit && newIngredientsData) {
+           const oldIng = originalIngredients[i];
+           const newIng = newIngredientsData.ingredients[editIndex];
+           if (newIng) {
+             deltaCalories += (newIng.calories - oldIng.calories);
+             deltaProtein += (newIng.protein - oldIng.protein);
+             finalIngredients.push(newIng);
+           }
+           editIndex++;
+        } else {
+           finalIngredients.push(originalIngredients[i]);
+        }
+      }
+      
+      const description = finalIngredients.map(ing => ing.name).join(", ");
 
       const updatedMeal: MealItem = {
         ...meal,
-        ingredients: parsedData.ingredients,
-        calories: parsedData.calories,
-        macronutrients: parsedData.macronutrients,
-        micronutrients: parsedData.micronutrients,
+        ingredients: finalIngredients,
+        calories: Math.max(0, meal.calories + deltaCalories),
+        macronutrients: {
+          ...meal.macronutrients,
+          protein: Math.max(0, meal.macronutrients.protein + deltaProtein),
+        },
         mealText: description,
       };
 

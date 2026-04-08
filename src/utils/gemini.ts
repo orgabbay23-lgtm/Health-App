@@ -632,3 +632,101 @@ export async function fetchFastCalorieFromAI(query: string): Promise<FastCalorie
     throw new Error("Failed to fetch calorie data from AI.");
   }
 }
+
+const editedIngredientsSchema: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    ingredients: {
+      type: SchemaType.ARRAY,
+      description: "List of edited ingredients.",
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          name: { type: SchemaType.STRING, description: "Name of the ingredient in Hebrew (e.g. '100 גרם עגבניה')." },
+          calories: { type: SchemaType.NUMBER, description: "Calories in this specific ingredient." },
+          protein: { type: SchemaType.NUMBER, description: "Protein in grams in this specific ingredient." },
+        },
+        required: ["name", "calories", "protein"],
+      },
+    },
+  },
+  required: ["ingredients"],
+};
+
+const editedIngredientsParser = z.object({
+  ingredients: z.array(
+    z.object({
+      name: z.string().min(1),
+      calories: z.number().finite().nonnegative(),
+      protein: z.number().finite().nonnegative(),
+    })
+  ).min(1),
+});
+
+export type ParsedEditedIngredients = z.infer<typeof editedIngredientsParser>;
+
+export interface IngredientEditRequest {
+  oldName: string;
+  oldCalories: number;
+  oldProtein: number;
+  newText: string;
+}
+
+const EDIT_SYSTEM_INSTRUCTION = `You are an expert clinical nutritionist. The user edited specific ingredients. For each item, you are given the original name, original calories, original protein, and the NEW requested text. Use the original values as a strict baseline to accurately and proportionally calculate the new values based on the requested change (e.g. if weight doubled, double the calories and protein). Return their standard Hebrew name, calories, and protein in grams. DO NOT return markdown. ONLY valid JSON. All returned text fields MUST be in Hebrew.`;
+
+export async function parseEditedIngredients(
+  edits: IngredientEditRequest[],
+): Promise<ParsedEditedIngredients> {
+  try {
+    const finalKey = await getApiKey();
+    if (!finalKey) throw new Error("MISSING_API_KEY");
+
+    const prompt = `Please analyze these specific edited ingredients:\n\n${edits.map(e => `Original: "${e.oldName}" (${e.oldCalories} kcal, ${e.oldProtein}g protein)\nNew Request: "${e.newText}"`).join("\n\n")}`;
+
+    const performRequest = async (modelName: string) => {
+      const genAI = new GoogleGenerativeAI(finalKey);
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: EDIT_SYSTEM_INSTRUCTION,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: editedIngredientsSchema,
+          ...GLOBAL_THINKING_CONFIG,
+        } as any,
+      });
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text().trim();
+      if (!responseText) throw new Error("Gemini returned an empty response body.");
+      return editedIngredientsParser.parse(JSON.parse(responseText));
+    };
+
+    try {
+      return await performRequest(PRIMARY_MODEL);
+    } catch (primaryError: any) {
+      if (checkIsAuthError(primaryError)) throw new Error("API_KEY_INVALID");
+      if (checkIsInvalidKeyError(primaryError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+
+      console.warn('[Gemini] Primary model failed on parseEditedIngredients, falling back to Lite...', primaryError);
+      try {
+        return await performRequest(FALLBACK_MODEL);
+      } catch (fallbackError: any) {
+        if (checkIsAuthError(fallbackError)) throw new Error("API_KEY_INVALID");
+        if (checkIsInvalidKeyError(fallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+        
+        console.warn('[Gemini] Lite model failed on parseEditedIngredients, falling back to Secondary Lite...', fallbackError);
+        try {
+          return await performRequest(SECONDARY_FALLBACK_MODEL);
+        } catch (secondFallbackError: any) {
+          if (checkIsAuthError(secondFallbackError)) throw new Error("API_KEY_INVALID");
+          if (checkIsInvalidKeyError(secondFallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+          throw new Error("שגיאה בניתוח המרכיבים, אנא נסו שוב מאוחר יותר.");
+        }
+      }
+    }
+  } catch (error: any) {
+    if (error.message === "MISSING_API_KEY" || error.message === "API_KEY_INVALID" || error.message === "INVALID_KEY_FROM_GOOGLE") {
+      throw error;
+    }
+    throw new Error("שגיאה בניתוח המרכיבים, אנא נסו שוב מאוחר יותר.");
+  }
+}

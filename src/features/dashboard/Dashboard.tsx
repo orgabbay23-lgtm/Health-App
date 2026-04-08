@@ -8,7 +8,7 @@ import {
   type NutritionSafetyAlert,
   evaluateMicronutrientSafety,
 } from "../../utils/nutrition-utils";
-import { parseMealDescription } from "../../utils/gemini";
+import { parseEditedIngredients } from "../../utils/gemini";
 import {
   aggregatePeriodLogs,
   createEmptyAggregations,
@@ -270,21 +270,34 @@ export function Dashboard() {
   const onEditIngredients = useCallback(async (dayKey: string, meal: MealItem, edits: { index: number; newText: string }[]) => {
     if (!meal.ingredients) return;
 
-    // Build full description from all ingredients (original names + edited texts)
-    const allTexts = meal.ingredients.map((ing, i) => {
-      const edit = edits.find((e) => e.index === i);
-      return edit ? edit.newText : ing.name;
-    });
-    const description = allTexts.join(", ");
+    const newTexts = edits.map(e => e.newText);
+    const parsedData = await parseEditedIngredients(newTexts);
 
-    const parsedData = await parseMealDescription(description);
+    let deltaCalories = 0;
+    let deltaProtein = 0;
+    const updatedIngredients = [...meal.ingredients];
+
+    edits.forEach((edit, i) => {
+      const oldIng = updatedIngredients[edit.index];
+      const newIng = parsedData.ingredients[i];
+      if (!newIng) return;
+
+      deltaCalories += (newIng.calories - oldIng.calories);
+      deltaProtein += (newIng.protein - oldIng.protein);
+
+      updatedIngredients[edit.index] = newIng;
+    });
+
+    const description = updatedIngredients.map(ing => ing.name).join(", ");
 
     const updatedMeal: MealItem = {
       ...meal,
-      ingredients: parsedData.ingredients,
-      calories: parsedData.calories,
-      macronutrients: parsedData.macronutrients,
-      micronutrients: parsedData.micronutrients,
+      ingredients: updatedIngredients,
+      calories: Math.max(0, meal.calories + deltaCalories),
+      macronutrients: {
+        ...meal.macronutrients,
+        protein: Math.max(0, meal.macronutrients.protein + deltaProtein),
+      },
       mealText: description,
     };
 
