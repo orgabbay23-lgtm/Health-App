@@ -142,7 +142,7 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     
     // 3. Define regex patterns for identification
     const units = /^(?:כף|כפות|כפית|כפיות|גרם|קילו|ק"ג|מ"ל|חצי|רבע|שליש|פרוסה|פרוסות|פרוסת|קצת|מעט|טיפה|טיפת|כוס|כוסות|בקבוק|בקבוקים|פחית|פחיות|קופסה|קופסת|קופסאות|גביע|גביעים|מנה|מנת|מנות|חתיכה|חתיכת|חתיכות|שקית|שקיות|יחידה|יחידות|קערה|קערות|קערת)$/;
-    const numbers = /^(?:אחת|אחד|שתי|שני|שניים|שלוש|שלושה|ארבע|ארבעה|חמש|חמישה|שש|שישה|שבע|שבעה|שמונה|תשע|תשעה|עשר|עשרה|כמה|הרבה)$/;
+    const numbers = /^(?:אחת|אחד|שתי|שני|שניים|שלוש|שלושה|ארבע|ארבעה|חמש|חמישה|שש|שישה|שבע|שבעה|שמונה|תשע|תשעה|עשר|עשרה|עשרים|שלושים|ארבעים|חמישים|מאה|מאות|כמה|הרבה)$/;
     
     // 4. Basic split by strong separators (comma, plus, newline, etc.)
     const basicRegex = /(?:\s+בתוספת\s+)|(?:\s+פלוס\s+)|(?:\s*\+\s*)|(?:,)|(?:\n)/g;
@@ -151,8 +151,8 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     // 5. Conditional split for 'ו' (vav) conjunction
     const parts: string[] = [];
     for (const p of intermediateParts) {
-      // Split by ' ו' (space + vav) 
-      const vavParts = p.split(/(?:\s+ו(?=[\u0590-\u05FFa-zA-Z0-9]))/g);
+      // Split by ' ו' or ' ו-' (space + vav + optional hyphen) 
+      const vavParts = p.split(/(?:\s+ו-?(?=[\u0590-\u05FFa-zA-Z0-9]))/g);
       if (vavParts.length === 1) {
         parts.push(vavParts[0]);
         continue;
