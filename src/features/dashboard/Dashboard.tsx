@@ -270,8 +270,17 @@ export function Dashboard() {
   const onEditIngredients = useCallback(async (dayKey: string, meal: MealItem, edits: { index: number; newText: string }[]) => {
     if (!meal.ingredients) return;
 
-    const newTexts = edits.map(e => e.newText);
-    const parsedData = await parseEditedIngredients(newTexts);
+    const editRequests = edits.map(edit => {
+      const oldIng = meal.ingredients![edit.index];
+      return {
+        oldName: oldIng.name,
+        oldCalories: oldIng.calories,
+        oldProtein: oldIng.protein,
+        newText: edit.newText
+      };
+    });
+
+    const parsedData = await parseEditedIngredients(editRequests);
 
     let deltaCalories = 0;
     let deltaProtein = 0;

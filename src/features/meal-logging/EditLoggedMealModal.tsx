@@ -235,11 +235,19 @@ export function EditLoggedMealModal({ isOpen, onClose, meal, dayKey }: EditLogge
 
     setIsSaving(true);
     try {
-      const editedTexts = editedEntries.map(e => e.newText);
+      const editRequests = editedEntries.map(e => {
+        const oldIng = originalIngredients[e.index];
+        return {
+          oldName: oldIng.name,
+          oldCalories: oldIng.calories,
+          oldProtein: oldIng.protein,
+          newText: e.newText
+        };
+      });
       let newIngredientsData = null;
       
-      if (editedTexts.length > 0) {
-        newIngredientsData = await parseEditedIngredients(editedTexts);
+      if (editRequests.length > 0) {
+        newIngredientsData = await parseEditedIngredients(editRequests);
       }
 
       let deltaCalories = 0;
