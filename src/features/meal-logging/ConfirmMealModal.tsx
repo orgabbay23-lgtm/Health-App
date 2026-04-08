@@ -105,8 +105,8 @@ const highlightFoodQuantities = (text: string) => {
   if (!text) return text;
   
   const words = [
-    'אחת', 'אחד', 'שתי', 'שני', 'שלוש', 'שלושה', 'ארבע', 'ארבעה', 'חמש', 'חמישה', 'שש', 'שישה', 'שבע', 'שבעה', 'שמונה', 'תשע', 'תשעה', 'עשר', 'עשרה', 'עשרים', 'שלושים', 'ארבעים', 'חמישים', 'מאה', 'מאות',
-    'גרם', 'גרמים', 'קילו', 'קילוגרם', 'ק"ג', 'קג', 'מ"ל', 'מל', 'ליטר', 'חצי', 'רבע', 'שליש', 'אחוז', 'כפות', 'כוסות', 'כפיות', 'כף', 'כוס', 'כפית', 'מנה', 'מנות', 'מנת', 'גביע', 'גביעים', 'חתיכה', 'חתיכות', 'חתיכת', 'פרוסה', 'פרוסות', 'פרוסת', 'יחידה', 'יחידות', 'בקבוק', 'בקבוקים', 'פחית', 'פחיות', 'קופסה', 'קופסת', 'קופסאות', 'שקית', 'שקיות', 'קערה', 'קערות', 'קערת'
+    'אחת', 'אחד', 'שתי', 'שני', 'שלוש', 'שלושה', 'ארבע', 'ארבעה', 'חמש', 'חמישה', 'שש', 'שישה', 'שבע', 'שבעה', 'שמונה', 'תשע', 'תשעה', 'עשר', 'עשרה', 'עשרים', 'שלושים', 'ארבעים', 'חמישים', 'שישים', 'שבעים', 'שמונים', 'תשעים', 'מאה', 'מאות',
+    'גרם', 'גרמים', 'קילו', 'קילוגרם', 'ק"ג', 'קג', 'מ"ל', 'מל', 'ליטר', 'חצי', 'רבע', 'שליש', 'אחוז', 'כפות', 'כוסות', 'כפיות', 'כף', 'כוס', 'כפית', 'מנה', 'מנות', 'מנת', 'גביע', 'גביעים', 'חתיכה', 'חתיכות', 'חתיכת', 'פרוסה', 'פרוסות', 'פרוסת', 'יחידה', 'יחידות', 'בקבוק', 'בקבוקים', 'פחית', 'פחיות', 'קופסה', 'קופסת', 'קופסאות', 'שקית', 'שקיות', 'קערה', 'קערות', 'קערת', 'משולש', 'משולשים', 'משולשי', 'כדור', 'כדורים', 'כדורי', 'שיפוד', 'שיפודים', 'שיפודי', "צ'ייסר", "צ'ייסרים", 'שוט', 'שוטים', 'צלחת', 'קערית'
   ];
   
   const regexStr = `(\\d+(?:\\.\\d+)?|\\d+\\/\\d+|%|(?<=[\\s,.\\[\\]()+-]|^)(?:${words.join('|')})(?=[\\s,.\\[\\]()+-]|$))`;
@@ -132,6 +132,7 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     
     // 1. Normalize 'ועם' to 'עם'
     let normalizedText = text.replace(/(?:\s+ועם\s+)/g, ' עם ');
+    normalizedText = normalizedText.replace(/(?:\s+(?:ביחד|יחד)\s+עם\s+)/g, ' עם ');
     
     // 2. Protect content inside parentheses
     const protectedPairs: string[] = [];
@@ -141,8 +142,9 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     });
     
     // 3. Define regex patterns for identification
-    const units = /^(?:כף|כפות|כפית|כפיות|גרם|קילו|ק"ג|מ"ל|חצי|רבע|שליש|פרוסה|פרוסות|פרוסת|קצת|מעט|טיפה|טיפת|כוס|כוסות|בקבוק|בקבוקים|פחית|פחיות|קופסה|קופסת|קופסאות|גביע|גביעים|מנה|מנת|מנות|חתיכה|חתיכת|חתיכות|שקית|שקיות|יחידה|יחידות|קערה|קערות|קערת)$/;
-    const numbers = /^(?:אחת|אחד|שתי|שני|שניים|שלוש|שלושה|ארבע|ארבעה|חמש|חמישה|שש|שישה|שבע|שבעה|שמונה|תשע|תשעה|עשר|עשרה|עשרים|שלושים|ארבעים|חמישים|מאה|מאות|כמה|הרבה)$/;
+    const unitsPattern = `(?:כף|כפות|כפית|כפיות|גרם|קילו|ק"ג|מ"ל|חצי|רבע|שליש|פרוסה|פרוסות|פרוסת|קצת|מעט|טיפה|טיפת|כוס|כוסות|בקבוק|בקבוקים|פחית|פחיות|קופסה|קופסת|קופסאות|גביע|גביעים|מנה|מנת|מנות|חתיכה|חתיכת|חתיכות|שקית|שקיות|יחידה|יחידות|קערה|קערות|קערת|משולש|משולשים|משולשי|כדור|כדורים|כדורי|שיפוד|שיפודים|שיפודי|צ'ייסר|צ'ייסרים|שוט|שוטים|צלחת|קערית)`;
+    const numbersPattern = `(?:אחת|אחד|שתי|שני|שניים|שלוש|שלושה|ארבע|ארבעה|חמש|חמישה|שש|שישה|שבע|שבעה|שמונה|תשע|תשעה|עשר|עשרה|עשרים|שלושים|ארבעים|חמישים|שישים|שבעים|שמונים|תשעים|מאה|מאות|כמה|הרבה)`;
+    const isUnitRegex = new RegExp(`^(?:[בכלמש](?:\\s*-\\s*|\\s+))?(?:${unitsPattern}|${numbersPattern}|\\d)(?=[\\s.,!?;:]|$)`);
     
     // 4. Basic split by strong separators (comma, plus, newline, etc.)
     const basicRegex = /(?:\s+בתוספת\s+)|(?:\s+פלוס\s+)|(?:\s*\+\s*)|(?:,)|(?:\n)/g;
@@ -163,14 +165,12 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
         const next = vavParts[i].trim();
         if (!next) continue;
         
-        const nextWords = next.split(/\s+/);
-        const firstNextWord = nextWords[0];
-        
-        const isUnit = units.test(firstNextWord) || /^\d/.test(firstNextWord) || numbers.test(firstNextWord);
+        const isUnit = isUnitRegex.test(next);
         
         // Expanded list of known food/drink words where 'ו' is part of the root.
         // We match the "remainder" of the word after the split (e.g., 'וניל' -> 'ניל').
-        const isVavRootWord = /^(?:ניל|ודקה|דקה|יסקי|ויסקי|רמוט|ורמוט|סאבי|ואסבי|אסבי|פל|ופל|אפל|ופלים|אפלים|פלים|יניגרט|יטמינצ'יק|ינשטפן|יינשטפן|ונטון|ולינגטון|ינדלו|יסוצקי|ינה|ינר|וק|ול|ולדורף|ולדורך|ולנסיה|יטמין|יטלו|ינרשניצל|ולקאנו|פלס)$/.test(firstNextWord);
+        const nextWithoutPrefix = next.replace(/^[בכלמש](?:\s*-\s*|\s+)?/, '');
+        const isVavRootWord = /^(?:ניל|ודקה|דקה|יסקי|ויסקי|רמוט|ורמוט|סאבי|ואסבי|אסבי|פל|ופל|אפל|ופלים|אפלים|פלים|יניגרט|יטמינצ'יק|ינשטפן|יינשטפן|ונטון|ולינגטון|ינדלו|יסוצקי|ינה|ינר|וק|ול|ולדורף|ולדורך|ולנסיה|יטמין|יטלו|ינרשניצל|ולקאנו|פלס)(?=[\\s.,!?;:]|$)/.test(nextWithoutPrefix);
         
         // Only split if there is a unit/number indicating a new item AND it's not a known vav-root word
         if (isUnit && !isVavRootWord) {
@@ -199,10 +199,7 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
       for (let i = 1; i < withParts.length; i++) {
         const next = withParts[i].trim();
         
-        const nextWords = next.split(/\s+/);
-        const firstNextWord = nextWords[0];
-        
-        const isUnit = units.test(firstNextWord) || /^\d/.test(firstNextWord) || numbers.test(firstNextWord);
+        const isUnit = isUnitRegex.test(next);
         
         // Only split if a clear unit/amount follows the 'עם'
         if (!isUnit) {
