@@ -167,15 +167,18 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
         const nextWords = next.split(/\s+/);
         const firstNextWord = nextWords[0];
         
+        const isUnit = units.test(firstNextWord) || /^\d/.test(firstNextWord) || numbers.test(firstNextWord);
+        
         // Expanded list of known food/drink words where 'ו' is part of the root.
         // We match the "remainder" of the word after the split (e.g., 'וניל' -> 'ניל').
         const isVavRootWord = /^(?:ניל|ודקה|דקה|יסקי|ויסקי|רמוט|ורמוט|סאבי|ואסבי|אסבי|פל|ופל|אפל|ופלים|אפלים|פלים|יניגרט|יטמינצ'יק|ינשטפן|יינשטפן|ונטון|ולינגטון|ינדלו|יסוצקי|ינה|ינר|וק|ול|ולדורף|ולדורך|ולנסיה|יטמין|יטלו|ינרשניצל|ולקאנו|פלס)$/.test(firstNextWord);
         
-        if (!isVavRootWord) {
+        // Only split if there is a unit/number indicating a new item AND it's not a known vav-root word
+        if (isUnit && !isVavRootWord) {
           parts.push(current);
           current = next;
         } else {
-          // If it's a vav-root word (like vanilla/vodka), keep it together
+          // Keep it together
           current += ' ו' + next;
         }
       }
@@ -195,21 +198,15 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
       
       let currentItem = withParts[0];
       for (let i = 1; i < withParts.length; i++) {
-        const prev = currentItem.trim();
         const next = withParts[i].trim();
-        
-        const prevWords = prev.split(/\s+/);
-        const lastPrevWord = prevWords[prevWords.length - 1];
         
         const nextWords = next.split(/\s+/);
         const firstNextWord = nextWords[0];
         
-        const isContainer = containers.test(lastPrevWord);
         const isUnit = units.test(firstNextWord) || /^\d/.test(firstNextWord) || numbers.test(firstNextWord);
         
-        // Don't split if it's a base dish (container) with a main filling, 
-        // unless a clear unit/amount follows the 'עם'
-        if (isContainer && !isUnit) {
+        // Only split if a clear unit/amount follows the 'עם'
+        if (!isUnit) {
           currentItem += ' עם ' + next;
         } else {
           finalItems.push(currentItem);
