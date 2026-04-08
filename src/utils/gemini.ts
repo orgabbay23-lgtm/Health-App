@@ -9,6 +9,8 @@ import type { FastCalorieItem } from "../data/fast-calorie-database";
 const PRIMARY_MODEL = "gemini-3-flash-preview";
 // FALLBACK: Lite — used on any PRIMARY error, and exclusively for Insights
 const FALLBACK_MODEL = "gemini-3.1-flash-lite-preview";
+// SECONDARY_FALLBACK: Used if both PRIMARY and FALLBACK fail
+const SECONDARY_FALLBACK_MODEL = "gemini-2.5-flash";
 
 // Global High Thinking configuration — applied to ALL models
 export interface GeminiThinkingConfig {
@@ -66,7 +68,7 @@ const mealResponseSchema: Schema = {
       items: {
         type: SchemaType.OBJECT,
         properties: {
-          name: { type: SchemaType.STRING, description: "Name of the ingredient (e.g. '100g Rice')." },
+          name: { type: SchemaType.STRING, description: "Name of the ingredient in Hebrew (e.g. '100 גרם אורז')." },
           calories: { type: SchemaType.NUMBER, description: "Calories in this specific ingredient." },
           protein: { type: SchemaType.NUMBER, description: "Protein in grams in this specific ingredient." },
         },
@@ -182,7 +184,7 @@ const mealResponseParser = z.object({
   }),
 });
 
-const SYSTEM_INSTRUCTION = `You are an expert clinical nutritionist and structured data extractor. Analyze Hebrew meal descriptions, estimate reasonable Israeli portion sizes when omitted, and return only valid JSON matching the requested schema. Do not return markdown, explanations, or extra keys.
+const SYSTEM_INSTRUCTION = `You are an expert clinical nutritionist and structured data extractor. Analyze Hebrew meal descriptions, estimate reasonable Israeli portion sizes when omitted, and return only valid JSON matching the requested schema. Do not return markdown, explanations, or extra keys. All returned text fields (meal_name, ingredient names) MUST be in Hebrew.
 
 CRITICAL — You MUST return accurate values for ALL 24 micronutrients in the "micronutrients" object:
 fiber, sodium, potassium, magnesium, calcium, iron, vitaminA, vitaminC, vitaminD, vitaminE, vitaminB12, iodine, zinc, folicAcid, vitaminK, selenium, vitaminB6, vitaminB3, vitaminB1, vitaminB2, vitaminB5, biotin, copper, manganese, chromium, omega3.
@@ -276,7 +278,14 @@ export async function analyzeMealImage(
       return await performRequest(FALLBACK_MODEL);
     } catch (fallbackError: any) {
       if (checkIsAuthError(fallbackError)) throw new Error("API_KEY_INVALID");
-      throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
+      
+      console.warn('[Gemini] Lite model failed on analyzeMealImage, falling back to Secondary Lite...', fallbackError);
+      try {
+        return await performRequest(SECONDARY_FALLBACK_MODEL);
+      } catch (secondFallbackError: any) {
+        if (checkIsAuthError(secondFallbackError)) throw new Error("API_KEY_INVALID");
+        throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
+      }
     }
   }
 }
@@ -570,7 +579,15 @@ export async function parseMealDescription(
       } catch (fallbackError: any) {
         if (checkIsAuthError(fallbackError)) throw new Error("API_KEY_INVALID");
         if (checkIsInvalidKeyError(fallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
-        throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
+        
+        console.warn('[Gemini] Lite model failed on parseMealDescription, falling back to Secondary Lite...', fallbackError);
+        try {
+          return await performRequest(SECONDARY_FALLBACK_MODEL);
+        } catch (secondFallbackError: any) {
+          if (checkIsAuthError(secondFallbackError)) throw new Error("API_KEY_INVALID");
+          if (checkIsInvalidKeyError(secondFallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+          throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
+        }
       }
     }
   } catch (error: any) {
