@@ -151,8 +151,8 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     // 5. Conditional split for 'ו' (vav) conjunction
     const parts: string[] = [];
     for (const p of intermediateParts) {
-      // Split by ' ו' or ' ו-' (space + vav + optional hyphen) 
-      const vavParts = p.split(/(?:\s+ו-?(?=[\u0590-\u05FFa-zA-Z0-9]))/g);
+      // Split by ' ו' with optional spaces and hyphens (e.g. ' ו ', ' ו-', ' ו - ') 
+      const vavParts = p.split(/(?:\s+ו(?:\s*-\s*|\s+)?(?=[\u0590-\u05FFa-zA-Z0-9]))/g);
       if (vavParts.length === 1) {
         parts.push(vavParts[0]);
         continue;
