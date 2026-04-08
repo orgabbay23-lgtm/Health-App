@@ -19,13 +19,13 @@ interface ConfirmMealModalProps {
 }
 
 const getFoodIcon = (text: string) => {
-  const lowerText = text.toLowerCase();
+  const lowerText = text.toLowerCase().replace(/'/g, '׳');
   
   // Robust Hebrew word matching:
-  // - Handles prefixes (ו,ה,ב,ל,מ,ש,כ)
+  // - Handles prefixes (ו,ה,ב,ל,מ,ש,כ) up to 3 letters
   // - Ensures word boundaries to avoid sub-word matches (like 'תה' in 'חביתה')
   const match = (keywords: string[]) => {
-    const pattern = new RegExp(`(?<![א-ת])(?:[ובהלמשכ]?)(?:${keywords.join('|')})(?![א-ת])`, 'g');
+    const pattern = new RegExp(`(?<![א-ת])(?:[ובהלמשכ]{0,3})(?:${keywords.join('|')})(?![א-ת])`, 'g');
     return pattern.test(lowerText);
   };
 
@@ -34,7 +34,7 @@ const getFoodIcon = (text: string) => {
   if (match(['מים', 'סודה'])) return GlassWater;
   if (match(['יין', 'וודקה', 'ערק', 'וויסקי', 'ג׳ין', 'רום', 'טקילה', 'אלכוהול', 'קוקטייל', 'צ׳ייסר'])) return Wine;
   if (match(['בירה', 'לאגר', 'אייל', 'היינקן', 'קורונה', 'קרלסברג', 'גולדסטאר', 'מכבי'])) return Beer;
-  if (match(['קולה', 'זירו', 'פנטה', 'ספרייט', 'פיוזטי', 'משקה', 'שוקו', 'אייס', 'שייק', 'מיץ', 'ענבים', 'תפוזים', 'לימונדה', 'נקטר', 'בקבוק', 'פחית', 'כוס'])) return CupSoda;
+  if (match(['קולה', 'זירו', 'פנטה', 'ספרייט', 'פיוזטי', 'משקה', 'שוקו', 'אייס', 'שייק', 'מיץ', 'ענבים', 'תפוזים', 'לימונדה', 'נקטר', 'בקבוק', 'פחית', 'כוס', 'חלבון', 'אבקת חלבון'])) return CupSoda;
   
   // 2. PROTEINS (Meat, Poultry, Fish, Eggs)
   if (match(['ביצה', 'חביתה', 'עין', 'מקושקשת', 'שקשוקה', 'אומלט', 'ביצים', 'ביצה קשה'])) return Egg;
@@ -42,13 +42,14 @@ const getFoodIcon = (text: string) => {
   if (match(['חזיר', 'בייקון', 'לבן', 'שינקן', 'האם', 'לרד'])) return Ham;
   if (match(['עוף', 'שניצל', 'כנפיים', 'פרגית', 'חזה עוף', 'כרעיים', 'פולקע', 'הודו', 'נאגטס', 'חזה הודו', 'פסטרמה', 'נקניק', 'נקניקיה', 'נקניקייה'])) return Drumstick;
   if (match(['דג', 'סלמון', 'טונה', 'אמנון', 'מושט', 'לברק', 'דניס', 'מוסר', 'סושי', 'סשימי', 'חריימה', 'גפילטע', 'סרדינים', 'אנשובי'])) return Fish;
+  if (match(['טופו', 'סייטן'])) return Leaf;
   
   // 3. CARBS, GRAINS & LEGUMES
   if (match(['פיצה', 'משולש', 'פוקאצ׳ה'])) return Pizza;
   if (match(['כריך', 'סנדוויץ', 'באגט', 'פיתה', 'לאפה', 'טורטיה', 'טוסט', 'בייגל', 'לחמניה', 'לחם', 'פרוסה', 'חלה', 'בייגלה', 'קרקר', 'פתית', 'פריכית', 'לחמית'])) return Sandwich;
   if (match(['אורז', 'פתיתים', 'בורגול', 'קינואה', 'כוסמת', 'קוסקוס', 'חומוס', 'פלאפל', 'עדשים', 'שעועית', 'פול', 'גרגירים', 'טחינה', 'מג׳דרה', 'נזיד', 'מרק'])) return Bean;
   if (match(['שיבולת שועל', 'קורנפלקס', 'דגנים', 'גרנולה', 'דייסה', 'קוואקר', 'ברנפלקס'])) return Wheat;
-  if (match(['פסטה', 'ספגטי', 'מקרוני', 'לזניה', 'רביולי', 'ניוקי', 'טורטליני', 'פנה', 'פטוצ׳יני'])) return UtensilsCrossed;
+  if (match(['פסטה', 'ספגטי', 'מקרוני', 'לזניה', 'רביולי', 'ניוקי', 'טורטליני', 'פנה', 'פטוצ׳יני', 'נודלס', 'אטריות'])) return UtensilsCrossed;
   
   // 4. DAIRY
   if (match(['גבינה', 'קוטג׳', 'קוטג', 'יוגורט', 'חלב', 'שמנת', 'חמאה', 'מעדן', 'לאבנה', 'פודינג', 'ריקוטה', 'מוצרלה', 'צהובה', 'לבנה', 'צפתית', 'בולגרית'])) return Milk;
@@ -56,7 +57,7 @@ const getFoodIcon = (text: string) => {
   // 5. VEGETABLES
   if (match(['סלט', 'חסה', 'כרוב', 'פטרוזיליה', 'כוסברה', 'תרד', 'שמיר', 'נענע', 'עלי', 'רוקט', 'בזיליקום', 'אורגנו'])) return Leaf;
   if (match(['גזר', 'בטטה', 'תפוח אדמה', 'תפו"א', 'פירה', 'צ׳יפס', 'שורש', 'צנונית', 'לפת'])) return Carrot;
-  if (match(['עגבניה', 'מלפפון', 'פלפל', 'גמבה', 'בצל', 'שום', 'תירס', 'אפונה', 'קישוא', 'חציל', 'פטריות', 'דלעת', 'ברוקולי', 'כרובית', 'חצילים', 'קישואים'])) return Salad;
+  if (match(['עגבניה', 'עגבנייה', 'מלפפון', 'פלפל', 'גמבה', 'בצל', 'שום', 'תירס', 'אפונה', 'קישוא', 'חציל', 'פטריות', 'דלעת', 'ברוקולי', 'כרובית', 'חצילים', 'קישואים'])) return Salad;
   
   // 6. FRUITS
   if (match(['תפוז', 'קלמנטינה', 'לימון', 'אשכולית', 'פומלה', 'ליים', 'הדרים'])) return Citrus;
@@ -66,7 +67,7 @@ const getFoodIcon = (text: string) => {
   if (match(['תפוח', 'פרי', 'פירות', 'אבטיח', 'מלון', 'אפרסק', 'משמש', 'אגס', 'מנגו', 'שזיף', 'תמר', 'אפרסמון', 'רימון', 'תאנה', 'אבוקדו', 'קיווי', 'אננס'])) return Apple;
   
   // 7. SWEETS, BAKERY & SNACKS
-  if (match(['עוגה', 'פאי', 'טארט', 'מוס', 'עוגת'])) return CakeSlice;
+  if (match(['עוגה', 'פאי', 'טארט', 'מוס', 'עוגת', 'פנקייק'])) return CakeSlice;
   if (match(['עוגיה', 'עוגייה', 'ביסקוויט', 'וופל', 'נשיקות', 'מקרון'])) return Cookie;
   if (match(['גלידה', 'ארטיק', 'שלגון', 'סורבה', 'פרוזן', 'יוגורטיה'])) return IceCreamBowl;
   if (match(['דונאט', 'סופגניה', 'סופגנייה', 'ברלינר'])) return Donut;
@@ -106,10 +107,10 @@ const highlightFoodQuantities = (text: string) => {
   
   const words = [
     'אחת', 'אחד', 'שתי', 'שני', 'שלוש', 'שלושה', 'ארבע', 'ארבעה', 'חמש', 'חמישה', 'שש', 'שישה', 'שבע', 'שבעה', 'שמונה', 'תשע', 'תשעה', 'עשר', 'עשרה', 'עשרים', 'שלושים', 'ארבעים', 'חמישים', 'שישים', 'שבעים', 'שמונים', 'תשעים', 'מאה', 'מאות',
-    'גרם', 'גרמים', 'קילו', 'קילוגרם', 'ק"ג', 'קג', 'מ"ל', 'מל', 'ליטר', 'חצי', 'רבע', 'שליש', 'אחוז', 'כפות', 'כוסות', 'כפיות', 'כף', 'כוס', 'כפית', 'מנה', 'מנות', 'מנת', 'גביע', 'גביעים', 'חתיכה', 'חתיכות', 'חתיכת', 'פרוסה', 'פרוסות', 'פרוסת', 'יחידה', 'יחידות', 'בקבוק', 'בקבוקים', 'פחית', 'פחיות', 'קופסה', 'קופסת', 'קופסאות', 'שקית', 'שקיות', 'קערה', 'קערות', 'קערת', 'משולש', 'משולשים', 'משולשי', 'כדור', 'כדורים', 'כדורי', 'שיפוד', 'שיפודים', 'שיפודי', "צ'ייסר", "צ'ייסרים", 'שוט', 'שוטים', 'צלחת', 'קערית'
+    'גרם', 'גרמים', 'קילו', 'קילוגרם', 'ק"ג', 'קג', 'מ"ל', 'מל', 'ליטר', 'חצי', 'רבע', 'שליש', 'אחוז', 'כפות', 'כוסות', 'כפיות', 'כף', 'כוס', 'כפית', 'מנה', 'מנות', 'מנת', 'גביע', 'גביעים', 'חתיכה', 'חתיכות', 'חתיכת', 'פרוסה', 'פרוסות', 'פרוסת', 'יחידה', 'יחידות', 'בקבוק', 'בקבוקים', 'פחית', 'פחיות', 'קופסה', 'קופסת', 'קופסאות', 'שקית', 'שקיות', 'קערה', 'קערות', 'קערת', 'משולש', 'משולשים', 'משולשי', 'כדור', 'כדורים', 'כדורי', 'שיפוד', 'שיפודים', 'שיפודי', "צ'ייסר", "צ'ייסרים", 'שוט', 'שוטים', 'צלחת', 'קערית', 'חבילה', 'חבילת', 'חופן', 'סקופ', 'קרטון', 'טיפות', 'טיפה', 'טיפת'
   ];
   
-  const regexStr = `(\\d+(?:\\.\\d+)?|\\d+\\/\\d+|%|(?<=[\\s,.\\[\\]()+-]|^)(?:${words.join('|')})(?=[\\s,.\\[\\]()+-]|$))`;
+  const regexStr = `(\\d+(?:\\.\\d+)?|\\d+\\/\\d+|%|(?<=[\\s,.\\[\\]()+-]|^)(?:[בכלמש](?:\\s*-\\s*|\\s*))?(?:${words.join('|')})(?=[\\s,.\\[\\]()+-]|$))`;
   const regex = new RegExp(regexStr, 'g');
   
   const parts = text.split(regex);
@@ -142,13 +143,13 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     });
     
     // 3. Define regex patterns for identification
-    const unitsPattern = `(?:כף|כפות|כפית|כפיות|גרם|קילו|ק"ג|מ"ל|חצי|רבע|שליש|פרוסה|פרוסות|פרוסת|קצת|מעט|טיפה|טיפת|כוס|כוסות|בקבוק|בקבוקים|פחית|פחיות|קופסה|קופסת|קופסאות|גביע|גביעים|מנה|מנת|מנות|חתיכה|חתיכת|חתיכות|שקית|שקיות|יחידה|יחידות|קערה|קערות|קערת|משולש|משולשים|משולשי|כדור|כדורים|כדורי|שיפוד|שיפודים|שיפודי|צ'ייסר|צ'ייסרים|שוט|שוטים|צלחת|קערית)`;
+    const unitsPattern = `(?:כף|כפות|כפית|כפיות|גרם|קילו|ק"ג|מ"ל|חצי|רבע|שליש|פרוסה|פרוסות|פרוסת|קצת|מעט|טיפה|טיפת|טיפות|כוס|כוסות|בקבוק|בקבוקים|פחית|פחיות|קופסה|קופסת|קופסאות|גביע|גביעים|מנה|מנת|מנות|חתיכה|חתיכת|חתיכות|שקית|שקיות|יחידה|יחידות|קערה|קערות|קערת|משולש|משולשים|משולשי|כדור|כדורים|כדורי|שיפוד|שיפודים|שיפודי|צ'ייסר|צ'ייסרים|שוט|שוטים|צלחת|קערית|חבילה|חבילת|חופן|סקופ|קרטון)`;
     const numbersPattern = `(?:אחת|אחד|שתי|שני|שניים|שלוש|שלושה|ארבע|ארבעה|חמש|חמישה|שש|שישה|שבע|שבעה|שמונה|תשע|תשעה|עשר|עשרה|עשרים|שלושים|ארבעים|חמישים|שישים|שבעים|שמונים|תשעים|מאה|מאות|כמה|הרבה)`;
-    const isUnitRegex = new RegExp(`^(?:[בכלמש](?:\\s*-\\s*|\\s+))?(?:${unitsPattern}|${numbersPattern}|\\d)(?=[\\s.,!?;:]|$)`);
+    const isUnitRegex = new RegExp(`^(?:[בכלמש](?:\\s*-\\s*|\\s*))?(?:${unitsPattern}|${numbersPattern}|\\d+(?:\\.\\d+)?|\\d+\\/\\d+)(?=[\\s.,!?;:]|$)`);
     
     // 4. Basic split by strong separators (comma, plus, newline, etc.)
-    const basicRegex = /(?:\s+בתוספת\s+)|(?:\s+פלוס\s+)|(?:\s*\+\s*)|(?:,)|(?:\n)/g;
-    const intermediateParts = normalizedText.split(basicRegex).filter(item => item !== undefined);
+    const basicRegex = /(?:\s+בתוספת\s+)|(?:\s+פלוס\s+)|(?:\s+וגם\s+)|(?:\s*\+\s*)|(?:,)|(?:\n)/g;
+    const intermediateParts = normalizedText.split(basicRegex).filter(item => item && item.trim().length > 0);
     
     // 5. Conditional split for 'ו' (vav) conjunction
     const parts: string[] = [];
@@ -277,31 +278,32 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     setItems(newItems);
     setEditingIndex(null);
   };
-const handleAddItem = () => {
-  if (!canInteract) return;
-  setItems([...items, ""]);
-  setEditingIndex(items.length);
-  setEditValue("");
-};
 
-const handleResetToOriginal = () => {
-  if (!canInteract) return;
-  setItems([mealText]);
-  setEditingIndex(null);
-};
+  const handleAddItem = () => {
+    if (!canInteract) return;
+    setItems([...items, ""]);
+    setEditingIndex(items.length);
+    setEditValue("");
+  };
 
-const handleDeleteItem = (index: number) => {
-  const newItems = [...items];
-  newItems.splice(index, 1);
-  setItems(newItems);
-  if (editingIndex === index) {
+  const handleResetToOriginal = () => {
+    if (!canInteract) return;
+    setItems([mealText]);
     setEditingIndex(null);
-  } else if (editingIndex !== null && editingIndex > index) {
-    setEditingIndex(editingIndex - 1);
-  }
-};
+  };
 
-const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+  const handleDeleteItem = (index: number) => {
+    const newItems = [...items];
+    newItems.splice(index, 1);
+    setItems(newItems);
+    if (editingIndex === index) {
+      setEditingIndex(null);
+    } else if (editingIndex !== null && editingIndex > index) {
+      setEditingIndex(editingIndex - 1);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleSaveEdit(index);
