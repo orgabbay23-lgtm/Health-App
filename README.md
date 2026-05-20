@@ -6,7 +6,7 @@ Health App is a mobile-first nutrition tracking application built with React, Vi
 
 - **Cloud Sync:** Powered by Supabase for Authentication and PostgreSQL storage.
 - **BYOK Gemini AI:** Use your own Google Gemini API key, stored locally in your browser for maximum privacy.
-- **Gemini AI Logging:** Robust meal-parsing pipeline with primary `gemini-3-flash-preview` and fallback `gemini-2.5-flash`.
+- **Gemini AI Logging:** Robust meal-parsing pipeline with primary `gemini-3.5-flash` and fallback `gemini-2.5-flash`.
 - **Clinical Nutrition:** Miffln-St Jeor formulas, protein heuristics, and safety-first micronutrient tracking.
 - **RTL Hebrew UX:** Fully localized interface with Hebrew support across all screens.
 

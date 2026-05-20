@@ -12,7 +12,7 @@
 ## 2. Core Clinical & Business Logic (FIXED - DO NOT ALTER)
 * **3 AM Rollover:** Daily logs reset at 03:00 AM local time.
 * **Nutritional Math:** Clinical formulas (MSJ for BMR, specific UL targets) are immutable.
-* **AI Routing:** All models use `thinkingLevel: "high"`. Meal parsing and vision optimistically attempt `gemini-3-flash-preview`. If ANY error occurs, they seamlessly fallback to `gemini-3.1-flash-lite-preview`. Insights exclusively use the Lite model. Database quota counting is REMOVED.
+* **AI Routing:** All models use `thinkingLevel: "high"`. Meal parsing and vision optimistically attempt `gemini-3.5-flash`. If ANY error occurs, they seamlessly fallback to `gemini-3.1-flash-lite`. Insights exclusively use the Lite model. Database quota counting is REMOVED.
 * **Timeframe Target Accumulation:** Weekly and Monthly periods use a rolling window backward from yesterday (excluding the current day). Weekly = Last 7 days, Monthly = Last 30 days. Targets ONLY accumulate for "Active Days". An active day is defined as any past day within the rolling timeframe that contains at least one logged meal (`dailyLogs[dayKey]?.meals?.length > 0`). Empty past days are completely excluded from both the averages and the target multiplier to prevent artificial target inflation. This applies to calories, macros, all 24 micronutrients, progress bar percentages, and AI insight generation.
 
 ## 3. UI/UX Architecture ($1B Startup Aesthetic)
@@ -335,7 +335,7 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 
 * **Architecture:**
     * `generateNutritionalInsight(timeframe, nutritionData, userProfile)` in `gemini.ts` sends aggregated nutrition percentages to Gemini with a dedicated Hebrew clinical nutritionist system prompt.
-    * Uses `gemini-3.1-flash-lite-preview` with the established 429ג†’`gemini-2.5-flash` fallback mechanism.     
+    * Uses `gemini-3.1-flash-lite` with the established 429ג†’`gemini-2.5-flash` fallback mechanism.     
     * The system prompt enforces: Hebrew language, warm/professional tone, bullet-point format, "׳ ׳§׳•׳“׳•׳× ׳׳©׳™׳׳•׳¨" (strengths) + "׳ ׳§׳•׳“׳•׳× ׳׳©׳™׳₪׳•׳¨" (improvements with 2-3 specific Israeli food suggestions).
 
 * **State Management (Zustand):**
@@ -382,7 +382,7 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 * **Pipeline Overview:**
     * Users can photograph meals via a camera button in the AI (Smart) tab of `MealLogModal`.
     * Images are converted to Base64 via `fileToBase64()` in `gemini.ts` (using `FileReader.readAsDataURL`, stripping the data URL prefix).
-    * The Base64 image + MIME type are sent to `analyzeMealImage()` which calls Gemini's multimodal API (`gemini-3.1-flash-lite-preview` with `gemini-2.5-flash` fallback on 429) with an `inlineData` part and a strict Hebrew-only prompt.
+    * The Base64 image + MIME type are sent to `analyzeMealImage()` which calls Gemini's multimodal API (`gemini-3.1-flash-lite` with `gemini-2.5-flash` fallback on 429) with an `inlineData` part and a strict Hebrew-only prompt.
     * Gemini returns a raw comma-separated Hebrew string describing identified foods with estimated quantities.
     * The user reviews and edits this string in an intermediary `ImageReviewPhase` (editable textarea) within the modal.
     * On confirmation ("׳”׳׳©׳ ׳׳—׳™׳©׳•׳‘"), the text is fed into the existing `parseMealDescription()` text-calculation pipeline ג€” identical to manual text entry.
@@ -406,8 +406,8 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 * **Global Thinking Config:**
     * `GLOBAL_THINKING_CONFIG = { thinkingConfig: { thinkingLevel: "high" } }` is applied to ALL models (both PRIMARY and FALLBACK).
 * **Model Routing (Simplified):**
-    * `PRIMARY_MODEL` = `gemini-3-flash-preview` — Optimistic first attempt for meal parsing and vision.
-    * `FALLBACK_MODEL` = `gemini-3.1-flash-lite-preview` — Automatic fallback on ANY primary error, and exclusive model for Insights.
+    * `PRIMARY_MODEL` = `gemini-3.5-flash` — Optimistic first attempt for meal parsing and vision.
+    * `FALLBACK_MODEL` = `gemini-3.1-flash-lite` — Automatic fallback on ANY primary error, and exclusive model for Insights.
     * **Database quota counting is REMOVED.** No `getDailyAiUsageCount`, `incrementDailyAiUsage`, or `DAILY_AI_LIMIT`.
 * **Meal Pipelines (Optimistic — `parseMealDescription`, `analyzeMealImage`):**
     1. ALWAYS attempt `PRIMARY_MODEL` first with `GLOBAL_THINKING_CONFIG`.

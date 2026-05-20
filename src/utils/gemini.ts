@@ -6,9 +6,9 @@ import type { FastCalorieItem } from "../data/fast-calorie-database";
 
 // ── Model Routing ───────────────────────────────────────────────────
 // PRIMARY: Optimistic first attempt for meal parsing & vision
-const PRIMARY_MODEL = "gemini-3-flash-preview";
+const PRIMARY_MODEL = "gemini-3.5-flash";
 // FALLBACK: Lite — used on any PRIMARY error, and exclusively for Insights
-const FALLBACK_MODEL = "gemini-3.1-flash-lite-preview";
+const FALLBACK_MODEL = "gemini-3.1-flash-lite";
 // SECONDARY_FALLBACK: Used if both PRIMARY and FALLBACK fail
 const SECONDARY_FALLBACK_MODEL = "gemini-2.5-flash";
 
@@ -578,7 +578,7 @@ export async function fetchFastCalorieFromAI(query: string): Promise<FastCalorie
     const genAI = new GoogleGenerativeAI(key);
     // Using flash-lite for instantaneous response
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-3.1-flash-lite-preview",
+      model: "gemini-3.1-flash-lite",
       generationConfig: { responseMimeType: "application/json" }
     });
 
