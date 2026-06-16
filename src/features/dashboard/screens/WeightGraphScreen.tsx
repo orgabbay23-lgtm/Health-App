@@ -120,7 +120,7 @@ export function WeightGraphScreen() {
             setEditingId(null);
             setInputValue("");
           }}
-          className="w-10 h-10 bg-slate-950 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+          className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-200/50 active:scale-90 transition-transform"
         >
           {isAdding || editingId ? <XIcon size={24} /> : <Plus size={24} />}
         </button>
@@ -164,7 +164,7 @@ export function WeightGraphScreen() {
               <button
                 onClick={handleSubmit}
                 disabled={!inputValue}
-                className="flex-1 bg-slate-950 text-white font-bold py-3 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-bold py-3 rounded-2xl shadow-lg shadow-indigo-200/50 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Save size={18} />
                 {editingId ? "עדכן" : "שמור"}
@@ -192,9 +192,9 @@ export function WeightGraphScreen() {
             onClick={() => setFilter(f.value)}
             className={cn(
               "px-5 py-2.5 rounded-full whitespace-nowrap text-[13px] font-bold transition-all flex-shrink-0",
-              filter === f.value 
-                ? "bg-slate-950 text-white shadow-md shadow-slate-950/20" 
-                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+              filter === f.value
+                ? "bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-300/40"
+                : "bg-white/70 text-slate-500 hover:bg-white border border-white/70"
             )}
           >
             {f.label}
@@ -203,7 +203,7 @@ export function WeightGraphScreen() {
       </div>
 
       {/* Graph Section */}
-      <div className="bg-white rounded-[2.5rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 min-h-[350px]">
+      <div className="specular bg-white/80 backdrop-blur-md rounded-[2.5rem] p-6 shadow-premium-lg border border-white/70 min-h-[350px]">
         <div className="mb-4">
           <div className="text-sm font-bold text-slate-400">מגמת שינוי</div>
           {filteredLogs.length > 1 && (
@@ -222,7 +222,14 @@ export function WeightGraphScreen() {
         <div className="h-[250px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
+              <defs>
+                <linearGradient id="weightLineGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#14b8a6" />
+                  <stop offset="50%" stopColor="#6366f1" />
+                  <stop offset="100%" stopColor="#0ea5e9" />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis 
                 dataKey="id"
                 axisLine={false} 
@@ -257,13 +264,13 @@ export function WeightGraphScreen() {
                   return null;
                 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="weight" 
-                stroke="#0f172a" 
-                strokeWidth={4} 
-                dot={{ r: 5, fill: '#0f172a', strokeWidth: 2, stroke: '#fff' }}
-                activeDot={{ r: 8, strokeWidth: 4, stroke: 'rgba(15, 23, 42, 0.1)' }}
+              <Line
+                type="monotone"
+                dataKey="weight"
+                stroke="url(#weightLineGrad)"
+                strokeWidth={4}
+                dot={{ r: 5, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
+                activeDot={{ r: 8, strokeWidth: 4, stroke: 'rgba(99, 102, 241, 0.15)', fill: '#6366f1' }}
                 animationDuration={1500}
               />
             </LineChart>
@@ -279,10 +286,10 @@ export function WeightGraphScreen() {
             <motion.div 
               layout
               key={log.id}
-              className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex justify-between items-center"
+              className="specular bg-white/75 backdrop-blur-md p-5 rounded-[2rem] border border-white/70 shadow-premium flex justify-between items-center"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400">
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200/50">
                   <Calendar size={22} />
                 </div>
                 <div>

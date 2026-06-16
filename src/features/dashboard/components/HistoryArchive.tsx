@@ -25,7 +25,7 @@ export function HistoryArchive({
     .sort(([a], [b]) => b.localeCompare(a));
 
   return (
-    <Card className="rounded-[30px] border-white/60 bg-white/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+    <Card className="specular rounded-[30px] border border-white/70 bg-white/85 backdrop-blur-md shadow-premium">
       <CardContent className="space-y-4 p-6">
         <div className="space-y-1">
           <p className="text-[13px] font-semibold tracking-[0.18em] text-slate-500">
@@ -54,8 +54,8 @@ export function HistoryArchive({
                 className={cn(
                   "flex w-full items-center justify-between rounded-[22px] border px-4 py-4 text-right transition",
                   selectedDayKey === dayKey
-                    ? "border-slate-900 bg-slate-900 text-white shadow-[0_18px_35px_rgba(15,23,42,0.22)]"
-                    : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white",
+                    ? "border-transparent bg-gradient-to-br from-slate-800 to-indigo-900 text-white shadow-[0_18px_35px_rgba(30,27,75,0.3)]"
+                    : "border-white/70 bg-white/70 text-slate-700 hover:border-white hover:bg-white",
                 )}
                 onClick={() => onSelect(dayKey)}
               >

@@ -260,7 +260,7 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
 
   return (
     <div className="relative w-full" dir="rtl">
-      <div className="relative rounded-[2.5rem] border border-white/60 bg-white/30 backdrop-blur-xl shadow-soft-2xl">
+      <div className="specular relative rounded-[2.5rem] border border-white/60 bg-gradient-to-b from-sky-50/60 via-white/45 to-white/35 backdrop-blur-xl shadow-premium-lg">
         {/* ═══ Header — always visible, tap to toggle ═══ */}
         <motion.div
           className="flex items-center justify-between px-5 py-4 cursor-pointer select-none"
@@ -679,7 +679,7 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                             key={ml}
                             whileTap={{ scale: 0.93 }}
                             onClick={() => handleAddWater(ml)}
-                            className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-slate-700 hover:bg-white/25 transition-all"
+                            className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white/65 backdrop-blur-md border border-white/80 shadow-sm text-slate-700 hover:bg-white transition-all"
                           >
                             <Icon className="w-4 h-4 text-sky-500" strokeWidth={2.5} />
                             <span className="text-[14px] font-black">+{ml}</span>
@@ -689,7 +689,7 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                         <motion.button
                           whileTap={{ scale: 0.93 }}
                           onClick={() => setIsCustomAddOpen(true)}
-                          className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-slate-700 hover:bg-white/25 transition-all"
+                          className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white/65 backdrop-blur-md border border-white/80 shadow-sm text-slate-700 hover:bg-white transition-all"
                         >
                           <Plus className="w-4 h-4 text-sky-500" strokeWidth={2.5} />
                           <span className="text-[14px] font-black">מותאם אישית</span>
@@ -744,7 +744,7 @@ export function WaterTracker({ userProfile }: WaterTrackerProps) {
                                 handleAddWater(ml);
                                 setIsCustomAddOpen(false);
                               }}
-                              className="py-1.5 px-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-slate-500 hover:bg-white/25 transition-all text-[12px] font-bold"
+                              className="py-1.5 px-3 rounded-xl bg-white/65 backdrop-blur-md border border-white/80 shadow-sm text-slate-500 hover:bg-white transition-all text-[12px] font-bold"
                             >
                               {label} ({ml} מ״ל)
                             </motion.button>

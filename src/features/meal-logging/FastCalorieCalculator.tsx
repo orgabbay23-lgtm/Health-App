@@ -243,9 +243,9 @@ export function FastCalorieCalculator() {
 
                   "h-11 w-11 rounded-xl transition-all duration-300",
 
-                  searchTerm.trim() 
+                  searchTerm.trim()
 
-                    ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200" 
+                    ? "bg-gradient-to-br from-indigo-500 to-violet-600 hover:brightness-110 text-white shadow-md shadow-indigo-200"
 
                     : "bg-slate-100 text-slate-400 opacity-70"
 
@@ -327,7 +327,7 @@ export function FastCalorieCalculator() {
 
       ) : (
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-6 animate-in zoom-in-95 duration-200">
+        <div className="specular bg-white/85 backdrop-blur-md border border-white/70 rounded-2xl p-5 shadow-premium space-y-6 animate-in zoom-in-95 duration-200">
 
           <div className="flex items-start justify-between">
 

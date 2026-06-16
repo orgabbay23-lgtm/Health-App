@@ -3,8 +3,8 @@
   "short_name": "Health App",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0f172a",
+  "background_color": "#eceefb",
+  "theme_color": "#eceefb",
   "icons": [
     {
       "src": "/192.png",

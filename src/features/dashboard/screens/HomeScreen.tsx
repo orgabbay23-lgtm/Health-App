@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { motion, type Variants } from "framer-motion";
+import { UtensilsCrossed } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import type {
@@ -193,14 +194,19 @@ export function HomeScreen({
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <Card className="border border-white/60 bg-white/30 backdrop-blur-xl shadow-soft-2xl rounded-[3rem]">
+        <Card className="specular border border-white/60 bg-gradient-to-b from-white/55 to-white/35 backdrop-blur-xl shadow-premium-lg rounded-[3rem]">
           <CardContent className="space-y-8 p-8 md:p-10">
             <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-black tracking-tight text-slate-950">
-                {periodMode === "daily" ? "ארוחות" : "פירוט תקופה"}
-              </h3>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-400 via-orange-400 to-amber-400 text-white shadow-lg shadow-orange-200/50">
+                  <UtensilsCrossed size={22} strokeWidth={2.5} />
+                </div>
+                <h3 className="text-2xl font-black tracking-tight text-slate-950">
+                  {periodMode === "daily" ? "ארוחות" : "פירוט תקופה"}
+                </h3>
+              </div>
               {periodMode === "daily" && meals.length > 0 && (
-                <div className="bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
+                <div className="bg-gradient-to-br from-rose-500 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg shadow-orange-200/50">
                   {meals.length} פריטים
                 </div>
               )}

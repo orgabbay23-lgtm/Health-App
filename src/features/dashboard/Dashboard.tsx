@@ -39,6 +39,7 @@ import { WeightGraphScreen } from "./screens/WeightGraphScreen";
 import { MorePopover } from "./components/MorePopover";
 import { WeightReminderModal } from "./components/WeightReminderModal";
 import { WeightFeaturePromoModal } from "./components/WeightFeaturePromoModal";
+import { WhatsNewModal } from "./components/WhatsNewModal";
 
 const EMPTY_DAILY_LOGS: Record<string, DailyLog> = {};
 const EMPTY_SAVED_MEALS: ReadonlyArray<{
@@ -450,6 +451,7 @@ export function Dashboard() {
 
       <WeightReminderModal />
       <WeightFeaturePromoModal />
+      <WhatsNewModal />
     </div>
   );
 }

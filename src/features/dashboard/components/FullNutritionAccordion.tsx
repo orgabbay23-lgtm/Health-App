@@ -1,3 +1,4 @@
+import { Activity } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -24,6 +25,9 @@ export function FullNutritionAccordion({
       <AccordionItem value="full-nutrition">
         <AccordionTrigger>
           <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-violet-200/50">
+              <Activity size={20} strokeWidth={2.5} />
+            </div>
             <p className="text-xl font-black text-slate-950">
               ערכים תזונתיים
             </p>

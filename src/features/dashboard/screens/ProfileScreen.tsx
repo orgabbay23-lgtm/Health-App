@@ -11,6 +11,14 @@ import type { UserData, UserProfile } from "../../../store";
 import { UserAvatar } from "../../users/UserAvatar";
 import { supabase } from "../../../lib/supabase";
 import { clearCachedApiKey } from "../../../utils/gemini";
+import { cn } from "../../../utils/utils";
+
+const TARGET_TINT: Record<"calories" | "protein" | "carbs" | "fat", { card: string; label: string }> = {
+  calories: { card: "from-sky-50/90 border-sky-100/80", label: "text-sky-600" },
+  protein: { card: "from-orange-50/90 border-orange-100/80", label: "text-orange-600" },
+  carbs: { card: "from-emerald-50/90 border-emerald-100/80", label: "text-emerald-600" },
+  fat: { card: "from-amber-50/90 border-amber-100/80", label: "text-amber-600" },
+};
 
 interface ProfileScreenProps {
   userProfile: UserProfile;
@@ -62,7 +70,7 @@ export function ProfileScreen({
 
   return (
     <div className="space-y-6">
-      <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-xl rounded-[2.5rem]">
+      <Card className="specular border border-white/60 bg-gradient-to-b from-white/60 to-white/40 backdrop-blur-md shadow-premium-lg rounded-[2.5rem]">
         <CardContent className="grid gap-8 p-8 lg:grid-cols-[1fr_auto]">
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-5">
@@ -84,7 +92,7 @@ export function ProfileScreen({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button type="button" className="rounded-2xl h-11 px-6 bg-slate-950 shadow-lg" onClick={onEditProfile}>
+              <Button type="button" className="rounded-2xl h-11 px-6 shadow-lg" onClick={onEditProfile}>
                 <Settings2 size={18} className="ms-2" />
                 עריכת פרופיל
               </Button>
@@ -109,9 +117,12 @@ export function ProfileScreen({
       </Card>
 
       <div className="grid gap-6">
-        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-xl rounded-[2rem]">
+        <Card className="specular border border-white/60 bg-white/55 backdrop-blur-sm shadow-premium rounded-[2rem]">
           <CardContent className="space-y-6 p-8">
-            <h3 className="text-xl font-bold text-slate-900">נתונים אישיים</h3>
+            <h3 className="flex items-center gap-2.5 text-xl font-black text-slate-900">
+              <span className="h-5 w-1.5 rounded-full bg-gradient-to-b from-sky-500 to-indigo-500" />
+              נתונים אישיים
+            </h3>
             <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
               {profileRows.map((row) => (
                 <ProfileRow key={row.label} label={row.label} value={row.value} />
@@ -120,21 +131,27 @@ export function ProfileScreen({
           </CardContent>
         </Card>
 
-        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-xl rounded-[2rem]">
+        <Card className="specular border border-white/60 bg-white/55 backdrop-blur-sm shadow-premium rounded-[2rem]">
           <CardContent className="space-y-6 p-8">
-            <h3 className="text-xl font-bold text-slate-900">יעדים קליניים</h3>
+            <h3 className="flex items-center gap-2.5 text-xl font-black text-slate-900">
+              <span className="h-5 w-1.5 rounded-full bg-gradient-to-b from-emerald-500 to-teal-500" />
+              יעדים קליניים
+            </h3>
             <div className="grid gap-4 grid-cols-2">
               {targetRows.map((row) => (
                 <div
                   key={row.nutrient}
-                  className="rounded-3xl border border-white bg-white/50 p-5 shadow-sm"
+                  className={cn(
+                    "specular rounded-3xl border bg-gradient-to-b to-white/70 p-5 shadow-premium",
+                    TARGET_TINT[row.nutrient].card,
+                  )}
                 >
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">
+                      <p className={cn("text-[13px] font-black uppercase tracking-widest", TARGET_TINT[row.nutrient].label)}>
                         {NUTRIENT_META[row.nutrient].label}
                       </p>
-                      <p className="text-lg font-bold text-slate-900">{row.value}</p>
+                      <p className="text-lg font-black text-slate-900">{row.value}</p>
                     </div>
                     <TipPopover
                       content={generateNutritionalTip(row.nutrient, userProfile)}
@@ -166,11 +183,11 @@ export function ProfileScreen({
 
 function ProfileStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-white bg-white/80 p-5 shadow-sm">
+    <div className="specular rounded-[1.5rem] border border-white/70 bg-gradient-to-b from-indigo-50/80 to-white/70 p-5 shadow-premium">
       <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest">
         {label}
       </p>
-      <p className="mt-1 text-2xl font-black text-slate-900 tracking-tighter">{value}</p>
+      <p className="mt-1 text-2xl font-black tracking-tighter bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500 bg-clip-text text-transparent">{value}</p>
       <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tighter">קק"ל / יום</p>
     </div>
   );

@@ -67,22 +67,28 @@ function App() {
   if (!hasHydrated || !isAppReady) {
     return (
       <div className="ios-app-shell" dir="rtl">
-        <div className="ios-scroll-canvas flex items-center justify-center relative overflow-hidden">
-          {/* Animated Mesh Background for Loading */}
-          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-            <div className="blob-animate blob-1" />
-            <div className="blob-animate blob-2" />
-            <div className="blob-animate blob-3" />
-            <div className="blob-animate blob-4" />
-          </div>
-
+        {/* Animated Aurora — direct child of the FIXED shell (NOT inside the
+            scroll canvas). On iOS, `position: fixed` inside a
+            `-webkit-overflow-scrolling: touch` container gets clipped to the
+            scroll area and won't paint into the bottom safe-area, exposing the
+            shell's near-white background as a white strip. Keeping it as an
+            `absolute` child of the shell guarantees true full-screen coverage. */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="blob-animate blob-1" />
+          <div className="blob-animate blob-2" />
+          <div className="blob-animate blob-3" />
+          <div className="blob-animate blob-4" />
+          <div className="app-luminance" />
+          <div className="app-grain" />
+        </div>
+        <div className="ios-scroll-canvas z-10 flex items-center justify-center relative overflow-hidden">
           <div className="relative flex flex-col items-center gap-12 z-10">
             <div className="relative">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                className="h-24 w-24 rounded-[2.5rem] bg-slate-950 flex items-center justify-center shadow-2xl border-[6px] border-white relative z-10"
+                className="shine h-24 w-24 rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 flex items-center justify-center shadow-[0_24px_60px_-12px_rgba(30,27,75,0.6)] border-[6px] border-white relative z-10"
               >
                  <motion.div
                   animate={{
@@ -90,7 +96,7 @@ function App() {
                     opacity: [1, 0.5, 1]
                   }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="h-3 w-3 rounded-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.8)]"
+                  className="h-3 w-3 rounded-full bg-white shadow-[0_0_18px_rgba(255,255,255,0.9)]"
                  />
               </motion.div>
 
@@ -107,7 +113,7 @@ function App() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="text-sm font-black text-slate-950 uppercase tracking-[0.3em]"
+                className="text-aurora text-sm font-black uppercase tracking-[0.3em]"
               >
                 הבריאות שלך בטעינה
               </motion.span>
@@ -138,15 +144,21 @@ function App() {
 
   return (
     <div className="ios-app-shell" dir="rtl">
-      <div className={cn("ios-scroll-canvas font-sans text-foreground", getTimeTint())}>
-        {/* Animated Mesh Background */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="blob-animate blob-1" />
-          <div className="blob-animate blob-2" />
-          <div className="blob-animate blob-3" />
-          <div className="blob-animate blob-4" />
-        </div>
-
+      {/* Animated Aurora — direct child of the FIXED shell (NOT inside the
+          scroll canvas). On iOS, `position: fixed` inside a
+          `-webkit-overflow-scrolling: touch` container gets clipped to the
+          scroll area and won't paint into the bottom safe-area, exposing the
+          shell's near-white background as a white strip. Keeping it as an
+          `absolute` child of the shell guarantees true full-screen coverage. */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="blob-animate blob-1" />
+        <div className="blob-animate blob-2" />
+        <div className="blob-animate blob-3" />
+        <div className="blob-animate blob-4" />
+        <div className="app-luminance" />
+        <div className="app-grain" />
+      </div>
+      <div className={cn("ios-scroll-canvas z-10 font-sans text-foreground", getTimeTint())}>
         <AnimatePresence mode="wait">
           <motion.div
             key={key}

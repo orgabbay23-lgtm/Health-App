@@ -36,7 +36,7 @@ export function BottomNavigation({
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.5 }}
           style={{ transform: "translateZ(0)" }}
-          className="bg-white/60 backdrop-blur-2xl border border-white/50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] rounded-[3rem] p-3 neo-blur"
+          className="specular bg-white/70 backdrop-blur-2xl border border-white/70 shadow-premium-lg rounded-[3rem] p-3 neo-blur"
         >
         <div className="flex items-center justify-around">
           {navigationItems.map((item, index) => {
@@ -57,8 +57,8 @@ export function BottomNavigation({
                 whileTap={{ scale: 0.9 }}
                 className={cn(
                   "relative flex flex-col items-center justify-center transition-all duration-300",
-                  isAdd 
-                    ? "h-16 w-16 rounded-[2rem] bg-slate-950 text-white shadow-2xl -mt-12 border-[6px] border-slate-50/50" 
+                  isAdd
+                    ? "shine h-16 w-16 rounded-[2rem] bg-gradient-to-br from-slate-800 via-slate-950 to-indigo-950 text-white shadow-[0_16px_36px_-8px_rgba(30,27,75,0.65)] -mt-12 border-[6px] border-white/70"
                     : "flex-1 h-12 rounded-2xl"
                 )}
                 onClick={() => {
@@ -74,7 +74,7 @@ export function BottomNavigation({
                 {active && (
                   <SafeLayoutMotion
                     layoutId="active-nav-bg"
-                    className="absolute inset-0 bg-slate-900/5 rounded-2xl -z-10"
+                    className="absolute inset-0 bg-gradient-to-b from-slate-900/[0.09] to-slate-900/[0.03] ring-1 ring-inset ring-white/60 rounded-2xl -z-10"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}

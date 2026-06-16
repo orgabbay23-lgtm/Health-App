@@ -139,12 +139,12 @@ const MealTimelineItem = memo(function MealTimelineItem({
 
   const getIconStyles = () => {
     const name = meal.meal_name.toLowerCase();
-    if (meal.sourceType === "supplement") return "bg-violet-50 text-violet-500 shadow-violet-100";
-    if (name.includes("בוקר") || name.includes("breakfast")) return "bg-orange-50 text-orange-500 shadow-orange-100";
-    if (name.includes("צהריים") || name.includes("lunch")) return "bg-emerald-50 text-emerald-500 shadow-emerald-100";
-    if (name.includes("ערב") || name.includes("dinner")) return "bg-indigo-50 text-indigo-500 shadow-indigo-100";
-    if (name.includes("ביניים") || name.includes("snack")) return "bg-rose-50 text-rose-500 shadow-rose-100";
-    return "bg-slate-50 text-slate-500 shadow-slate-100";
+    if (meal.sourceType === "supplement") return "bg-gradient-to-br from-violet-500 to-purple-500 text-white shadow-violet-200/60";
+    if (name.includes("בוקר") || name.includes("breakfast")) return "bg-gradient-to-br from-orange-400 to-amber-500 text-white shadow-orange-200/60";
+    if (name.includes("צהריים") || name.includes("lunch")) return "bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-emerald-200/60";
+    if (name.includes("ערב") || name.includes("dinner")) return "bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-indigo-200/60";
+    if (name.includes("ביניים") || name.includes("snack")) return "bg-gradient-to-br from-rose-400 to-pink-500 text-white shadow-rose-200/60";
+    return "bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-slate-200/60";
   };
 
   return (
@@ -160,7 +160,7 @@ const MealTimelineItem = memo(function MealTimelineItem({
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.96, transition: { type: "spring", stiffness: 400, damping: 17 } }}
     >
-      <Card className="rounded-[2rem] border border-white/60 bg-white/50 backdrop-blur-md shadow-soft-xl transition-all duration-300">
+      <Card className="specular rounded-[2rem] border border-white/60 bg-white/50 backdrop-blur-md shadow-premium transition-all duration-300">
         <CardContent className="p-0 overflow-hidden rounded-[2rem]">
           <div className="p-6">
             <div className="flex items-start justify-between gap-4">

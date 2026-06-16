@@ -58,10 +58,10 @@ export function OnboardingFlow() {
     >
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="overflow-hidden border-white/70 bg-[linear-gradient(160deg,_rgba(255,255,255,0.95),_rgba(255,250,240,0.95))] shadow-[0_28px_90px_rgba(15,23,42,0.12)]">
+          <Card className="specular overflow-hidden border-white/70 bg-[linear-gradient(160deg,_rgba(255,255,255,0.95),_rgba(255,250,240,0.95))] shadow-premium-lg">
             <CardContent className="space-y-8 p-8 md:p-10">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-semibold tracking-[0.18em] text-slate-500 shadow-sm">
-                <Sparkles size={14} />
+              <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 px-4 py-2 text-[13px] font-black tracking-[0.18em] text-white shadow-lg shadow-indigo-200/50">
+                <Sparkles size={14} fill="currentColor" />
                 הגדרת משתמש
               </div>
 
@@ -80,8 +80,8 @@ export function OnboardingFlow() {
               </div>
 
               <div className="space-y-4">
-                <h2 className="text-4xl font-semibold leading-tight text-slate-950">
-                  נגדיר בסיס קליני מדויק לפני שמתחילים לתעד
+                <h2 className="text-4xl font-black leading-tight text-slate-950">
+                  נגדיר בסיס קליני מדויק לפני שמתחילים <span className="text-aurora">לתעד</span>
                 </h2>
                 <p className="text-sm leading-7 text-slate-600 md:text-base">
                   הפרטים כאן מזינים את יעדי הקלוריות, החלבון, המיקרונוטריינטים,
@@ -100,7 +100,7 @@ export function OnboardingFlow() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="border-white/70 bg-white/92 shadow-[0_28px_90px_rgba(15,23,42,0.12)]">
+          <Card className="specular border-white/70 bg-white/92 shadow-premium-lg">
             <CardContent className="space-y-6 p-8 md:p-10">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
@@ -145,7 +145,8 @@ export function OnboardingFlow() {
 
 function FeaturePill({ label }: { label: string }) {
   return (
-    <div className="rounded-[22px] border border-white/75 bg-white/85 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm">
+    <div className="flex items-center gap-2.5 rounded-[22px] border border-white/75 bg-white/85 px-4 py-3 text-sm font-bold text-slate-700 shadow-sm">
+      <span className="h-2 w-2 shrink-0 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500" />
       {label}
     </div>
   );

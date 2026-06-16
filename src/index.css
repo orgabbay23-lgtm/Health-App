@@ -64,11 +64,11 @@
     overscroll-behavior: none !important;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
-    background-color: hsl(var(--background)) !important;
+    background-color: #eceefb !important;
   }
 
   body {
-    background-color: hsl(var(--background)) !important;
+    background-color: #eceefb !important;
     @apply text-foreground;
     font-family: 'Assistant', 'Heebo', system-ui, sans-serif;
     width: 100% !important;
@@ -85,7 +85,7 @@
   #root {
     width: 100% !important;
     height: 100dvh !important;
-    background-color: hsl(var(--background)) !important;
+    background-color: #eceefb !important;
   }
 }
 
@@ -107,26 +107,34 @@
     -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
 
-  /* iOS Immutable App Shell — Force absolute full-screen coverage including 
-     all system areas (notch/home indicator). 
-     Using inset: 0 !important and height: 100dvh !important to guarantee it hits the physical bottom. */
+  /* iOS Immutable App Shell — Force absolute full-screen coverage including
+     all system areas (notch/home indicator).
+     IMPORTANT (iOS PWA fix): we rely ONLY on `inset: 0` to stretch the shell
+     edge-to-edge. We must NOT also set an explicit `height` — when top/bottom
+     AND height are all set, CSS treats the box as over-constrained and drops
+     `bottom`, so the box collapses to `100dvh`. In iOS standalone PWAs `100dvh`
+     is sometimes shorter than the real screen, which left a white strip at the
+     bottom. With `viewport-fit=cover`, `inset: 0` fills the true full screen. */
   .ios-app-shell {
     position: fixed !important;
     inset: 0 !important;
     width: 100vw !important;
-    height: 100dvh !important;
+    min-height: 100dvh !important;
     overflow: hidden !important;
-    background-color: hsl(var(--background)) !important;
+    /* Aurora-toned base (NOT white). If any sliver of this shell ever shows
+       through at the bottom safe-area on iOS, it blends with the aurora instead
+       of reading as a white strip. */
+    background: linear-gradient(175deg, #eafaff 0%, #eef0fc 50%, #e7e6fa 100%) !important;
     z-index: 0 !important;
   }
 
   /* Internal scrollable canvas — all vertical scrolling occurs here.
-     The background (blobs/tints) bleeds to the absolute edges. */
+     The background (blobs/tints) bleeds to the absolute edges.
+     Same rule as the shell: `inset: 0` defines the height, no explicit height. */
   .ios-scroll-canvas {
     position: absolute !important;
     inset: 0 !important;
     width: 100% !important;
-    height: 100dvh !important;
     overflow-y: auto !important;
     overflow-x: clip !important;
     overscroll-behavior-y: contain !important;
@@ -134,23 +142,68 @@
     background-color: transparent !important;
   }
 
-  /* Animated Mesh Background Blobs */
+  /* ── Animated Aurora Mesh Background ──
+     Soft radial light-sources that drift slowly. Richer & more luminous
+     than flat blobs — reads as premium frosted glass over living light. */
   .blob-animate {
-    @apply absolute blur-[120px] rounded-full opacity-30 mix-blend-multiply;
-    animation: blob-float 25s infinite alternate ease-in-out;
+    @apply absolute rounded-full;
+    filter: blur(110px) saturate(135%);
+    mix-blend-mode: multiply;
+    will-change: transform;
+    animation: blob-float 28s infinite alternate ease-in-out;
   }
 
   @keyframes blob-float {
-    0% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
-    100% { transform: translate(0, 0) scale(1); }
+    0%   { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+    33%  { transform: translate3d(36px, -54px, 0) scale(1.12) rotate(8deg); }
+    66%  { transform: translate3d(-26px, 26px, 0) scale(0.92) rotate(-6deg); }
+    100% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
   }
 
-  .blob-1 { @apply bg-sky-300 w-[500px] h-[500px] -top-20 -left-20; }
-  .blob-2 { @apply bg-violet-300 w-[600px] h-[600px] top-1/2 -right-20; animation-delay: -5s; }
-  .blob-3 { @apply bg-emerald-200 w-[400px] h-[400px] -bottom-20 left-1/2; animation-delay: -10s; }
-  .blob-4 { @apply bg-amber-200 w-[450px] h-[450px] top-1/4 left-1/4; animation-delay: -15s; }
+  .blob-1 {
+    width: 540px; height: 540px; top: -90px; left: -90px;
+    background: radial-gradient(circle at 50% 50%, rgba(56,189,248,0.55) 0%, rgba(45,212,191,0.32) 45%, rgba(56,189,248,0) 70%);
+  }
+  .blob-2 {
+    width: 640px; height: 640px; top: 42%; right: -120px;
+    background: radial-gradient(circle at 50% 50%, rgba(167,139,250,0.5) 0%, rgba(129,140,248,0.3) 45%, rgba(167,139,250,0) 70%);
+    animation-delay: -6s;
+  }
+  .blob-3 {
+    width: 460px; height: 460px; bottom: -110px; left: 42%;
+    background: radial-gradient(circle at 50% 50%, rgba(52,211,153,0.46) 0%, rgba(45,212,191,0.28) 45%, rgba(52,211,153,0) 70%);
+    animation-delay: -12s;
+  }
+  .blob-4 {
+    width: 480px; height: 480px; top: 22%; left: 20%;
+    background: radial-gradient(circle at 50% 50%, rgba(251,191,170,0.45) 0%, rgba(244,114,182,0.26) 45%, rgba(251,191,170,0) 70%);
+    animation-delay: -18s;
+  }
+
+  /* ── Premium film-grain texture ──
+     Sits above the aurora, below content. Adds tactile depth so the
+     glass surfaces never look flat. Extremely subtle. */
+  .app-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.04;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 220px 220px;
+  }
+
+  /* ── Soft top luminance ──
+     A gentle wash of light from the top of the canvas, like studio
+     lighting on the frosted shell. */
+  .app-luminance {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 60% at 50% -10%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 55%),
+      radial-gradient(90% 50% at 50% 110%, rgba(99,102,241,0.06) 0%, rgba(99,102,241,0) 60%);
+  }
 
   /* Nutrient Gradients */
   .gradient-calories { @apply bg-gradient-to-br from-sky-400 to-teal-400; }
@@ -211,5 +264,110 @@
   @keyframes catBlink {
     0%, 95%, 98%, 100% { transform: scaleY(1); }
     96%, 99% { transform: scaleY(0.1); }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     Premium surface system — "Aurora Glass"
+     Solid, luminous, dimensional. Never washed-out.
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Specular top-edge highlight for any glass card — the crisp band of
+     light along the top rim that sells real frosted glass. */
+  .specular {
+    position: relative;
+  }
+  .specular::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.15) 22%, rgba(255,255,255,0) 50%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Animated gradient text — for hero headings / brand moments */
+  .text-aurora {
+    background: linear-gradient(110deg, #0ea5e9, #6366f1, #10b981, #0ea5e9);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+            background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: aurora-pan 6s linear infinite;
+  }
+  @keyframes aurora-pan {
+    to { background-position: 200% center; }
+  }
+
+  /* Diagonal shine sweep — for premium buttons / featured chips */
+  .shine {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .shine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 45%;
+    left: -60%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.45), transparent);
+    transform: skewX(-18deg);
+    animation: shine-sweep 4.5s ease-in-out infinite;
+    animation-delay: 1.2s;
+    pointer-events: none;
+  }
+  @keyframes shine-sweep {
+    0%, 35% { left: -60%; }
+    65%, 100% { left: 130%; }
+  }
+
+  /* Gentle float for accent elements */
+  .animate-float {
+    animation: gentle-float 6s ease-in-out infinite;
+  }
+  @keyframes gentle-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+  }
+}
+
+/* ── Refined custom scrollbar (desktop) ── */
+.ios-scroll-canvas::-webkit-scrollbar {
+  width: 10px;
+}
+.ios-scroll-canvas::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ios-scroll-canvas::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.28);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.ios-scroll-canvas::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.45);
+  background-clip: content-box;
+}
+
+/* ── Premium text selection ── */
+::selection {
+  background: rgba(99, 102, 241, 0.22);
+  color: #0f172a;
+}
+
+/* ── Respect reduced-motion: calm the ambient animations ── */
+@media (prefers-reduced-motion: reduce) {
+  .blob-animate,
+  .animate-float,
+  .shine::after,
+  .text-aurora,
+  .animate-cat-blink {
+    animation: none !important;
   }
 }

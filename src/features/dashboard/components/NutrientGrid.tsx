@@ -86,7 +86,7 @@ export function NutrientGrid({
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => setShowTier2(true)}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/40 text-[13px] font-bold text-slate-500 shadow-soft-sm"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-50/80 to-violet-50/80 backdrop-blur-sm border border-indigo-100/70 text-[13px] font-black text-indigo-600 shadow-premium"
         >
           <span>הרחב</span>
           <ChevronDown className="w-4 h-4" />
@@ -123,7 +123,7 @@ export function NutrientGrid({
           animate={{ opacity: 1 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => setShowTier3(true)}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/40 text-[13px] font-bold text-slate-500 shadow-soft-sm"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-50/80 to-violet-50/80 backdrop-blur-sm border border-indigo-100/70 text-[13px] font-black text-indigo-600 shadow-premium"
         >
           <span>ערכים נוספים</span>
           <ChevronDown className="w-4 h-4" />
@@ -160,7 +160,7 @@ export function NutrientGrid({
           animate={{ opacity: 1 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => { setShowTier2(false); setShowTier3(false); }}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/40 text-[13px] font-bold text-slate-500 shadow-soft-sm"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-50/80 to-violet-50/80 backdrop-blur-sm border border-indigo-100/70 text-[13px] font-black text-indigo-600 shadow-premium"
         >
           <span>צמצם</span>
           <ChevronDown className="w-4 h-4 rotate-180" />

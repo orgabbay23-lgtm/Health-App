@@ -447,21 +447,21 @@ export function MealLogModal({
 
           <TabsList className="grid w-full grid-cols-4 h-[68px] sm:h-14 relative p-1 bg-slate-100/50 rounded-[1.35rem]">
             <motion.div
-              className="absolute top-1 bottom-1 rounded-2xl bg-white shadow-soft-lg ring-1 ring-slate-100 pointer-events-none z-0"
+              className="absolute top-1 bottom-1 rounded-2xl bg-gradient-to-br from-white to-indigo-50 shadow-premium ring-1 ring-indigo-100 pointer-events-none z-0"
               style={{ width: "calc((100% - 8px) / 4)", right: "4px" }}
               initial={false}
               animate={{ x: `${tabIndex * -100}%` }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
             />
-            <TabsTrigger value="ai" className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0 text-[13px] font-semibold text-slate-500 data-[state=active]:text-slate-900 transition-colors">
+            <TabsTrigger value="ai" className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0 text-[13px] font-semibold text-slate-500 data-[state=active]:text-indigo-600 transition-colors">
               <WandSparkles className="w-4 h-4" />
               <span>חכם</span>
             </TabsTrigger>
-            <TabsTrigger value="manual" className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0 text-[13px] font-semibold text-slate-500 data-[state=active]:text-slate-900 transition-colors">
+            <TabsTrigger value="manual" className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0 text-[13px] font-semibold text-slate-500 data-[state=active]:text-indigo-600 transition-colors">
               <Plus className="w-4 h-4" />
               <span>ידני</span>
             </TabsTrigger>
-            <TabsTrigger value="saved" className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0 text-[13px] font-semibold text-slate-500 data-[state=active]:text-slate-900 transition-colors">
+            <TabsTrigger value="saved" className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 relative z-10 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:ring-0 text-[13px] font-semibold text-slate-500 data-[state=active]:text-indigo-600 transition-colors">
               <Heart className="w-4 h-4" />
               <span>מועדפים</span>
             </TabsTrigger>
@@ -596,7 +596,7 @@ export function MealLogModal({
                               type="button"
                               whileTap={{ scale: 0.9 }}
                               onClick={() => fileInputRef.current?.click()}
-                              className="w-10 h-10 rounded-full bg-white/70 backdrop-blur-md border border-slate-200/60 shadow-sm flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:border-emerald-300 hover:shadow-emerald-100 transition-all"
+                              className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-200/50 flex items-center justify-center text-white hover:brightness-110 transition-all"
                               title="צלם תמונה"
                             >
                               <Camera size={18} />
@@ -605,7 +605,7 @@ export function MealLogModal({
                               type="button"
                               whileTap={{ scale: 0.9 }}
                               onClick={() => galleryInputRef.current?.click()}
-                              className="w-10 h-10 rounded-full bg-white/70 backdrop-blur-md border border-slate-200/60 shadow-sm flex items-center justify-center text-slate-400 hover:text-violet-500 hover:border-violet-300 hover:shadow-violet-100 transition-all"
+                              className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-fuchsia-500 shadow-lg shadow-violet-200/50 flex items-center justify-center text-white hover:brightness-110 transition-all"
                               title="בחר מגלריה"
                             >
                               <ImageIcon size={18} />
@@ -633,7 +633,7 @@ export function MealLogModal({
                       <Button
                         type="submit"
                         size="lg"
-                        className="w-full h-16 rounded-2xl text-lg"
+                        className="shine w-full h-16 rounded-2xl text-lg bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 hover:brightness-110 shadow-lg shadow-indigo-300/40"
                         disabled={isSubmitting}
                       >
                         {isSubmitting ? (
@@ -646,7 +646,10 @@ export function MealLogModal({
                             מנתח...
                           </span>
                         ) : (
-                          "הוסף ארוחה"
+                          <span className="flex items-center gap-2.5">
+                            <WandSparkles className="w-5 h-5" />
+                            הוסף ארוחה
+                          </span>
                         )}
                       </Button>
                     </motion.form>
@@ -733,8 +736,13 @@ export function MealLogModal({
                   הוסף מרכיב נוסף
                 </Button>
 
-                <Button type="submit" size="lg" className="w-full h-16 rounded-2xl text-lg" disabled={isSubmitting}>
-                  {isSubmitting ? "מעבד..." : "שמור ארוחה"}
+                <Button type="submit" size="lg" className="shine w-full h-16 rounded-2xl text-lg bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 hover:brightness-110 shadow-lg shadow-indigo-300/40" disabled={isSubmitting}>
+                  {isSubmitting ? "מעבד..." : (
+                    <span className="flex items-center gap-2.5">
+                      <Plus className="w-5 h-5" strokeWidth={3} />
+                      שמור ארוחה
+                    </span>
+                  )}
                 </Button>
               </motion.form>
               </FormProvider>
@@ -883,7 +891,7 @@ export function MealLogModal({
                         <div className="p-4">
                           <div className="flex gap-4 items-center mb-3">
                             {!saved.custom_image_url && (
-                              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+                              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-rose-200/50">
                                 <Heart size={20} fill="currentColor" />
                               </div>
                             )}

@@ -78,10 +78,10 @@ export function WeightReminderModal() {
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="bg-white rounded-[2.5rem] shadow-2xl p-8 w-full max-w-md relative z-[201] text-right pointer-events-auto"
+          className="specular bg-white rounded-[2.5rem] shadow-premium-lg p-8 w-full max-w-md relative z-[201] text-right pointer-events-auto"
           dir="rtl"
         >
-          <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mb-6 mx-auto text-slate-950">
+          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl flex items-center justify-center mb-6 mx-auto text-white shadow-lg shadow-indigo-200/50">
             <Scale size={32} />
           </div>
 
@@ -112,7 +112,7 @@ export function WeightReminderModal() {
             <button
               onClick={handleSave}
               disabled={!newWeight}
-              className="w-full bg-slate-950 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50"
+              className="w-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-200/50 active:scale-[0.98] transition-all disabled:opacity-50"
             >
               <Save size={20} />
               שמור

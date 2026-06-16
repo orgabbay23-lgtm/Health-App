@@ -223,7 +223,7 @@ export function SmartInsightGenerator({
   return (
     <div className="w-full" dir="rtl">
       <motion.div
-        className="w-full rounded-[2rem] border border-white/40 bg-white/30 backdrop-blur-xl shadow-soft-xl overflow-visible"
+        className="specular w-full rounded-[2rem] border border-white/60 bg-gradient-to-b from-white/55 to-white/35 backdrop-blur-xl shadow-premium overflow-visible"
       >
         {/* Header / Toggle */}
         <button
@@ -231,7 +231,7 @@ export function SmartInsightGenerator({
           className="w-full flex items-center justify-between px-6 py-5 focus:outline-none"
         >
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-violet-100/50 p-2 text-violet-600">
+            <div className="rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 p-2.5 text-white shadow-lg shadow-violet-200/60">
               <Sparkles size={20} />
             </div>
             <span className="text-lg font-black text-slate-900 tracking-tight">שאלה ל-AI</span>
@@ -276,7 +276,7 @@ export function SmartInsightGenerator({
                       <button
                         onClick={handleAskCustom}
                         disabled={!(aiInsights[keys.customQ] || "").trim() || isLoadingCustom}
-                        className="absolute bottom-3 left-3 flex items-center justify-center rounded-xl bg-violet-600 p-2 text-white shadow-soft-md hover:bg-violet-700 disabled:opacity-40 transition-all"
+                        className="absolute bottom-3 left-3 flex items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 p-2.5 text-white shadow-lg shadow-violet-200/50 hover:brightness-110 disabled:opacity-40 transition-all"
                       >
                         {isLoadingCustom ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="rotate-180" />}
                       </button>

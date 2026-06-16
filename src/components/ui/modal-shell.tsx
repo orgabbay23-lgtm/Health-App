@@ -112,7 +112,7 @@ export function ModalShell({
               mass: 0.6
             }}
             className={cn(
-              "relative w-[95vw] bg-white/80 backdrop-blur-2xl text-right shadow-soft-2xl border border-white/60 overscroll-contain will-change-transform",
+              "specular relative w-[95vw] bg-white/85 backdrop-blur-2xl text-right shadow-premium-lg border border-white/70 overscroll-contain will-change-transform",
               // Centered modal on all screen sizes
               "max-h-[85dvh] rounded-[2rem] sm:max-w-md md:max-w-2xl",
               className,
@@ -121,9 +121,10 @@ export function ModalShell({
             tabIndex={-1}
           >
             {/* Mesh Background inside modal */}
-            <div className="absolute inset-0 pointer-events-none opacity-20 overflow-hidden -z-10">
-              <div className="absolute -top-[20%] -left-[20%] w-[60%] h-[60%] rounded-full bg-blue-100 blur-[80px]" />
-              <div className="absolute -bottom-[20%] -right-[20%] w-[60%] h-[60%] rounded-full bg-indigo-100 blur-[80px]" />
+            <div className="absolute inset-0 pointer-events-none opacity-30 overflow-hidden -z-10">
+              <div className="absolute -top-[20%] -left-[20%] w-[60%] h-[60%] rounded-full bg-sky-200 blur-[80px]" />
+              <div className="absolute -bottom-[20%] -right-[20%] w-[60%] h-[60%] rounded-full bg-indigo-200 blur-[80px]" />
+              <div className="absolute top-[30%] right-[10%] w-[40%] h-[40%] rounded-full bg-emerald-100 blur-[80px]" />
             </div>
 
             <div className="flex items-start justify-between gap-4 px-8 py-6 md:py-8">

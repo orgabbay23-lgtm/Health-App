@@ -1,6 +1,6 @@
 import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Flame } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { TipPopover } from "../../../components/ui/tip-popover";
 import {
@@ -8,7 +8,7 @@ import {
   generateNutritionalTip,
   type TrackedNutrientKey,
 } from "../../../utils/nutritional-tips";
-import { formatNutritionValue, getNutrientProgressColor } from "../../../utils/nutrition-utils";
+import { formatNutritionValue } from "../../../utils/nutrition-utils";
 import type { UserProfile } from "../../../store";
 import { type DashboardPeriod } from "../../../utils/date-navigation";
 import { cn } from "../../../utils/utils";
@@ -32,8 +32,7 @@ export function PrimaryNutrientCard({
   const meta = NUTRIENT_META[nutrient];
   const percentage = target > 0 ? (current / target) * 100 : 0;
   const isNearGoal = percentage >= 90 && percentage <= 110;
-  const nutrientColors = getNutrientProgressColor(nutrient, current, target);
-  
+
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const safePercentage = Math.min(Math.max(percentage, 0), 100);
@@ -103,7 +102,17 @@ export function PrimaryNutrientCard({
         </div>
       )}
 
-      <Card className="border border-white/60 bg-white/40 backdrop-blur-xl shadow-soft-2xl rounded-[3rem]">
+      {/* Vivid colour halo behind the hero card */}
+      <div
+        className={cn(
+          "absolute -inset-3 -z-10 rounded-[3.5rem] blur-2xl opacity-70 transition-colors duration-700",
+          isOver
+            ? "bg-gradient-to-br from-rose-300/40 via-orange-200/30 to-amber-200/30"
+            : "bg-gradient-to-br from-sky-300/40 via-indigo-300/25 to-teal-300/35",
+        )}
+      />
+
+      <Card className="specular relative border border-white/60 bg-gradient-to-b from-white/70 to-white/45 backdrop-blur-xl shadow-premium-lg rounded-[3rem]">
         <CardContent className="flex flex-col items-center gap-8 p-10">
           <div className="relative isolate">
             <div className="relative flex h-56 w-56 items-center justify-center">
@@ -111,21 +120,39 @@ export function PrimaryNutrientCard({
                 <CatPeeker caloriePercentage={Math.round(percentage)} />
               )}
               <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="caloriesRing" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0ea5e9" />
+                  <stop offset="50%" stopColor="#6366f1" />
+                  <stop offset="100%" stopColor="#14b8a6" />
+                </linearGradient>
+                <linearGradient id="caloriesRingOver" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fb7185" />
+                  <stop offset="100%" stopColor="#f43f5e" />
+                </linearGradient>
+                <filter id="caloriesRingGlow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="2.4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
               <circle
                 cx="50"
                 cy="50"
                 r={radius}
                 stroke="currentColor"
-                strokeWidth="7"
+                strokeWidth="8.5"
                 fill="transparent"
-                className="text-slate-200/40"
+                className="text-slate-200/50"
               />
               <motion.circle
                 cx="50"
                 cy="50"
                 r={radius}
-                stroke={nutrientColors.stroke}
-                strokeWidth="7"
+                stroke={isOver ? "url(#caloriesRingOver)" : "url(#caloriesRing)"}
+                strokeWidth="8.5"
                 fill="transparent"
                 strokeDasharray={circumference}
                 initial={{ strokeDashoffset: circumference }}
@@ -136,8 +163,8 @@ export function PrimaryNutrientCard({
                   damping: 20
                 }}
                 strokeLinecap="round"
+                filter="url(#caloriesRingGlow)"
                 style={{ transform: "translateZ(0)" }}
-                className={cn("drop-shadow-sm transition-colors duration-500")}
               />
             </svg>
             <div className="absolute flex flex-col items-center justify-center text-center">
@@ -147,12 +174,16 @@ export function PrimaryNutrientCard({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ type: "spring", stiffness: 100, damping: 15 }}
-                  className="text-5xl font-black tracking-tighter text-slate-950"
+                  className={cn(
+                    "text-6xl font-black tracking-tighter bg-gradient-to-br bg-clip-text text-transparent drop-shadow-sm",
+                    isOver ? "from-rose-500 to-rose-600" : "from-sky-500 via-indigo-500 to-teal-500",
+                  )}
                 >
                   {displayCalories}
                 </motion.span>
               </AnimatePresence>
-              <span className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400 mt-1">
+              <span className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500 mt-1 flex items-center gap-1.5">
+                <Flame size={14} className="text-orange-400" fill="currentColor" />
                 קלוריות
               </span>
               <AnimatePresence mode="wait">
@@ -173,7 +204,7 @@ export function PrimaryNutrientCard({
           </div>
           </div>
 
-          <div className="flex w-full items-center justify-between bg-slate-50/50 backdrop-blur-sm rounded-3xl p-5 border border-white/50">
+          <div className="flex w-full items-center justify-between bg-gradient-to-br from-sky-50/80 via-white/60 to-indigo-50/60 backdrop-blur-sm rounded-3xl p-5 border border-white/60 shadow-inner-top">
             <div className="flex flex-col">
               <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">{periodLabel}</span>
               <div className="flex items-baseline gap-1">

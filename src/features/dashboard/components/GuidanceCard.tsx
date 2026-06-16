@@ -18,9 +18,9 @@ export function GuidanceCard({ flags }: GuidanceCardProps) {
       className="space-y-3"
     >
       {flags.map((flag) => (
-        <Card key={flag} className="border-none bg-blue-50/60 backdrop-blur-sm shadow-soft-sm rounded-3xl overflow-hidden">
+        <Card key={flag} className="specular bg-gradient-to-br from-sky-50/90 to-indigo-50/70 backdrop-blur-sm shadow-premium rounded-3xl overflow-hidden border border-sky-100/80">
           <CardContent className="flex items-center gap-4 p-5">
-            <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-white/80 text-blue-500 shadow-sm">
+            <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-500 text-white shadow-lg shadow-sky-200/60">
               <Sparkles size={18} />
             </div>
             <p className="text-sm font-bold text-blue-900/80 leading-relaxed">

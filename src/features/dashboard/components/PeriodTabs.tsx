@@ -32,8 +32,8 @@ export function PeriodTabs({ value, onChange }: PeriodTabsProps) {
             className={cn(
               "inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all duration-300",
               active
-                ? "bg-slate-950 text-white shadow-lg scale-105"
-                : "text-slate-500 hover:bg-white/50 hover:text-slate-900",
+                ? "bg-gradient-to-br from-slate-800 via-slate-950 to-indigo-950 text-white shadow-[0_8px_20px_-6px_rgba(30,27,75,0.5)] scale-105"
+                : "text-slate-500 hover:bg-white/60 hover:text-slate-900",
             )}
             onClick={() => onChange(item.value)}
           >

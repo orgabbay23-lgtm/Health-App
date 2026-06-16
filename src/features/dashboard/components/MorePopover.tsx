@@ -40,7 +40,7 @@ export function MorePopover({ isOpen, onClose, onNavigate }: MorePopoverProps) {
             exit={{ opacity: 0, scale: 0.8, y: 20, x: -20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             style={{ transformOrigin: "bottom left" }}
-            className="absolute bottom-24 left-6 w-64 bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-white/50 p-3 pointer-events-auto overflow-hidden"
+            className="specular absolute bottom-24 left-6 w-64 bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-premium-lg border border-white/70 p-3 pointer-events-auto overflow-hidden"
           >
             <div className="flex flex-col gap-1" dir="rtl">
               <button
@@ -50,7 +50,7 @@ export function MorePopover({ isOpen, onClose, onNavigate }: MorePopoverProps) {
                 }}
                 className="flex items-center gap-3 p-4 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors text-right w-full group"
               >
-                <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-lg group-active:scale-90 transition-transform">
+                <div className="w-10 h-10 bg-gradient-to-br from-slate-800 to-indigo-900 text-white rounded-xl flex items-center justify-center shadow-lg group-active:scale-90 transition-transform">
                   <UserRound size={20} />
                 </div>
                 <div className="flex-1">
@@ -68,7 +68,7 @@ export function MorePopover({ isOpen, onClose, onNavigate }: MorePopoverProps) {
                 }}
                 className="flex items-center gap-3 p-4 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors text-right w-full group"
               >
-                <div className="w-10 h-10 bg-indigo-500 text-white rounded-xl flex items-center justify-center shadow-lg group-active:scale-90 transition-transform">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200/50 group-active:scale-90 transition-transform">
                   <LineChart size={20} />
                 </div>
                 <div className="flex-1">

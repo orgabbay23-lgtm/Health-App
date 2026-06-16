@@ -384,8 +384,8 @@ export function EditLoggedMealModal({ isOpen, onClose, meal, dayKey }: EditLogge
                 className="w-full flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-br from-indigo-50/80 to-blue-50/50 border border-indigo-200/40 hover:border-indigo-300/60 hover:shadow-md active:scale-[0.98] transition-all text-right"
                 onClick={() => setMode("ingredients")}
               >
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center shrink-0">
-                  <List size={22} className="text-indigo-600" />
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-200/50">
+                  <List size={22} className="text-white" />
                 </div>
                 <div className="flex-1 space-y-1">
                   <h3 className="text-[15px] font-black text-slate-900">ערוך מרכיבים ספציפיים</h3>
@@ -399,8 +399,8 @@ export function EditLoggedMealModal({ isOpen, onClose, meal, dayKey }: EditLogge
                 className="w-full flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-br from-violet-50/80 to-purple-50/50 border border-violet-200/40 hover:border-violet-300/60 hover:shadow-md active:scale-[0.98] transition-all text-right"
                 onClick={() => setMode("full")}
               >
-                <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
-                  <Pencil size={22} className="text-violet-600" />
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shrink-0 shadow-lg shadow-violet-200/50">
+                  <Pencil size={22} className="text-white" />
                 </div>
                 <div className="flex-1 space-y-1">
                   <h3 className="text-[15px] font-black text-slate-900">ערוך את כל הארוחה</h3>

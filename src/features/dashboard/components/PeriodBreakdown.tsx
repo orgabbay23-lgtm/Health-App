@@ -75,14 +75,14 @@ function PeriodBreakdownItem({
   const [isOpen, setIsOpen] = useState(Boolean(day.log));
 
   return (
-    <Card className="rounded-[24px] border-white/60 bg-white/88 shadow-[0_14px_32px_rgba(15,23,42,0.05)]">
+    <Card className="specular rounded-[24px] border border-white/70 bg-white/85 backdrop-blur-md shadow-premium">
       <button
         type="button"
         className="flex w-full items-center justify-between gap-4 px-5 py-4 text-right"
         onClick={() => setIsOpen((current) => !current)}
       >
         <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-sky-50 p-2 text-sky-600">
+          <div className="rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-500 p-2.5 text-white shadow-lg shadow-sky-200/50">
             <CalendarDays size={18} />
           </div>
           <div className="space-y-1">

@@ -26,6 +26,11 @@ export default {
         'soft-lg': '0 10px 24px rgba(0,0,0,0.06)',
         'soft-xl': '0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02)',
         'soft-2xl': '0 25px 50px -12px rgba(0,0,0,0.08)',
+        // Premium layered depth — a tight contact shadow + a soft ambient cast.
+        'premium': '0 1px 2px rgba(15,23,42,0.04), 0 8px 24px -6px rgba(15,23,42,0.10), 0 24px 48px -12px rgba(15,23,42,0.10)',
+        'premium-lg': '0 2px 4px rgba(15,23,42,0.05), 0 16px 40px -8px rgba(15,23,42,0.14), 0 40px 80px -16px rgba(15,23,42,0.12)',
+        'glow-primary': '0 18px 44px -12px rgba(15,23,42,0.55)',
+        'inner-top': 'inset 0 1px 0 0 rgba(255,255,255,0.65)',
       },
       colors: {
         border: "hsl(var(--border))",
@@ -80,10 +85,20 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "gradient-x": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        "float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-7px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "gradient-x": "gradient-x 6s ease infinite",
+        "float": "float 6s ease-in-out infinite",
       },
     },
   },

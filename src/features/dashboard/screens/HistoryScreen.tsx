@@ -85,19 +85,19 @@ export function HistoryScreen({
       </motion.div>
 
       <motion.div variants={staggerItem}>
-        <Card className="border-none bg-white/40 backdrop-blur-md shadow-soft-lg rounded-[2rem]">
+        <Card className="specular border border-white/60 bg-gradient-to-b from-white/55 to-white/35 backdrop-blur-md shadow-premium rounded-[2rem]">
           <CardContent className="space-y-4 p-6">
             <div className="flex flex-wrap gap-2 text-sm">
-              <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
+              <div className="rounded-full bg-sky-100/70 px-4 py-2 font-black text-sky-700 uppercase tracking-tighter">
                 {periodData.loggedDays} ימים
               </div>
-              <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
+              <div className="rounded-full bg-indigo-100/70 px-4 py-2 font-black text-indigo-700 uppercase tracking-tighter">
                 {Math.round(periodData.aggregations.calories)} קק"ל
               </div>
-              <div className="rounded-full bg-white/50 px-4 py-2 font-bold text-slate-500 uppercase tracking-tighter">
+              <div className="rounded-full bg-orange-100/70 px-4 py-2 font-black text-orange-700 uppercase tracking-tighter">
                 {Math.round(periodTargets.protein)}ג חלבון
               </div>
-              <div className="rounded-full bg-slate-900 px-4 py-2 font-bold text-white uppercase tracking-tighter ms-auto">
+              <div className="rounded-full bg-gradient-to-br from-slate-800 to-indigo-900 px-4 py-2 font-bold text-white uppercase tracking-tighter ms-auto shadow-md">
                 <span dir="ltr">{formatSelectedDate(selectedDayKey)}</span>
               </div>
             </div>
@@ -118,9 +118,10 @@ export function HistoryScreen({
           onSelect={onSelectDayKey}
         />
 
-        <Card className="border-none bg-white/60 backdrop-blur-sm shadow-soft-xl rounded-[2.5rem]">
+        <Card className="specular border border-white/60 bg-white/55 backdrop-blur-sm shadow-premium rounded-[2.5rem]">
           <CardContent className="space-y-6 p-6 md:p-8">
-            <h3 className="text-xl font-black text-slate-900 tracking-tight">
+            <h3 className="flex items-center gap-2.5 text-xl font-black text-slate-900 tracking-tight">
+              <span className="h-5 w-1.5 rounded-full bg-gradient-to-b from-rose-400 to-orange-400" />
               {periodMode === "daily" ? "ארוחות ביום שנבחר" : "פירוט התקופה"}
             </h3>
 

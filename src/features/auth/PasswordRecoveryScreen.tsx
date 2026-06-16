@@ -55,10 +55,12 @@ export function PasswordRecoveryScreen() {
         <div className="blob-animate blob-2" />
         <div className="blob-animate blob-3" />
         <div className="blob-animate blob-4" />
+        <div className="app-luminance" />
+        <div className="app-grain" />
       </div>
 
-      <div className="relative z-10 w-full max-w-md rounded-[2.5rem] bg-white/60 backdrop-blur-xl p-8 shadow-soft-2xl border border-white/60">
-        <h1 className="mb-6 text-center text-3xl font-black text-slate-900 tracking-tight">
+      <div className="specular relative z-10 w-full max-w-md rounded-[2.5rem] bg-gradient-to-b from-white/75 to-white/55 backdrop-blur-xl p-8 shadow-premium-lg border border-white/70">
+        <h1 className="text-aurora mb-6 text-center text-3xl font-black tracking-tight">
           קביעת סיסמה חדשה
         </h1>
         

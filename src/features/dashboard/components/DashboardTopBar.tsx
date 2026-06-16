@@ -19,9 +19,9 @@ export function DashboardTopBar({
         className="relative group"
       >
         {/* Glassmorphism Background Glow */}
-        <div className="absolute -inset-1 bg-gradient-to-r from-sky-400/20 to-emerald-400/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-        
-        <div className="relative flex items-center bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_32px_rgba(15,23,42,0.08)] rounded-full p-1.5 transition-all hover:shadow-[0_12px_48px_rgba(15,23,42,0.12)]">
+        <div className="absolute -inset-1 bg-gradient-to-r from-sky-400/25 via-indigo-400/20 to-emerald-400/25 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+
+        <div className="specular relative flex items-center bg-white/70 backdrop-blur-xl border border-white/70 shadow-premium rounded-full p-1.5 transition-all hover:shadow-premium-lg">
           <PeriodTabs value={periodMode} onChange={onPeriodChange} />
         </div>
       </motion.div>
