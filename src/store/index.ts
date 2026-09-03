@@ -364,7 +364,7 @@ interface AppState {
   clearUserData: () => void;
   setUserProfile: (profile: NutritionProfileInput) => Promise<void>;
   updateProfileDetails: (details: Partial<NutritionProfileInput>) => Promise<void>;
-  addMealLog: (dayKey: string, meal: MealItem) => Promise<NutritionSafetyAlert[]>;
+  addMealLog: (dayKey: string, meal: MealItem, signal?: AbortSignal) => Promise<NutritionSafetyAlert[]>;
   updateMealLog: (dayKey: string, mealId: string, updatedMeal: MealItem) => Promise<NutritionSafetyAlert[]>;
   removeMealLog: (dayKey: string, mealId: string) => Promise<void>;
   saveMealAsFavorite: (meal: MealItem) => Promise<boolean>;
@@ -689,7 +689,7 @@ export const useAppStore = create<AppState>()(
     }
   },
 
-  addMealLog: async (dayKey, meal) => {
+  addMealLog: async (dayKey, meal, signal) => {
     const { dailyLogs, profile, userId } = get();
     if (!userId) return [];
 
@@ -705,14 +705,20 @@ export const useAppStore = create<AppState>()(
     const logToSave = cleanedLogs[dayKey];
     let error = null;
     if (logToSave) {
-      const res = await supabase.from('daily_logs').upsert({
-        user_id: userId,
-        date: dayKey,
-        meals: logToSave.meals,
-        aggregations: logToSave.aggregations,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id,date' });
-      error = res.error;
+      try {
+        const request = supabase.from('daily_logs').upsert({
+          user_id: userId,
+          date: dayKey,
+          meals: logToSave.meals,
+          aggregations: logToSave.aggregations,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id,date' });
+        if (signal) request.abortSignal(signal);
+        const res = await request;
+        error = res.error;
+      } catch (requestError) {
+        error = requestError;
+      }
     }
 
     if (error) {
@@ -722,7 +728,9 @@ export const useAppStore = create<AppState>()(
       throw new Error("שגיאה בשמירת הארוחה");
     }
 
-    await pruneDailyLogRows(userId, prunableLogKeys);
+    void pruneDailyLogRows(userId, prunableLogKeys).catch((pruneError) => {
+      console.error("Error pruning old meal logs", pruneError);
+    });
 
     return alerts;
   },

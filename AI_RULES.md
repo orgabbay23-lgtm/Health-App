@@ -12,8 +12,8 @@
 ## 2. Core Clinical & Business Logic (FIXED - DO NOT ALTER)
 * **3 AM Rollover:** Daily logs reset at 03:00 AM local time.
 * **Nutritional Math:** Clinical formulas (MSJ for BMR, specific UL targets) are immutable.
-* **AI Routing:** All models use `thinkingLevel: "high"`. Meal parsing and vision optimistically attempt `gemini-3.5-flash`. If ANY error occurs, they seamlessly fallback to `gemini-3.1-flash-lite`. Insights exclusively use the Lite model. Database quota counting is REMOVED.
-* **Timeframe Target Accumulation:** Weekly and Monthly periods use a rolling window backward from yesterday (excluding the current day). Weekly = Last 7 days, Monthly = Last 30 days. Targets ONLY accumulate for "Active Days". An active day is defined as any past day within the rolling timeframe that contains at least one logged meal (`dailyLogs[dayKey]?.meals?.length > 0`). Empty past days are completely excluded from both the averages and the target multiplier to prevent artificial target inflation. This applies to calories, macros, all 24 micronutrients, progress bar percentages, and AI insight generation.
+* **AI Routing:** Every Gemini feature uses `gemini-3.5-flash-lite` with its default thinking configuration. No explicit `thinkingConfig` is sent, and no second model or duplicate fallback attempt is used. Database quota counting is REMOVED.
+* **Timeframe Target Accumulation:** Weekly and Monthly periods use a rolling window backward from yesterday (excluding the current day). Weekly = Last 7 days, Monthly = Last 30 days. Targets ONLY accumulate for "Active Days". An active day is defined as any past day within the rolling timeframe that contains at least one logged meal (`dailyLogs[dayKey]?.meals?.length > 0`). Empty past days are completely excluded from both the averages and the target multiplier to prevent artificial target inflation. This applies to calories, macros, all 26 micronutrients, progress bar percentages, and AI insight generation.
 
 ## 3. UI/UX Architecture ($1B Startup Aesthetic)
 * **Data Visualization:** Progress rings and macro cards display dynamic, animated percentage indicators. Percentages exceeding 100% gracefully transition to warning colors to alert the user without breaking the aesthetic.
@@ -56,7 +56,7 @@ visibilitychange listeners to trigger global loading states or full-page refresh
 - ג… UI/UX Overhaul: Premium Glassmorphism & Native feel established.
 - ג… Supabase Vault & BYOK: Fully operational and secure.
 - ג… UI Color Infusion: Nutrient color-coding and dynamic visual feedback complete.
-- ג… Clinical data expansion ג€” 24 micronutrients (including Omega 3 EPA+DHA), 3-tier hierarchy, accessibility font scale, updated Gemini prompt.
+- ג… Clinical data expansion ג€” 26 micronutrients (including Omega 3 EPA+DHA), 3-tier hierarchy, accessibility font scale, updated Gemini prompt.
 - ׳ ג€ג€ **CURRENT PHASE:** Contextual AI Insights & UX Refinement ׳’ג‚¬ג€ Smart nutritional recommendations and seamless feedback loops (auto-navigation + scroll).
 ## 6. Native PWA & Mobile UX
 * **Theme Sync:** `index.html` must include dual media-query meta tags for dynamic Dark/Light mode auto-switching on iOS:
@@ -265,7 +265,7 @@ fetchUserData to be silent by default if profile data already exists.
 ## 10. Gemini Prompt & 24 Micronutrient Schema (Updated March 2026)
 
 * **System Instruction:**
-    * `gemini.ts` sends an explicit system prompt listing all 24 micronutrient keys by name and their expected units.
+    * `gemini.ts` sends an explicit system prompt listing all 26 micronutrient keys by name and their expected units.
     * The prompt demands USDA/clinical-grade accuracy and instructs Gemini to return 0 for absent nutrients (never omit a key).
 * **Schema & Validation:**
     * `mealResponseSchema` (Google Generative AI Schema) and `mealResponseParser` (Zod) both require all 26 fields in `micronutrients` (fiber, sodium + 24 clinical micronutrients).
@@ -335,7 +335,7 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 
 * **Architecture:**
     * `generateNutritionalInsight(timeframe, nutritionData, userProfile)` in `gemini.ts` sends aggregated nutrition percentages to Gemini with a dedicated Hebrew clinical nutritionist system prompt.
-    * Uses `gemini-3.1-flash-lite` with the established 429ג†’`gemini-2.5-flash` fallback mechanism.     
+    * Uses `gemini-3.5-flash-lite` with its default thinking configuration.
     * The system prompt enforces: Hebrew language, warm/professional tone, bullet-point format, "׳ ׳§׳•׳“׳•׳× ׳׳©׳™׳׳•׳¨" (strengths) + "׳ ׳§׳•׳“׳•׳× ׳׳©׳™׳₪׳•׳¨" (improvements with 2-3 specific Israeli food suggestions).
 
 * **State Management (Zustand):**
@@ -355,7 +355,7 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 * **Integration:**
     * **Time-Awareness:** Daily insights (	imeframe === 'day') inject the current Israel time into the prompt so the AI accurately judges caloric/nutrient progress relative to the time of day.
     * Placed in `HomeScreen.tsx` between the micronutrient accordion and the meals/period-breakdown card, visible across all period modes (daily/weekly/monthly).
-    * Calculates percentage-based nutrition data (current vs. targets for calories, macros, and all 24 micronutrients) before sending to Gemini.
+    * Calculates percentage-based nutrition data (current vs. targets for calories, macros, and all 26 micronutrients) before sending to Gemini.
 
 * **Rules:**
     * Insight keys must be deterministic per viewed period so re-generating overwrites the previous insight for that exact period.
@@ -382,7 +382,7 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 * **Pipeline Overview:**
     * Users can photograph meals via a camera button in the AI (Smart) tab of `MealLogModal`.
     * Images are converted to Base64 via `fileToBase64()` in `gemini.ts` (using `FileReader.readAsDataURL`, stripping the data URL prefix).
-    * The Base64 image + MIME type are sent to `analyzeMealImage()` which calls Gemini's multimodal API (`gemini-3.1-flash-lite` with `gemini-2.5-flash` fallback on 429) with an `inlineData` part and a strict Hebrew-only prompt.
+    * The Base64 image + MIME type are sent to `analyzeMealImage()` which calls Gemini's multimodal API (`gemini-3.5-flash-lite` with default thinking) with an `inlineData` part and a strict Hebrew-only prompt.
     * Gemini returns a raw comma-separated Hebrew string describing identified foods with estimated quantities.
     * The user reviews and edits this string in an intermediary `ImageReviewPhase` (editable textarea) within the modal.
     * On confirmation ("׳”׳׳©׳ ׳׳—׳™׳©׳•׳‘"), the text is fed into the existing `parseMealDescription()` text-calculation pipeline ג€” identical to manual text entry.
@@ -391,37 +391,35 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
     * `gemini.ts`: Exports `fileToBase64(file: File) => Promise<string>` and `analyzeMealImage(base64Image, mimeType) => Promise<string>`.
     * `MealLogModal.tsx`: Two hidden file inputs — (1) Camera: `<input type="file" accept="image/*" capture="environment" />` and (2) Gallery: `<input type="file" accept="image/*" />` (NO `capture` attribute). Both are triggered by adjacent circular Glassmorphism icon buttons (Camera icon + Image icon). Both share the same `isAnalyzingImage` loading state and `handleImageCapture` processing pipeline. Three visual states: normal form, `isAnalyzingImage` shimmer, and `imageReviewText` edit phase.
     * The vision prompt is intentionally separate from `SYSTEM_INSTRUCTION` ג€” it produces raw Hebrew text, not structured JSON.
+    * The vision prompt enforces a strict quantity contract: every comma-separated item must include one numeric amount and an explicit unit. When no scale is visible, the model must return one best estimate using plate/bowl coverage, item count, relative proportions, and standard serving-size assumptions; ranges or quantity-free food names are forbidden.
+    * Mixed dishes retain their recognizable identity while calorie-significant visible components are quantified separately. For example, creamy salmon pasta should identify separate estimated quantities for pasta, salmon, and cream sauce.
 
 * **Error Handling:**
     * API key errors (`API_KEY_INVALID`, `MISSING_API_KEY`) trigger the BYOK modal, consistent with the text flow.
-    * 429 quota errors fall back to `gemini-2.5-flash` per the standard fallback mechanism.
+    * Any model error returns directly to the preserved confirmation step; the same model is not called twice.
 
 * **Rule:** The Vision pipeline MUST remain a two-step process: (1) image ג†’ raw text, (2) raw text ג†’ structured JSON via `parseMealDescription`. Never bypass the user review step or send images directly to the structured JSON endpoint.
 
 ## 20. UX & Routing
 * **Auto-Navigation & Feedback:** Upon successfully logging any meal, the app MUST automatically navigate the user back to the Home tab and smoothly scroll to the top to provide immediate visual feedback on their daily progress.
 
-## 21. AI Architecture — Optimistic Execution with Fallback (Updated March 2026)
+## 21. AI Architecture — Single Flash Lite Model (Updated September 2026)
 
-* **Global Thinking Config:**
-    * `GLOBAL_THINKING_CONFIG = { thinkingConfig: { thinkingLevel: "high" } }` is applied to ALL models (both PRIMARY and FALLBACK).
-* **Model Routing (Simplified):**
-    * `PRIMARY_MODEL` = `gemini-3.5-flash` — Optimistic first attempt for meal parsing and vision.
-    * `FALLBACK_MODEL` = `gemini-3.1-flash-lite` — Automatic fallback on ANY primary error, and exclusive model for Insights.
-    * **Database quota counting is REMOVED.** No `getDailyAiUsageCount`, `incrementDailyAiUsage`, or `DAILY_AI_LIMIT`.
-* **Meal Pipelines (Optimistic — `parseMealDescription`, `analyzeMealImage`):**
-    1. ALWAYS attempt `PRIMARY_MODEL` first with `GLOBAL_THINKING_CONFIG`.
-    2. If ANY error occurs (429, 500, timeout, etc.), log a warning and IMMEDIATELY execute with `FALLBACK_MODEL` (also with `GLOBAL_THINKING_CONFIG`).
-    3. Auth errors (`API_KEY_INVALID`, `MISSING_API_KEY`) are re-thrown immediately without fallback.
-* **Insight Pipelines (Exclusive FALLBACK — `generateNutritionalInsight`, `answerInsightFollowUp`):**
-    * Hardcoded to ONLY use `FALLBACK_MODEL` with `GLOBAL_THINKING_CONFIG`.
-    * No primary/fallback routing for insights.
-* **Thinking Response Handling:** `analyzeMealImage()` explicitly parses response candidates to extract only the final `.text` answer, skipping any `thought`-flagged parts that the thinking model may return. Other pipelines use `result.response.text()` which auto-extracts the final answer.
+* **Single Model:** `GEMINI_MODEL = "gemini-3.5-flash-lite"` is used by meal parsing, vision, ingredient editing, fast-calorie lookup, insights, supplements, and follow-up answers.
+* **Default Thinking:** No AI request includes an explicit `thinkingConfig`; the model's default configuration is always used.
+* **Single Attempt:** Meal and vision pipelines make one model request. A model error returns to the preserved UI state instead of retrying the same model under a fallback alias.
+* **Authentication Errors:** `API_KEY_INVALID` and `MISSING_API_KEY` continue to trigger the existing BYOK flow.
+* **Database quota counting is REMOVED.** No `getDailyAiUsageCount`, `incrementDailyAiUsage`, or `DAILY_AI_LIMIT`.
+* **Vision Response Handling:** `analyzeMealImage()` explicitly parses response candidates to extract only the final `.text` answer, skipping any `thought`-flagged parts if present. Other pipelines use `result.response.text()`.
+* **Structured Meal Calculation Contract:** `SYSTEM_INSTRUCTION` must preserve user-supplied quantities exactly and estimate only missing quantities. Every returned ingredient name must contain a numeric amount and unit; ready-to-eat edible weight is the default unless the user explicitly states another condition. Explicit sauces, dressings, cream, oil, and calorie-relevant preparation methods must be represented in the ingredient list.
+* **Calculation Consistency:** Root-level `ingredients` is required by both the Gemini response schema and Zod validation. Total calories must equal the rounded sum of ingredient calories, and total protein must equal the rounded sum of ingredient protein. Macro calories must pass a plausibility check using 4/4/9 kcal per gram with reasonable food-label variance.
+* **Micronutrient Completeness:** The structured meal response contains 26 micronutrient keys, not 24. All keys are mandatory and use the units declared in `mealResponseSchema`; `omega3` means EPA + DHA only.
+* **Estimation Honesty:** Nutrition values are evidence-based estimates unless an exact product label is supplied. The model must not fabricate label-level precision for branded foods it cannot identify confidently.
 * **Dual Camera/Gallery Input:** `MealLogModal.tsx` provides two adjacent circular Glassmorphism icon buttons:
     1. **Camera** (Lucide `Camera` icon): Triggers `<input capture="environment">` — opens device camera directly.
     2. **Gallery** (Lucide `Image` icon): Triggers `<input>` WITHOUT `capture` — opens the photo picker/gallery.
     * Both inputs share the same `handleImageCapture` handler and `isAnalyzingImage` loading state.
-* **Rule:** Any future meal-logging AI pipeline MUST use the optimistic primary→fallback pattern. Any future insight/analytics AI pipeline MUST use `FALLBACK_MODEL` exclusively. All AI pipelines require the API Cost Protection confirmation gate (Section 18).
+* **Rule:** Any future AI pipeline MUST use `GEMINI_MODEL` without an explicit thinking configuration or a duplicate same-model fallback. All AI pipelines require the API Cost Protection confirmation gate (Section 18).
 
 ## 22. Clinical 3-Tier Nutrient Progress Color Logic (March 2026)
 
@@ -554,6 +552,16 @@ pm run build\ or \	sc\) to verify changes before concluding a task.
         2. **Dashboard Layout:** Updated \Dashboard.tsx\ with \pb-32 pb-safe-bottom\ and removed redundant desktop-only navigation.
         3. **Build Fix (TS6133):** Purged unused imports (\Plus\, \Button\, \cn\) and types (\DashboardScreen\) from \Dashboard.tsx\ to satisfy strict production build rules.
     * **Standard:** Always ensure a clean production build by removing unused imports/variables. Maintain the floating navigation standard with proper bottom padding on all scrollable views.
+
+## 28b. Gemini 3.5 Flash Lite & Lossless Retry UX (September 2026)
+
+* **Superseding Model Rule:** This section supersedes older model names and thinking settings retained in historical sections. Every AI path uses only `gemini-3.5-flash-lite` with no explicit thinking configuration.
+* **No Fallback Model:** Each operation makes one model request. If it fails, return the error to the UI; do not repeat the request under another model alias.
+* **Lossless Calculation Failure:** `ConfirmMealModal` must await `processMealSubmission`. It may close only after a successful result. For every failure type—including model, validation, Vault, network, and database errors—the confirmation step remains available with the exact user-edited meal text and an enabled retry action once loading ends.
+* **Duplicate-Submission Guard:** While calculation is running, confirmation and dismissal controls are disabled and display a loading state.
+* **Calculation Animation:** While `ConfirmMealModal` awaits the calculation, it must render the existing `CatLoadingAnimation`. On failure, the animation transitions back to the preserved confirmation state; on success, the modal closes normally.
+* **Bounded Requests:** Gemini calls used by meal parsing, vision, ingredient edits, and the fast-calorie calculator have a 15-second per-request timeout; Vault API-key retrieval has an 8-second timeout. `ConfirmMealModal` also enforces a 45-second end-to-end deadline with `AbortController`. A timeout must cancel the active client request, stop the cat animation, show a retry message, and restore the exact confirmation state.
+* **Abortable Persistence:** The meal-log Supabase upsert accepts the same abort signal and rolls back its optimistic state if aborted or rejected. Retention pruning runs as non-blocking cleanup and must never keep the calorie-calculation UI open.
 
 ## 29. Architectural Standards — Lessons from Weight Tracking (March 2026)
 

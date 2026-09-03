@@ -5,12 +5,17 @@ import { supabase } from "../lib/supabase";
 import type { FastCalorieItem } from "../data/fast-calorie-database";
 
 // ── Model Routing ───────────────────────────────────────────────────
-// PRIMARY: Optimistic first attempt for meal parsing & vision
-const PRIMARY_MODEL = "gemini-3.5-flash";
-// FALLBACK: Lite — used on any PRIMARY error, and exclusively for Insights
-const FALLBACK_MODEL = "gemini-3.1-flash-lite";
-// SECONDARY_FALLBACK: Used if both PRIMARY and FALLBACK fail
-const SECONDARY_FALLBACK_MODEL = "gemini-2.5-flash";
+// Single-model experiment: all AI paths use Flash Lite with default thinking.
+const GEMINI_MODEL = "gemini-3.5-flash-lite";
+
+// Bound all AI requests so a stalled connection can never trap the UI in loading.
+const GEMINI_REQUEST_TIMEOUT_MS = 15_000;
+const VAULT_REQUEST_TIMEOUT_MS = 8_000;
+
+const getGeminiRequestOptions = (signal?: AbortSignal) => ({
+  timeout: GEMINI_REQUEST_TIMEOUT_MS,
+  ...(signal ? { signal } : {}),
+});
 
 export interface GeminiUserProfile {
   name: string;
@@ -127,14 +132,14 @@ const mealResponseSchema: Schema = {
       ],
     },
   },
-  required: ["meal_name", "calories", "macronutrients", "micronutrients"],
+  required: ["meal_name", "ingredients", "calories", "macronutrients", "micronutrients"],
 };
 
 const mealResponseParser = z.object({
   meal_name: z.string().min(1),
   ingredients: z.array(
     z.object({
-      name: z.string(),
+      name: z.string().trim().min(1),
       calories: z.number().finite().nonnegative(),
       protein: z.number().finite().nonnegative(),
     })
@@ -175,37 +180,70 @@ const mealResponseParser = z.object({
   }),
 });
 
-const SYSTEM_INSTRUCTION = `You are an expert clinical nutritionist and structured data extractor. Analyze Hebrew meal descriptions, estimate reasonable Israeli portion sizes when omitted, and return only valid JSON matching the requested schema. Do not return markdown, explanations, or extra keys. All returned text fields (meal_name, ingredient names) MUST be in Hebrew.
+const SYSTEM_INSTRUCTION = `You are an expert clinical nutritionist and structured data extractor. Analyze Hebrew meal descriptions and return one valid JSON object matching the provided schema. Return no markdown, explanations, comments, or extra keys. All text values, including meal_name and ingredient names, MUST be in Hebrew.
 
-CRITICAL — You MUST return accurate values for ALL 24 micronutrients in the "micronutrients" object:
+QUANTITY AND INTERPRETATION CONTRACT:
+1. Preserve every quantity and unit explicitly supplied by the user. Never silently replace, reduce, or increase a stated amount. You may convert it internally for nutritional calculations, but keep the user's original quantity and unit in the ingredient name.
+2. Estimate only information that is missing. When a food has no quantity, choose one reasonable Israeli serving estimate, include that numeric quantity and unit in the ingredient name, and calculate all nutrition from that assumption. Never use a range or a vague quantity such as "מנה", "קצת", or "לפי הטעם".
+3. Every ingredient name MUST include a numeric quantity and an explicit unit, for example "150 גרם חזה עוף" or "2 כפות טחינה". The ingredients array must contain at least one item and must include every calorie-relevant food mentioned by the user.
+4. Unless the user explicitly says raw, dry, frozen, bone-in, or unpeeled, interpret quantities as the edible, prepared, ready-to-eat portion. Exclude bones, shells, pits, packaging, and other inedible weight.
+5. Preserve calorie-relevant preparation details such as fried, baked, grilled, skin-on, full-fat, low-fat, drained, or sweetened.
+
+MIXED DISHES, SAUCES, AND COOKING FAT:
+1. Keep the recognizable meal name, but represent separately in ingredients every calorie-significant component that the user states or that the named preparation necessarily contains.
+2. Never omit an explicitly mentioned sauce, dressing, spread, cheese, cream, sugar, or oil. If its quantity is missing, estimate a typical amount and show that assumption in its ingredient name.
+3. For fried or sautéed food, include a reasonable estimate of absorbed cooking oil unless the user explicitly says no oil or provides the oil amount. Do not add invisible optional toppings or sides that are not stated or implied by the preparation.
+4. For a mixed dish such as pasta with salmon and cream sauce, return separate estimated ingredients for the pasta, salmon, and cream sauce so their calories are auditable.
+
+NUTRITION CALCULATION CONTRACT:
+1. Use best evidence-based estimates from standard food-composition references and typical Israeli products. Do not imply label-level precision when no product label was provided.
+2. If a brand and exact product are supplied and you confidently know its values, use them. Otherwise use a reasonable value for the closest matching product; never invent a supposedly exact branded value.
+3. Ingredient calories and protein must correspond to the quantity written in that ingredient's name.
+4. Total meal calories MUST equal the sum of ingredient calories after rounding. Total meal protein MUST equal the sum of ingredient protein after rounding.
+5. Total carbohydrates and fat must be calculated from the same ingredient assumptions. Perform a silent plausibility check that total calories are consistent with approximately 4 kcal/g protein, 4 kcal/g carbohydrate, and 9 kcal/g fat, allowing reasonable variance for fiber, alcohol, food-label conventions, and rounding.
+6. Use non-negative finite numbers. Round calories to practical whole numbers, macronutrients to at most one decimal place, and micronutrients to sensible clinically useful precision.
+
+MICRONUTRIENT CONTRACT — RETURN ALL 26 KEYS:
 fiber, sodium, potassium, magnesium, calcium, iron, vitaminA, vitaminC, vitaminD, vitaminE, vitaminB12, iodine, zinc, folicAcid, vitaminK, selenium, vitaminB6, vitaminB3, vitaminB1, vitaminB2, vitaminB5, biotin, copper, manganese, chromium, omega3.
 
-Units: fiber (g), sodium/potassium/magnesium/calcium (mg), iron (mg), vitaminA (µg RAE), vitaminC (mg), vitaminD (µg), vitaminE (mg α-tocopherol), vitaminB12 (µg), iodine (µg), zinc (mg), folicAcid (µg DFE), vitaminK (µg), selenium (µg), vitaminB6 (mg), vitaminB3 (mg NE), vitaminB1 (mg), vitaminB2 (mg), vitaminB5 (mg), biotin (µg), copper (mg), manganese (mg), chromium (µg), omega3 (mg).
+Required units: fiber (g); sodium, potassium, magnesium, calcium (mg); iron (mg); vitaminA (µg RAE); vitaminC (mg); vitaminD (µg); vitaminE (mg α-tocopherol); vitaminB12 (µg); iodine (µg); zinc (mg); folicAcid (µg DFE); vitaminK (µg); selenium (µg); vitaminB6 (mg); vitaminB3 (mg NE); vitaminB1 (mg); vitaminB2 (mg); vitaminB5 (mg); biotin (µg); copper (mg); manganese (mg); chromium (µg); omega3 (mg).
 
-For omega3, calculate the estimated total of EPA + DHA in milligrams (mg). Only count EPA and DHA forms (not ALA). Rich sources include fatty fish (salmon, sardines, mackerel), fish oil, and algae-based supplements.
+For omega3, estimate only EPA + DHA in milligrams; do not count ALA. Use 0 only when a nutrient is reasonably negligible for the entire meal, never merely because the value is uncertain. Never omit a micronutrient key.
 
-Use USDA/clinical-grade reference data. If a micronutrient is truly absent from the meal, return 0. Never omit a key.
-
-Handle common Israeli food slang, colloquialisms, typos, and commercial brand names (e.g., Osem, Tnuva, Strauss) intelligently to accurately fetch their specific nutritional values.`;
+Handle common Israeli food slang, colloquialisms, spelling mistakes, and commercial brand names such as Osem, Tnuva, and Strauss. Before returning the JSON, silently verify schema completeness, explicit ingredient quantities, arithmetic consistency, Hebrew text, and all 26 micronutrient keys.`;
 
 export type ParsedMealDescription = z.infer<typeof mealResponseParser>;
 
-const VISION_SYSTEM_INSTRUCTION = `You are a clinical nutritionist. Your goal is to identify food items in images and describe them in natural Hebrew, optimized for a calorie tracking diary. Think like a person logging their food: be concise, accurate, and use logical units.`;
+const VISION_SYSTEM_INSTRUCTION = `You are a clinical nutritionist and visual portion-size estimator. Identify every calorie-relevant food in the image and describe it in natural Hebrew for a calorie tracking diary. Every identified item MUST include one explicit numeric quantity and a logical unit. When exact measurement is impossible, infer one best estimate from visible scale cues and typical Israeli serving sizes. Never omit a quantity because of uncertainty.`;
 
 const VISION_PROMPT = `Analyze this image and list every food item as a simple, comma-separated Hebrew string. 
 
-Apply these universal principles:
-1. IDENTIFICATION: Identify the dish as a whole if it's a known composite meal (e.g., Sushi, Burger, Pizza, Shakshuka). Do not deconstruct complex meals into their raw base ingredients (like rice, flour, or water) unless they are distinct side dishes.
-2. QUANTIFICATION: Use the most logical Israeli unit for each item:
-   - Discrete pieces: Use 'יחידות' or 'פרוסות' (e.g., for sushi, nuggets, bread, fruit, pastries).
-   - Bulk/Grain-based sides: Use 'כפות' or 'כוסות' (e.g., for rice, pasta, salads, spreads).
-   - Solid Protein & Fried sides: Use 'גרם' (e.g., for meat, chicken, fish, fries) as weight is the only accurate way to measure these.
-3. NUTRITIONAL STATE: Only include details that affect calories (e.g., 'fried', 'roasted', 'with/without shell', 'with/without bone').
-4. NO FLUFF: Strictly avoid visual or sensory descriptions (e.g., 'fresh', 'round', 'tasty', 'red').
+MANDATORY QUANTITY CONTRACT:
+1. EVERY comma-separated food item MUST contain exactly one numeric amount and an explicit unit. Never return a food name by itself.
+2. If no reliable scale reference is visible, you MUST still choose one best estimate. Do not output a range, "unknown", or a vague size such as "מנה" or "קצת".
+3. Infer portion size from all available visual cues: plate or bowl coverage, container volume, food depth and thickness, utensil size, number of pieces, and the relative proportions between ingredients. If no scale cue exists, assume a standard dinner plate is about 26 cm wide or a standard bowl holds about 500 ml.
+4. Before answering, silently verify that every food item in the final string has both a number and a unit.
+
+Use the most logical Israeli unit:
+- Countable foods: 'יחידות' or 'פרוסות' (sushi, nuggets, bread, fruit, pastries).
+- Pasta, rice, grains, salads and other bulk foods: 'כוסות' or 'כפות'. Decimals such as '1.5 כוסות' are allowed.
+- Meat, chicken, fish, fries and other solid proteins or dense foods: 'גרם'.
+- Sauces, dressings, cream, oil and spreads: 'כפות', 'כפיות' or 'מ״ל'. These calorie-dense additions MUST be included when visible or clearly part of the named dish.
+
+IDENTIFICATION RULES:
+1. Keep the recognizable dish name, but separately quantify visible calorie-significant components when doing so improves calorie accuracy. Do not deconstruct foods into invisible raw ingredients such as flour or water.
+2. For a mixed pasta dish, quantify the pasta, visible protein, and sauce separately instead of returning only the dish name.
+3. Include only preparation details that affect calories, such as fried, roasted, skin-on, bone-in, or a cream-based sauce.
+4. Strictly avoid sensory or decorative descriptions such as fresh, round, tasty, or red.
 
 Output ONLY the Hebrew string. No conversational text or markdown.
 
-Example logic: If you see 24 pieces of sushi, identify it as '24 יחידות סושי מאקי' with its main filling, not as piles of rice and fish.`;
+Correct output examples:
+- Pasta dish: '2 כוסות פסטה רחבה, 100 גרם סלמון, 4 כפות רוטב שמנת'.
+- Sushi: '24 יחידות סושי מאקי במילוי סלמון ואבוקדו'.
+- Breakfast: '2 יחידות ביצים מטוגנות, 2 פרוסות לחם, 1 כף גבינה לבנה'.
+
+Incorrect output: 'פסטה רחבה עם סלמון ורוטב שמנת' — quantities are missing and this is forbidden.`;
 
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -221,22 +259,27 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
-// ── Meal Image Analysis (Optimistic Primary → Fallback) ─────────────
+// ── Meal Image Analysis ──────────────────────────────────────────────
 export async function analyzeMealImage(
   base64Image: string,
   mimeType: string,
+  signal?: AbortSignal,
 ): Promise<string> {
-  const finalKey = await getApiKey();
+  const finalKey = await getApiKey(signal);
 
-  const performRequest = async (modelName: string) => {
+  const performRequest = async () => {
     const genAI = new GoogleGenerativeAI(finalKey);
     const model = genAI.getGenerativeModel({
-      model: modelName,
+      model: GEMINI_MODEL,
       systemInstruction: VISION_SYSTEM_INSTRUCTION,
     });
-    const result = await model.generateContent([      { inlineData: { data: base64Image, mimeType } },
-      VISION_PROMPT,
-    ]);
+    const result = await model.generateContent(
+      [
+        { inlineData: { data: base64Image, mimeType } },
+        VISION_PROMPT,
+      ],
+      getGeminiRequestOptions(signal),
+    );
     // Extract only the final text answer, ignoring any "thoughts" parts
     const candidates = result.response.candidates;
     let text = "";
@@ -253,27 +296,11 @@ export async function analyzeMealImage(
     return text;
   };
 
-  // Optimistic: try PRIMARY first
   try {
-    return await performRequest(PRIMARY_MODEL);
-  } catch (primaryError: any) {
-    if (checkIsAuthError(primaryError)) throw new Error("API_KEY_INVALID");
-
-    // Any error → fallback to Lite
-    console.warn('[Gemini] Primary model failed on analyzeMealImage, falling back to Lite...', primaryError);
-    try {
-      return await performRequest(FALLBACK_MODEL);
-    } catch (fallbackError: any) {
-      if (checkIsAuthError(fallbackError)) throw new Error("API_KEY_INVALID");
-      
-      console.warn('[Gemini] Lite model failed on analyzeMealImage, falling back to Secondary Lite...', fallbackError);
-      try {
-        return await performRequest(SECONDARY_FALLBACK_MODEL);
-      } catch (secondFallbackError: any) {
-        if (checkIsAuthError(secondFallbackError)) throw new Error("API_KEY_INVALID");
-        throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
-      }
-    }
+    return await performRequest();
+  } catch (modelError: any) {
+    if (checkIsAuthError(modelError)) throw new Error("API_KEY_INVALID");
+    throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
   }
 }
 
@@ -281,8 +308,37 @@ export function clearCachedApiKey() {
   // No-op: Cache killed to guarantee fresh key on every request
 }
 
-export const getApiKey = async (): Promise<string> => {
-  const { data: vaultData, error: vaultError } = await supabase.rpc('get_user_api_key');
+export const getApiKey = async (signal?: AbortSignal): Promise<string> => {
+  const requestController = new AbortController();
+  const forwardAbort = () => requestController.abort();
+  const timeoutId = window.setTimeout(
+    () => requestController.abort(),
+    VAULT_REQUEST_TIMEOUT_MS,
+  );
+
+  if (signal?.aborted) {
+    requestController.abort();
+  } else {
+    signal?.addEventListener("abort", forwardAbort, { once: true });
+  }
+
+  let vaultData: unknown;
+  let vaultError: unknown;
+
+  try {
+    const request = supabase.rpc('get_user_api_key');
+    request.abortSignal(requestController.signal);
+    const response = await request;
+    vaultData = response.data;
+    vaultError = response.error;
+
+    if (requestController.signal.aborted) {
+      throw new Error(signal?.aborted ? "REQUEST_ABORTED" : "VAULT_TIMEOUT");
+    }
+  } finally {
+    window.clearTimeout(timeoutId);
+    signal?.removeEventListener("abort", forwardAbort);
+  }
 
   if (vaultError) {
     console.error("Vault retrieval error:", vaultError);
@@ -302,9 +358,9 @@ export const getApiKey = async (): Promise<string> => {
   return finalKey;
 };
 
-// ── Insight Functions (Exclusive FALLBACK_MODEL — no primary/fallback routing) ──
+// ── Insight Functions (single model, default thinking) ───────────────
 
-const INSIGHT_SYSTEM_INSTRUCTION = `You are a friendly, warm, and highly professional Israeli clinical nutritionist. Analyze the provided nutritional data (calories, macros, fiber, and all 24 micronutrients) for the given timeframe.
+const INSIGHT_SYSTEM_INSTRUCTION = `You are a friendly, warm, and highly professional Israeli clinical nutritionist. Analyze the provided nutritional data (calories, macros, fiber, and all 26 micronutrients) for the given timeframe.
 
 CRITICAL — Goal-Aware Evaluation:
 You will receive the user's profile including their caloric deficit goal (goalDeficit). A positive goalDeficit means the user is trying to LOSE WEIGHT.
@@ -353,7 +409,7 @@ ${JSON.stringify(nutritionData)}
   try {
     const genAI = new GoogleGenerativeAI(finalKey);
     const model = genAI.getGenerativeModel({
-      model: FALLBACK_MODEL,
+      model: GEMINI_MODEL,
       systemInstruction: INSIGHT_SYSTEM_INSTRUCTION,
     });
     const result = await model.generateContent(userPrompt);
@@ -400,7 +456,7 @@ export async function generateCustomAnswer(
   try {
     const genAI = new GoogleGenerativeAI(finalKey);
     const model = genAI.getGenerativeModel({
-      model: FALLBACK_MODEL,
+      model: GEMINI_MODEL,
       systemInstruction: CUSTOM_ANSWER_SYSTEM_INSTRUCTION,
     });
     const result = await model.generateContent(userPrompt);
@@ -452,7 +508,7 @@ export async function generateSupplementRecommendations(
   try {
     const genAI = new GoogleGenerativeAI(finalKey);
     const model = genAI.getGenerativeModel({
-      model: FALLBACK_MODEL,
+      model: GEMINI_MODEL,
       systemInstruction: SUPPLEMENT_SYSTEM_INSTRUCTION,
     });
     const result = await model.generateContent(userPrompt);
@@ -495,7 +551,7 @@ ${userQuestion}`;
   try {
     const genAI = new GoogleGenerativeAI(finalKey);
     const model = genAI.getGenerativeModel({
-      model: FALLBACK_MODEL,
+      model: GEMINI_MODEL,
       systemInstruction: FOLLOWUP_SYSTEM_INSTRUCTION,
     });
     const result = await model.generateContent(userPrompt);
@@ -508,28 +564,32 @@ ${userQuestion}`;
   }
 }
 
-// ── Meal Text Parsing (Optimistic Primary → Fallback) ───────────────
+// ── Meal Text Parsing ────────────────────────────────────────────────
 export async function parseMealDescription(
   description: string,
+  signal?: AbortSignal,
 ): Promise<ParsedMealDescription> {
   try {
-    const finalKey = await getApiKey();
+    const finalKey = await getApiKey(signal);
 
     if (!finalKey) {
       throw new Error("MISSING_API_KEY");
     }
 
-    const performRequest = async (modelName: string) => {
+    const performRequest = async () => {
       const genAI = new GoogleGenerativeAI(finalKey);
       const model = genAI.getGenerativeModel({
-        model: modelName,
+        model: GEMINI_MODEL,
         systemInstruction: SYSTEM_INSTRUCTION,
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: mealResponseSchema,
         } as any,
       });
-      const result = await model.generateContent(description.trim());
+      const result = await model.generateContent(
+        description.trim(),
+        getGeminiRequestOptions(signal),
+      );
       const responseText = result.response.text().trim();
 
       if (!responseText) {
@@ -539,30 +599,12 @@ export async function parseMealDescription(
       return mealResponseParser.parse(JSON.parse(responseText));
     };
 
-    // Optimistic: try PRIMARY first
     try {
-      return await performRequest(PRIMARY_MODEL);
-    } catch (primaryError: any) {
-      if (checkIsAuthError(primaryError)) throw new Error("API_KEY_INVALID");
-      if (checkIsInvalidKeyError(primaryError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
-
-      // Any error → fallback to Lite
-      console.warn('[Gemini] Primary model failed on parseMealDescription, falling back to Lite...', primaryError);
-      try {
-        return await performRequest(FALLBACK_MODEL);
-      } catch (fallbackError: any) {
-        if (checkIsAuthError(fallbackError)) throw new Error("API_KEY_INVALID");
-        if (checkIsInvalidKeyError(fallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
-        
-        console.warn('[Gemini] Lite model failed on parseMealDescription, falling back to Secondary Lite...', fallbackError);
-        try {
-          return await performRequest(SECONDARY_FALLBACK_MODEL);
-        } catch (secondFallbackError: any) {
-          if (checkIsAuthError(secondFallbackError)) throw new Error("API_KEY_INVALID");
-          if (checkIsInvalidKeyError(secondFallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
-          throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
-        }
-      }
+      return await performRequest();
+    } catch (modelError: any) {
+      if (checkIsAuthError(modelError)) throw new Error("API_KEY_INVALID");
+      if (checkIsInvalidKeyError(modelError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+      throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
     }
   } catch (error: any) {
     if (error.message === "MISSING_API_KEY" || error.message === "API_KEY_INVALID" || error.message === "INVALID_KEY_FROM_GOOGLE") {
@@ -576,9 +618,9 @@ export async function fetchFastCalorieFromAI(query: string): Promise<FastCalorie
   try {
     const key = await getApiKey();
     const genAI = new GoogleGenerativeAI(key);
-    // Using flash-lite for instantaneous response
+    // Flash Lite keeps this lookup fast and inexpensive.
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-3.1-flash-lite",
+      model: GEMINI_MODEL,
       generationConfig: { responseMimeType: "application/json" }
     });
 
@@ -598,7 +640,10 @@ export async function fetchFastCalorieFromAI(query: string): Promise<FastCalorie
       }
     `;
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(
+      prompt,
+      getGeminiRequestOptions(),
+    );
     const text = result.response.text();
     return JSON.parse(text) as FastCalorieItem;
   } catch (error) {
@@ -650,44 +695,34 @@ const EDIT_SYSTEM_INSTRUCTION = `You are an expert clinical nutritionist. The us
 
 export async function parseEditedIngredients(
   edits: IngredientEditRequest[],
+  signal?: AbortSignal,
 ): Promise<ParsedEditedIngredients> {
   try {
-    const finalKey = await getApiKey();
+    const finalKey = await getApiKey(signal);
     if (!finalKey) throw new Error("MISSING_API_KEY");
 
     const prompt = `Please analyze these specific edited ingredients:\n\n${edits.map(e => `Original: "${e.oldName}" (${e.oldCalories} kcal, ${e.oldProtein}g protein)\nNew Request: "${e.newText}"`).join("\n\n")}`;
 
-    const performRequest = async (modelName: string) => {
+    const performRequest = async () => {
       const genAI = new GoogleGenerativeAI(finalKey);
       const model = genAI.getGenerativeModel({
-        model: modelName,
+        model: GEMINI_MODEL,
         systemInstruction: EDIT_SYSTEM_INSTRUCTION,
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: editedIngredientsSchema,
         } as any,
       });
-      const result = await model.generateContent(prompt);
+      const result = await model.generateContent(
+        prompt,
+        getGeminiRequestOptions(signal),
+      );
       const responseText = result.response.text().trim();
       if (!responseText) throw new Error("Gemini returned an empty response body.");
       return editedIngredientsParser.parse(JSON.parse(responseText));
     };
 
-    try {
-      return await performRequest(FALLBACK_MODEL);
-    } catch (fallbackError: any) {
-      if (checkIsAuthError(fallbackError)) throw new Error("API_KEY_INVALID");
-      if (checkIsInvalidKeyError(fallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
-
-      console.warn('[Gemini] Lite model failed on parseEditedIngredients, falling back to Secondary Lite...', fallbackError);
-      try {
-        return await performRequest(SECONDARY_FALLBACK_MODEL);
-      } catch (secondFallbackError: any) {
-        if (checkIsAuthError(secondFallbackError)) throw new Error("API_KEY_INVALID");
-        if (checkIsInvalidKeyError(secondFallbackError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
-        throw new Error("שגיאה בניתוח המרכיבים, אנא נסו שוב מאוחר יותר.");
-      }
-    }
+    return await performRequest();
   } catch (error: any) {
     if (error.message === "MISSING_API_KEY" || error.message === "API_KEY_INVALID" || error.message === "INVALID_KEY_FROM_GOOGLE") {
       throw error;

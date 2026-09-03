@@ -10,11 +10,15 @@ import {
   Bean, Wheat, Grape, Citrus, Leaf, Ham, GlassWater
 } from "lucide-react";
 import { Input } from "../../components/ui/input";
+import { CatLoadingAnimation } from "./CatLoadingAnimation";
+import { toast } from "sonner";
+
+const CALCULATION_TIMEOUT_MS = 45_000;
 
 interface ConfirmMealModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (updatedText: string) => void;
+  onConfirm: (updatedText: string, signal?: AbortSignal) => Promise<boolean>;
   mealText: string;
 }
 
@@ -229,6 +233,8 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [canInteract, setCanInteract] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const calculationAbortRef = useRef<AbortController | null>(null);
   
   const buttonsRef = useRef<HTMLDivElement>(null);
   const [isButtonsVisible, setIsButtonsVisible] = useState(true);
@@ -243,6 +249,10 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
       return () => clearTimeout(timer);
     }
   }, [isOpen, mealText]);
+
+  useEffect(() => {
+    return () => calculationAbortRef.current?.abort();
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -312,20 +322,90 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (isConfirming) return;
+
     if (editingIndex !== null) {
       handleSaveEdit(editingIndex);
     }
     const finalItems = editingIndex !== null ? items.map((it, idx) => idx === editingIndex ? editValue.trim() : it) : items;
     const joinedText = finalItems.filter(it => it.length > 0).join(" עם ");
-    onConfirm(joinedText);
-    onClose();
+
+    setIsConfirming(true);
+    const requestController = new AbortController();
+    calculationAbortRef.current = requestController;
+    let didTimeout = false;
+    let timeoutId: number | undefined;
+    let succeeded = false;
+
+    try {
+      const timeoutPromise = new Promise<boolean>((resolve) => {
+        timeoutId = window.setTimeout(() => {
+          didTimeout = true;
+          requestController.abort();
+          resolve(false);
+        }, CALCULATION_TIMEOUT_MS);
+      });
+
+      succeeded = await Promise.race([
+        onConfirm(joinedText, requestController.signal),
+        timeoutPromise,
+      ]);
+
+      if (didTimeout) {
+        toast.error("החישוב ארך זמן רב מדי. הנתונים נשמרו ואפשר לנסות שוב.", {
+          id: "meal-calculation-timeout",
+        });
+      }
+
+      if (succeeded) {
+        onClose();
+      }
+    } catch (error) {
+      if (!requestController.signal.aborted) {
+        console.error("Meal confirmation failed", error);
+      }
+    } finally {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+      if (calculationAbortRef.current === requestController) {
+        calculationAbortRef.current = null;
+      }
+      if (!succeeded) {
+        setIsConfirming(false);
+      }
+    }
   };
 
   return (
     <>
-      <ModalShell isOpen={isOpen} onClose={onClose} title="סיכום ארוחה">
-        <div className="space-y-5 sm:space-y-6 mt-1 flex flex-col pb-4">
+      <ModalShell
+        isOpen={isOpen}
+        onClose={isConfirming ? () => {} : onClose}
+        title={isConfirming ? "מחשב קלוריות" : "סיכום ארוחה"}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          {isConfirming ? (
+            <motion.div
+              key="meal-calculation"
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+              className="glass-shimmer flex min-h-[320px] items-center justify-center rounded-3xl border border-blue-200/40 bg-gradient-to-br from-blue-50/80 to-violet-50/50"
+            >
+              <CatLoadingAnimation />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="meal-confirmation"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.18 }}
+            >
+              <div className="space-y-5 sm:space-y-6 mt-1 flex flex-col pb-4">
           
           {/* Magical Header Area */}
           <div className="flex flex-col sm:flex-row items-center justify-center text-center sm:text-right space-y-2 sm:space-y-0 sm:space-x-4 sm:space-x-reverse mb-2 sm:mb-6 shrink-0">
@@ -534,6 +614,9 @@ export function ConfirmMealModal({ isOpen, onClose, onConfirm, mealText }: Confi
                 transition={{ repeat: Infinity, duration: 2, delay: 1.5 }}
               />
             </motion.button>
+          )}
+        </AnimatePresence>
+            </motion.div>
           )}
         </AnimatePresence>
       </ModalShell>

@@ -6,7 +6,7 @@ Health App is a mobile-first nutrition tracking application built with React, Vi
 
 - **Cloud Sync:** Powered by Supabase for Authentication and PostgreSQL storage.
 - **BYOK Gemini AI:** Use your own Google Gemini API key, stored locally in your browser for maximum privacy.
-- **Gemini AI Logging:** Robust meal-parsing pipeline with primary `gemini-3.5-flash` and fallback `gemini-2.5-flash`.
+- **Gemini AI Logging:** All AI features use `gemini-3.5-flash-lite` with the model's default thinking configuration.
 - **Clinical Nutrition:** Miffln-St Jeor formulas, protein heuristics, and safety-first micronutrient tracking.
 - **RTL Hebrew UX:** Fully localized interface with Hebrew support across all screens.
 
@@ -81,5 +81,6 @@ To ensure Google OAuth and persistence work correctly in production:
    - Ensure the redirect URI in Google Cloud matches the one provided by Supabase (`https://<project-id>.supabase.co/auth/v1/callback`).
 3. **Environment Variables**:
    - Ensure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set in Vercel Project Settings.
-   - (Optional) `VITE_GEMINI_API_KEY` can be set as a fallback, but users are encouraged to use their own via the UI.
+4. **Runtime**:
+   - Vercel uses Node.js 24.x, matching the version declared in `package.json` and validated by the production build.
 

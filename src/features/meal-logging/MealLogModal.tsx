@@ -78,7 +78,10 @@ export function MealLogModal({
   const [isCreatingFav, setIsCreatingFav] = useState(false);
   const [uploadingMealId, setUploadingMealId] = useState<string | null>(null);
 
-  const [confirmMealData, setConfirmMealData] = useState<{ text: string, onConfirm: (updatedText: string) => void } | null>(null);
+  const [confirmMealData, setConfirmMealData] = useState<{
+    text: string;
+    onConfirm: (updatedText: string, signal?: AbortSignal) => Promise<boolean>;
+  } | null>(null);
 
   // Image Crop states
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
@@ -165,12 +168,15 @@ export function MealLogModal({
     name: "ingredients",
   });
 
-  const processMealSubmission = async (description: string) => {
+  const processMealSubmission = async (
+    description: string,
+    signal?: AbortSignal,
+  ) => {
     setIsSubmitting(true);
     setIsAiCalculating(true);
 
     try {
-      const parsedData = await parseMealDescription(description);
+      const parsedData = await parseMealDescription(description, signal);
       const alerts = await addMealLog(targetDate, {
         id: generateId(),
         timestamp: new Date().toISOString(),
@@ -186,7 +192,7 @@ export function MealLogModal({
         confidence_score: 1,
         sourceType: "food",
         mealText: description,
-      });
+      }, signal);
 
       toast.success("הארוחה נוספה בהצלחה");
       alerts.forEach((alert) => {
@@ -199,6 +205,8 @@ export function MealLogModal({
 
       resetAi();
       resetManual();
+      setImageReviewText(null);
+      setPendingDescription(null);
       onClose();
       
       // Auto-Navigate & Scroll Top (Rule 20)
@@ -215,7 +223,12 @@ export function MealLogModal({
       if (onSuccess) {
         onSuccess();
       }
+      return true;
     } catch (error: any) {
+      if (signal?.aborted) {
+        return false;
+      }
+
       if (error.message === "BYOK_REQUIRED" || error.message === "API_KEY_INVALID" || error.message === "MISSING_API_KEY" || error.message === "INVALID_KEY_FROM_GOOGLE") {
         if (error.message === "API_KEY_INVALID") {
           toast.error("מפתח ה-API שסופק אינו תקין או פג תוקף. אנא הזן מפתח חדש.");
@@ -230,23 +243,29 @@ export function MealLogModal({
         console.error(error);
         toast.error(error.message || "אירעה שגיאה בפענוח הארוחה. בדוק את מפתח ה-API ונסה שוב.");
       }
+      return false;
     } finally {
       setIsSubmitting(false);
       setIsAiCalculating(false);
     }
   };
 
-  const handleByokSuccess = () => {
-    if (pendingDescription) {
-      processMealSubmission(pendingDescription);
-      setPendingDescription(null);
+  const handleByokSuccess = async () => {
+    if (!pendingDescription) return;
+
+    const description = pendingDescription;
+    setPendingDescription(null);
+    const succeeded = await processMealSubmission(description);
+    if (succeeded) {
+      setConfirmMealData(null);
     }
   };
 
   const onAiSubmit = (data: AiFormValues) => {
     setConfirmMealData({
       text: data.description,
-      onConfirm: (updatedText: string) => processMealSubmission(updatedText)
+      onConfirm: (updatedText: string, signal?: AbortSignal) =>
+        processMealSubmission(updatedText, signal)
     });
   };
 
@@ -260,7 +279,8 @@ export function MealLogModal({
 
     setConfirmMealData({
       text: description,
-      onConfirm: (updatedText: string) => processMealSubmission(updatedText)
+      onConfirm: (updatedText: string, signal?: AbortSignal) =>
+        processMealSubmission(updatedText, signal)
     });
   };
 
@@ -309,9 +329,9 @@ export function MealLogModal({
   const handleCalculateAndLog = (text: string) => {
     setConfirmMealData({
       text: text,
-      onConfirm: (updatedText: string) => {
+      onConfirm: (updatedText: string, signal?: AbortSignal) => {
         setEditingMeal(null);
-        processMealSubmission(updatedText);
+        return processMealSubmission(updatedText, signal);
       }
     });
   };
@@ -369,10 +389,8 @@ export function MealLogModal({
     const text = imageReviewText.trim();
     setConfirmMealData({
       text: text,
-      onConfirm: () => {
-        setImageReviewText(null);
-        processMealSubmission(text);
-      }
+      onConfirm: (updatedText: string, signal?: AbortSignal) =>
+        processMealSubmission(updatedText, signal)
     });
   };
 
