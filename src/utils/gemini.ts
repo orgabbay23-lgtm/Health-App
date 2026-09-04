@@ -1,21 +1,63 @@
 /// <reference types="vite/client" />
-import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
+import {
+  GoogleGenAI,
+  ThinkingLevel,
+  Type,
+  type ContentListUnion,
+  type GenerateContentConfig,
+  type HttpRetryOptions,
+  type Schema,
+} from "@google/genai";
 import { z } from "zod";
 import { supabase } from "../lib/supabase";
 import type { FastCalorieItem } from "../data/fast-calorie-database";
 
 // ── Model Routing ───────────────────────────────────────────────────
-// Single-model experiment: all AI paths use Flash Lite with default thinking.
-const GEMINI_MODEL = "gemini-3.5-flash-lite";
+// Keep Flash Lite as the fast/cheap primary. Only the fallback receives an
+// explicit thinking level; the primary intentionally uses the model default.
+const PRIMARY_GEMINI_MODEL = {
+  model: "gemini-3.5-flash-lite",
+  timeoutMs: 10_000,
+} as const;
 
-// Bound all AI requests so a stalled connection can never trap the UI in loading.
-const GEMINI_REQUEST_TIMEOUT_MS = 15_000;
+const FALLBACK_GEMINI_MODEL = {
+  model: "gemini-3.8-flash",
+  thinkingLevel: ThinkingLevel.LOW,
+  timeoutMs: 12_000,
+} as const;
+
+// Prefer the full 3.5 Flash model before dropping to the older compatibility
+// model when the two standard routes are simultaneously capacity constrained.
+const THIRD_MEAL_MODEL = {
+  model: "gemini-3.5-flash",
+  timeoutMs: 10_000,
+} as const;
+
+const EMERGENCY_MEAL_MODEL = {
+  model: "gemini-3.1-flash-lite",
+  timeoutMs: 10_000,
+} as const;
+
+type GeminiModelRoute =
+  | typeof PRIMARY_GEMINI_MODEL
+  | typeof FALLBACK_GEMINI_MODEL
+  | typeof THIRD_MEAL_MODEL
+  | typeof EMERGENCY_MEAL_MODEL;
+
+// Bound Vault access separately from the per-model limits above.
 const VAULT_REQUEST_TIMEOUT_MS = 8_000;
 
-const getGeminiRequestOptions = (signal?: AbortSignal) => ({
-  timeout: GEMINI_REQUEST_TIMEOUT_MS,
-  ...(signal ? { signal } : {}),
-});
+// A 503 means that Gemini is temporarily overloaded, not that the user's
+// quota or API key is invalid. Give each model one short backoff retry before
+// moving on, while keeping the whole UI flow below its hard timeout.
+const GEMINI_RETRY_OPTIONS: HttpRetryOptions = {
+  attempts: 2,
+  initialDelay: 0.8,
+  maxDelay: 1.6,
+  expBase: 2,
+  jitter: 0.2,
+  httpStatusCodes: [408, 429, 500, 502, 503, 504],
+};
 
 export interface GeminiUserProfile {
   name: string;
@@ -30,98 +72,209 @@ export interface GeminiUserProfile {
 
 // ── Error detection helpers ─────────────────────────────────────────
 function checkIsAuthError(err: unknown): boolean {
-  const error = err as any;
+  const error = err as { status?: unknown; message?: unknown };
+  const message = typeof error?.message === "string" ? error.message.toLowerCase() : "";
   return (
     error?.status === 401 ||
     error?.status === 403 ||
-    error?.message?.includes("401") ||
-    error?.message?.includes("403") ||
-    error?.message?.toLowerCase?.()?.includes("unauthorized") ||
-    error?.message?.toLowerCase?.()?.includes("invalid api key") ||
-    error?.message?.toLowerCase?.()?.includes("api key not found")
+    message.includes("401") ||
+    message.includes("403") ||
+    message.includes("unauthorized")
   );
 }
 
 function checkIsInvalidKeyError(err: unknown): boolean {
-  const error = err as any;
+  const error = err as { message?: unknown };
+  const message = typeof error?.message === "string" ? error.message.toLowerCase() : "";
+
+  // Google can use HTTP 400 for many request problems (including schemas), so
+  // never classify every 400 response as an invalid API key.
   return (
-    error?.status === 400 ||
-    error?.message?.includes("400") ||
-    error?.message?.includes("API_KEY_INVALID")
+    message.includes("api_key_invalid") ||
+    message.includes("invalid api key") ||
+    message.includes("api key not valid") ||
+    message.includes("api key not found")
   );
 }
 
+function summarizeGeminiFailure(error: unknown) {
+  if (error instanceof z.ZodError) {
+    return {
+      kind: "response-schema-validation",
+      paths: error.issues.map((issue) => issue.path.join(".")).filter(Boolean),
+    };
+  }
+
+  if (error instanceof SyntaxError) {
+    return { kind: "invalid-json-response" };
+  }
+
+  const candidate = error as { name?: unknown; status?: unknown; message?: unknown };
+  const name = typeof candidate?.name === "string" ? candidate.name.toLowerCase() : "";
+  const message = typeof candidate?.message === "string" ? candidate.message.toLowerCase() : "";
+  let kind = "model-request-failed";
+  if (message.includes("timeout") || name.includes("abort")) kind = "model-timeout-or-abort";
+  else if (message.includes("429") || message.includes("quota") || message.includes("resource exhausted")) kind = "rate-limit-or-quota";
+  else if (message.includes("500") || message.includes("502") || message.includes("503") || message.includes("server")) kind = "model-server-error";
+
+  let reason = "unknown";
+  if (message.includes("high demand")) reason = "high-demand";
+  else if (message.includes("service unavailable") || message.includes("unavailable")) reason = "service-unavailable";
+  else if (message.includes("timeout") || message.includes("timed out")) reason = "request-timeout";
+  else if (message.includes("permission denied")) reason = "permission-denied";
+
+  return {
+    kind,
+    reason,
+    ...(typeof candidate?.status === "number" ? { status: candidate.status } : {}),
+    ...(typeof candidate?.name === "string" ? { name: candidate.name } : {}),
+  };
+}
+
+function formatGeminiFailure(model: string, error: unknown): string {
+  return JSON.stringify({ model, ...summarizeGeminiFailure(error) });
+}
+
+function buildGeminiConfig(
+  route: GeminiModelRoute,
+  config?: GenerateContentConfig,
+  signal?: AbortSignal,
+): GenerateContentConfig {
+  return {
+    ...config,
+    httpOptions: {
+      ...config?.httpOptions,
+      timeout: route.timeoutMs,
+      retryOptions: GEMINI_RETRY_OPTIONS,
+    },
+    ...(signal ? { abortSignal: signal } : {}),
+    ...("thinkingLevel" in route
+      ? {
+          thinkingConfig: {
+            ...config?.thinkingConfig,
+            thinkingLevel: route.thinkingLevel,
+          },
+        }
+      : {}),
+  };
+}
+
+function generateGeminiContent(
+  ai: GoogleGenAI,
+  route: GeminiModelRoute,
+  contents: ContentListUnion,
+  config?: GenerateContentConfig,
+  signal?: AbortSignal,
+) {
+  return ai.models.generateContent({
+    model: route.model,
+    contents,
+    config: buildGeminiConfig(route, config, signal),
+  });
+}
+
+async function runWithGeminiFallback<T>(
+  operation: string,
+  request: (route: GeminiModelRoute) => Promise<T>,
+  signal?: AbortSignal,
+): Promise<T> {
+  try {
+    return await request(PRIMARY_GEMINI_MODEL);
+  } catch (primaryError: unknown) {
+    if (
+      signal?.aborted ||
+      checkIsAuthError(primaryError) ||
+      checkIsInvalidKeyError(primaryError)
+    ) {
+      throw primaryError;
+    }
+
+    console.warn(
+      `[Gemini] ${operation}: primary model failed; trying fallback. ${formatGeminiFailure(PRIMARY_GEMINI_MODEL.model, primaryError)}`,
+    );
+
+    try {
+      return await request(FALLBACK_GEMINI_MODEL);
+    } catch (fallbackError: unknown) {
+      console.error(
+        `[Gemini] ${operation}: both model attempts failed. ${formatGeminiFailure(FALLBACK_GEMINI_MODEL.model, fallbackError)}`,
+      );
+      throw fallbackError;
+    }
+  }
+}
+
 const mealResponseSchema: Schema = {
-  type: SchemaType.OBJECT,
+  type: Type.OBJECT,
   properties: {
     meal_name: {
-      type: SchemaType.STRING,
+      type: Type.STRING,
       description: "Short Hebrew meal name.",
     },
     ingredients: {
-      type: SchemaType.ARRAY,
+      type: Type.ARRAY,
       description: "List of individual ingredients making up the meal.",
       items: {
-        type: SchemaType.OBJECT,
+        type: Type.OBJECT,
         properties: {
-          name: { type: SchemaType.STRING, description: "Name of the ingredient in Hebrew (e.g. '100 גרם אורז')." },
-          calories: { type: SchemaType.NUMBER, description: "Calories in this specific ingredient." },
-          protein: { type: SchemaType.NUMBER, description: "Protein in grams in this specific ingredient." },
+          name: { type: Type.STRING, description: "Name of the ingredient in Hebrew (e.g. '100 גרם אורז')." },
+          calories: { type: Type.NUMBER, description: "Calories in this specific ingredient." },
+          protein: { type: Type.NUMBER, description: "Protein in grams in this specific ingredient." },
         },
         required: ["name", "calories", "protein"],
       },
     },
     calories: {
-      type: SchemaType.NUMBER,
+      type: Type.NUMBER,
       description: "Total estimated calories for the meal.",
     },
     macronutrients: {
-      type: SchemaType.OBJECT,
+      type: Type.OBJECT,
       properties: {
         protein: {
-          type: SchemaType.NUMBER,
+          type: Type.NUMBER,
           description: "Protein in grams.",
         },
         carbs: {
-          type: SchemaType.NUMBER,
+          type: Type.NUMBER,
           description: "Carbohydrates in grams.",
         },
         fat: {
-          type: SchemaType.NUMBER,
+          type: Type.NUMBER,
           description: "Fat in grams.",
         },
       },
       required: ["protein", "carbs", "fat"],
     },
     micronutrients: {
-      type: SchemaType.OBJECT,
+      type: Type.OBJECT,
       properties: {
-        fiber: { type: SchemaType.NUMBER, description: "Fiber in grams." },
-        sodium: { type: SchemaType.NUMBER, description: "Sodium in milligrams." },
-        potassium: { type: SchemaType.NUMBER, description: "Potassium in milligrams." },
-        magnesium: { type: SchemaType.NUMBER, description: "Magnesium in milligrams." },
-        calcium: { type: SchemaType.NUMBER, description: "Calcium in milligrams." },
-        iron: { type: SchemaType.NUMBER, description: "Iron in milligrams." },
-        vitaminA: { type: SchemaType.NUMBER, description: "Vitamin A in micrograms RAE." },
-        vitaminC: { type: SchemaType.NUMBER, description: "Vitamin C in milligrams." },
-        vitaminD: { type: SchemaType.NUMBER, description: "Vitamin D in micrograms." },
-        vitaminE: { type: SchemaType.NUMBER, description: "Vitamin E in milligrams alpha-tocopherol." },
-        vitaminB12: { type: SchemaType.NUMBER, description: "Vitamin B12 in micrograms." },
-        iodine: { type: SchemaType.NUMBER, description: "Iodine in micrograms." },
-        zinc: { type: SchemaType.NUMBER, description: "Zinc in milligrams." },
-        folicAcid: { type: SchemaType.NUMBER, description: "Folate (folic acid) in micrograms DFE." },
-        vitaminK: { type: SchemaType.NUMBER, description: "Vitamin K in micrograms." },
-        selenium: { type: SchemaType.NUMBER, description: "Selenium in micrograms." },
-        vitaminB6: { type: SchemaType.NUMBER, description: "Vitamin B6 (pyridoxine) in milligrams." },
-        vitaminB3: { type: SchemaType.NUMBER, description: "Vitamin B3 (niacin) in milligrams NE." },
-        vitaminB1: { type: SchemaType.NUMBER, description: "Vitamin B1 (thiamine) in milligrams." },
-        vitaminB2: { type: SchemaType.NUMBER, description: "Vitamin B2 (riboflavin) in milligrams." },
-        vitaminB5: { type: SchemaType.NUMBER, description: "Vitamin B5 (pantothenic acid) in milligrams." },
-        biotin: { type: SchemaType.NUMBER, description: "Biotin (B7) in micrograms." },
-        copper: { type: SchemaType.NUMBER, description: "Copper in milligrams." },
-        manganese: { type: SchemaType.NUMBER, description: "Manganese in milligrams." },
-        chromium: { type: SchemaType.NUMBER, description: "Chromium in micrograms." },
-        omega3: { type: SchemaType.NUMBER, description: "Omega-3 EPA+DHA total in milligrams." },
+        fiber: { type: Type.NUMBER, description: "Fiber in grams." },
+        sodium: { type: Type.NUMBER, description: "Sodium in milligrams." },
+        potassium: { type: Type.NUMBER, description: "Potassium in milligrams." },
+        magnesium: { type: Type.NUMBER, description: "Magnesium in milligrams." },
+        calcium: { type: Type.NUMBER, description: "Calcium in milligrams." },
+        iron: { type: Type.NUMBER, description: "Iron in milligrams." },
+        vitaminA: { type: Type.NUMBER, description: "Vitamin A in micrograms RAE." },
+        vitaminC: { type: Type.NUMBER, description: "Vitamin C in milligrams." },
+        vitaminD: { type: Type.NUMBER, description: "Vitamin D in micrograms." },
+        vitaminE: { type: Type.NUMBER, description: "Vitamin E in milligrams alpha-tocopherol." },
+        vitaminB12: { type: Type.NUMBER, description: "Vitamin B12 in micrograms." },
+        iodine: { type: Type.NUMBER, description: "Iodine in micrograms." },
+        zinc: { type: Type.NUMBER, description: "Zinc in milligrams." },
+        folicAcid: { type: Type.NUMBER, description: "Folate (folic acid) in micrograms DFE." },
+        vitaminK: { type: Type.NUMBER, description: "Vitamin K in micrograms." },
+        selenium: { type: Type.NUMBER, description: "Selenium in micrograms." },
+        vitaminB6: { type: Type.NUMBER, description: "Vitamin B6 (pyridoxine) in milligrams." },
+        vitaminB3: { type: Type.NUMBER, description: "Vitamin B3 (niacin) in milligrams NE." },
+        vitaminB1: { type: Type.NUMBER, description: "Vitamin B1 (thiamine) in milligrams." },
+        vitaminB2: { type: Type.NUMBER, description: "Vitamin B2 (riboflavin) in milligrams." },
+        vitaminB5: { type: Type.NUMBER, description: "Vitamin B5 (pantothenic acid) in milligrams." },
+        biotin: { type: Type.NUMBER, description: "Biotin (B7) in micrograms." },
+        copper: { type: Type.NUMBER, description: "Copper in milligrams." },
+        manganese: { type: Type.NUMBER, description: "Manganese in milligrams." },
+        chromium: { type: Type.NUMBER, description: "Chromium in micrograms." },
+        omega3: { type: Type.NUMBER, description: "Omega-3 EPA+DHA total in milligrams." },
       },
       required: [
         "fiber", "sodium", "potassium", "magnesium", "calcium", "iron",
@@ -134,6 +287,31 @@ const mealResponseSchema: Schema = {
   },
   required: ["meal_name", "ingredients", "calories", "macronutrients", "micronutrients"],
 };
+
+function toJsonSchema(schema: Schema): Record<string, unknown> {
+  const jsonSchema: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === "type" && typeof value === "string") {
+      jsonSchema.type = value.toLowerCase();
+    } else if (key === "properties" && value && typeof value === "object") {
+      jsonSchema.properties = Object.fromEntries(
+        Object.entries(value).map(([propertyName, propertySchema]) => [
+          propertyName,
+          toJsonSchema(propertySchema as Schema),
+        ]),
+      );
+    } else if (key === "items" && value && typeof value === "object") {
+      jsonSchema.items = toJsonSchema(value as Schema);
+    } else {
+      jsonSchema[key] = value;
+    }
+  }
+
+  return jsonSchema;
+}
+
+const mealResponseJsonSchema = toJsonSchema(mealResponseSchema);
 
 const mealResponseParser = z.object({
   meal_name: z.string().min(1),
@@ -266,40 +444,30 @@ export async function analyzeMealImage(
   signal?: AbortSignal,
 ): Promise<string> {
   const finalKey = await getApiKey(signal);
+  const ai = new GoogleGenAI({ apiKey: finalKey });
 
-  const performRequest = async () => {
-    const genAI = new GoogleGenerativeAI(finalKey);
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      systemInstruction: VISION_SYSTEM_INSTRUCTION,
-    });
-    const result = await model.generateContent(
+  const performRequest = async (route: GeminiModelRoute) => {
+    const result = await generateGeminiContent(
+      ai,
+      route,
       [
         { inlineData: { data: base64Image, mimeType } },
-        VISION_PROMPT,
+        { text: VISION_PROMPT },
       ],
-      getGeminiRequestOptions(signal),
+      { systemInstruction: VISION_SYSTEM_INSTRUCTION },
+      signal,
     );
-    // Extract only the final text answer, ignoring any "thoughts" parts
-    const candidates = result.response.candidates;
-    let text = "";
-    if (candidates && candidates.length > 0) {
-      const parts = candidates[0].content?.parts || [];
-      for (const part of parts) {
-        if ("text" in part && !(part as any).thought) {
-          text = (part as any).text;
-        }
-      }
-    }
-    text = text?.trim() || result.response.text().trim();
+    const text = result.text?.trim() ?? "";
     if (!text) throw new Error("Empty response");
     return text;
   };
 
   try {
-    return await performRequest();
-  } catch (modelError: any) {
-    if (checkIsAuthError(modelError)) throw new Error("API_KEY_INVALID");
+    return await runWithGeminiFallback("meal-image-analysis", performRequest, signal);
+  } catch (modelError: unknown) {
+    if (checkIsAuthError(modelError) || checkIsInvalidKeyError(modelError)) {
+      throw new Error("API_KEY_INVALID");
+    }
     throw new Error("שגיאה בזיהוי התמונה, אנא נסו שוב מאוחר יותר.");
   }
 }
@@ -407,17 +575,22 @@ ${JSON.stringify(nutritionData)}
 נתח את הנתונים ותן המלצה קצרה ומותאמת אישית תוך שימוש בפורמט המספור וההדגשה הנדרש.`;
 
   try {
-    const genAI = new GoogleGenerativeAI(finalKey);
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      systemInstruction: INSIGHT_SYSTEM_INSTRUCTION,
+    const ai = new GoogleGenAI({ apiKey: finalKey });
+    return await runWithGeminiFallback("nutritional-insight", async (route) => {
+      const result = await generateGeminiContent(
+        ai,
+        route,
+        userPrompt,
+        { systemInstruction: INSIGHT_SYSTEM_INSTRUCTION },
+      );
+      const text = result.text?.trim() ?? "";
+      if (!text) throw new Error("Empty response");
+      return text;
     });
-    const result = await model.generateContent(userPrompt);
-    const text = result.response.text().trim();
-    if (!text) throw new Error("Empty response");
-    return text;
-  } catch (apiError: any) {
-    if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
+  } catch (apiError: unknown) {
+    if (checkIsAuthError(apiError) || checkIsInvalidKeyError(apiError)) {
+      throw new Error("API_KEY_INVALID");
+    }
     throw new Error("שגיאה ביצירת ההמלצה, אנא נסו שוב מאוחר יותר.");
   }
 }
@@ -454,17 +627,22 @@ export async function generateCustomAnswer(
 `;
 
   try {
-    const genAI = new GoogleGenerativeAI(finalKey);
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      systemInstruction: CUSTOM_ANSWER_SYSTEM_INSTRUCTION,
+    const ai = new GoogleGenAI({ apiKey: finalKey });
+    return await runWithGeminiFallback("custom-nutrition-answer", async (route) => {
+      const result = await generateGeminiContent(
+        ai,
+        route,
+        userPrompt,
+        { systemInstruction: CUSTOM_ANSWER_SYSTEM_INSTRUCTION },
+      );
+      const text = result.text?.trim() ?? "";
+      if (!text) throw new Error("Empty response");
+      return text;
     });
-    const result = await model.generateContent(userPrompt);
-    const text = result.response.text().trim();
-    if (!text) throw new Error("Empty response");
-    return text;
-  } catch (apiError: any) {
-    if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
+  } catch (apiError: unknown) {
+    if (checkIsAuthError(apiError) || checkIsInvalidKeyError(apiError)) {
+      throw new Error("API_KEY_INVALID");
+    }
     throw new Error("שגיאה במתן התשובה, אנא נסו שוב מאוחר יותר.");
   }
 }
@@ -506,17 +684,22 @@ export async function generateSupplementRecommendations(
 `;
 
   try {
-    const genAI = new GoogleGenerativeAI(finalKey);
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      systemInstruction: SUPPLEMENT_SYSTEM_INSTRUCTION,
+    const ai = new GoogleGenAI({ apiKey: finalKey });
+    return await runWithGeminiFallback("supplement-recommendations", async (route) => {
+      const result = await generateGeminiContent(
+        ai,
+        route,
+        userPrompt,
+        { systemInstruction: SUPPLEMENT_SYSTEM_INSTRUCTION },
+      );
+      const text = result.text?.trim() ?? "";
+      if (!text) throw new Error("Empty response");
+      return text;
     });
-    const result = await model.generateContent(userPrompt);
-    const text = result.response.text().trim();
-    if (!text) throw new Error("Empty response");
-    return text;
-  } catch (apiError: any) {
-    if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
+  } catch (apiError: unknown) {
+    if (checkIsAuthError(apiError) || checkIsInvalidKeyError(apiError)) {
+      throw new Error("API_KEY_INVALID");
+    }
     throw new Error("שגיאה ביצירת המלצות לתוספים, אנא נסו שוב מאוחר יותר.");
   }
 }
@@ -549,17 +732,22 @@ ${JSON.stringify(userProfile)}
 ${userQuestion}`;
 
   try {
-    const genAI = new GoogleGenerativeAI(finalKey);
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      systemInstruction: FOLLOWUP_SYSTEM_INSTRUCTION,
+    const ai = new GoogleGenAI({ apiKey: finalKey });
+    return await runWithGeminiFallback("insight-follow-up", async (route) => {
+      const result = await generateGeminiContent(
+        ai,
+        route,
+        userPrompt,
+        { systemInstruction: FOLLOWUP_SYSTEM_INSTRUCTION },
+      );
+      const text = result.text?.trim() ?? "";
+      if (!text) throw new Error("Empty response");
+      return text;
     });
-    const result = await model.generateContent(userPrompt);
-    const text = result.response.text().trim();
-    if (!text) throw new Error("Empty response");
-    return text;
-  } catch (apiError: any) {
-    if (checkIsAuthError(apiError)) throw new Error("API_KEY_INVALID");
+  } catch (apiError: unknown) {
+    if (checkIsAuthError(apiError) || checkIsInvalidKeyError(apiError)) {
+      throw new Error("API_KEY_INVALID");
+    }
     throw new Error("שגיאה בתשובה לשאלה, אנא נסו שוב מאוחר יותר.");
   }
 }
@@ -576,21 +764,30 @@ export async function parseMealDescription(
       throw new Error("MISSING_API_KEY");
     }
 
-    const performRequest = async () => {
-      const genAI = new GoogleGenerativeAI(finalKey);
-      const model = genAI.getGenerativeModel({
-        model: GEMINI_MODEL,
-        systemInstruction: SYSTEM_INSTRUCTION,
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: mealResponseSchema,
-        } as any,
-      });
-      const result = await model.generateContent(
-        description.trim(),
-        getGeminiRequestOptions(signal),
+    const ai = new GoogleGenAI({ apiKey: finalKey });
+    const performRequest = async (route: GeminiModelRoute) => {
+      const interaction = await ai.interactions.create(
+        {
+          model: route.model,
+          input: description.trim(),
+          system_instruction: SYSTEM_INSTRUCTION,
+          response_format: {
+            type: "text",
+            mime_type: "application/json",
+            schema: mealResponseJsonSchema,
+          },
+          store: false,
+          ...("thinkingLevel" in route
+            ? { generation_config: { thinking_level: "low" } }
+            : {}),
+        },
+        {
+          timeout: route.timeoutMs,
+          maxRetries: 0,
+          ...(signal ? { fetchOptions: { signal } } : {}),
+        },
       );
-      const responseText = result.response.text().trim();
+      const responseText = interaction.output_text?.trim() ?? "";
 
       if (!responseText) {
         throw new Error("Gemini returned an empty response body.");
@@ -600,14 +797,42 @@ export async function parseMealDescription(
     };
 
     try {
-      return await performRequest();
-    } catch (modelError: any) {
+      return await runWithGeminiFallback("meal-description-parsing", performRequest, signal);
+    } catch (modelError: unknown) {
       if (checkIsAuthError(modelError)) throw new Error("API_KEY_INVALID");
       if (checkIsInvalidKeyError(modelError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
-      throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
+      if (signal?.aborted) throw modelError;
+
+      console.warn(
+        `[Gemini] meal-description-parsing: trying third model. ${formatGeminiFailure(FALLBACK_GEMINI_MODEL.model, modelError)}`,
+      );
+
+      try {
+        return await performRequest(THIRD_MEAL_MODEL);
+      } catch (thirdModelError: unknown) {
+        if (checkIsAuthError(thirdModelError)) throw new Error("API_KEY_INVALID");
+        if (checkIsInvalidKeyError(thirdModelError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+        if (signal?.aborted) throw thirdModelError;
+
+        console.warn(
+          `[Gemini] meal-description-parsing: trying emergency compatibility model. ${formatGeminiFailure(THIRD_MEAL_MODEL.model, thirdModelError)}`,
+        );
+
+        try {
+          return await performRequest(EMERGENCY_MEAL_MODEL);
+        } catch (emergencyError: unknown) {
+          console.error(
+            `[Gemini] meal-description-parsing: all model routes failed. ${formatGeminiFailure(EMERGENCY_MEAL_MODEL.model, emergencyError)}`,
+          );
+          if (checkIsAuthError(emergencyError)) throw new Error("API_KEY_INVALID");
+          if (checkIsInvalidKeyError(emergencyError)) throw new Error("INVALID_KEY_FROM_GOOGLE");
+          throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
+        }
+      }
     }
-  } catch (error: any) {
-    if (error.message === "MISSING_API_KEY" || error.message === "API_KEY_INVALID" || error.message === "INVALID_KEY_FROM_GOOGLE") {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "MISSING_API_KEY" || message === "API_KEY_INVALID" || message === "INVALID_KEY_FROM_GOOGLE") {
       throw error;
     }
     throw new Error("שגיאה בניתוח הארוחה, אנא נסו שוב מאוחר יותר.");
@@ -617,12 +842,7 @@ export async function parseMealDescription(
 export async function fetchFastCalorieFromAI(query: string): Promise<FastCalorieItem> {
   try {
     const key = await getApiKey();
-    const genAI = new GoogleGenerativeAI(key);
-    // Flash Lite keeps this lookup fast and inexpensive.
-    const model = genAI.getGenerativeModel({ 
-      model: GEMINI_MODEL,
-      generationConfig: { responseMimeType: "application/json" }
-    });
+    const ai = new GoogleGenAI({ apiKey: key });
 
     const prompt = `
       Act as an Israeli clinical dietitian. The user is asking for the caloric value of: "${query}".
@@ -640,30 +860,35 @@ export async function fetchFastCalorieFromAI(query: string): Promise<FastCalorie
       }
     `;
 
-    const result = await model.generateContent(
-      prompt,
-      getGeminiRequestOptions(),
-    );
-    const text = result.response.text();
-    return JSON.parse(text) as FastCalorieItem;
+    return await runWithGeminiFallback("fast-calorie-lookup", async (route) => {
+      const result = await generateGeminiContent(
+        ai,
+        route,
+        prompt,
+        { responseMimeType: "application/json" },
+      );
+      const text = result.text?.trim() ?? "";
+      if (!text) throw new Error("Empty response");
+      return JSON.parse(text) as FastCalorieItem;
+    });
   } catch (error) {
-    console.error("[Gemini] Fast Calorie fetch failed:", error);
+    console.error("[Gemini] Fast Calorie fetch failed:", summarizeGeminiFailure(error));
     throw new Error("Failed to fetch calorie data from AI.");
   }
 }
 
 const editedIngredientsSchema: Schema = {
-  type: SchemaType.OBJECT,
+  type: Type.OBJECT,
   properties: {
     ingredients: {
-      type: SchemaType.ARRAY,
+      type: Type.ARRAY,
       description: "List of edited ingredients.",
       items: {
-        type: SchemaType.OBJECT,
+        type: Type.OBJECT,
         properties: {
-          name: { type: SchemaType.STRING, description: "Name of the ingredient in Hebrew (e.g. '100 גרם עגבניה')." },
-          calories: { type: SchemaType.NUMBER, description: "Calories in this specific ingredient." },
-          protein: { type: SchemaType.NUMBER, description: "Protein in grams in this specific ingredient." },
+          name: { type: Type.STRING, description: "Name of the ingredient in Hebrew (e.g. '100 גרם עגבניה')." },
+          calories: { type: Type.NUMBER, description: "Calories in this specific ingredient." },
+          protein: { type: Type.NUMBER, description: "Protein in grams in this specific ingredient." },
         },
         required: ["name", "calories", "protein"],
       },
@@ -703,30 +928,32 @@ export async function parseEditedIngredients(
 
     const prompt = `Please analyze these specific edited ingredients:\n\n${edits.map(e => `Original: "${e.oldName}" (${e.oldCalories} kcal, ${e.oldProtein}g protein)\nNew Request: "${e.newText}"`).join("\n\n")}`;
 
-    const performRequest = async () => {
-      const genAI = new GoogleGenerativeAI(finalKey);
-      const model = genAI.getGenerativeModel({
-        model: GEMINI_MODEL,
-        systemInstruction: EDIT_SYSTEM_INSTRUCTION,
-        generationConfig: {
+    const ai = new GoogleGenAI({ apiKey: finalKey });
+    const performRequest = async (route: GeminiModelRoute) => {
+      const result = await generateGeminiContent(
+        ai,
+        route,
+        prompt,
+        {
+          systemInstruction: EDIT_SYSTEM_INSTRUCTION,
           responseMimeType: "application/json",
           responseSchema: editedIngredientsSchema,
-        } as any,
-      });
-      const result = await model.generateContent(
-        prompt,
-        getGeminiRequestOptions(signal),
+        },
+        signal,
       );
-      const responseText = result.response.text().trim();
+      const responseText = result.text?.trim() ?? "";
       if (!responseText) throw new Error("Gemini returned an empty response body.");
       return editedIngredientsParser.parse(JSON.parse(responseText));
     };
 
-    return await performRequest();
-  } catch (error: any) {
-    if (error.message === "MISSING_API_KEY" || error.message === "API_KEY_INVALID" || error.message === "INVALID_KEY_FROM_GOOGLE") {
+    return await runWithGeminiFallback("edited-ingredient-parsing", performRequest, signal);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "MISSING_API_KEY" || message === "API_KEY_INVALID" || message === "INVALID_KEY_FROM_GOOGLE") {
       throw error;
     }
+    if (checkIsAuthError(error)) throw new Error("API_KEY_INVALID");
+    if (checkIsInvalidKeyError(error)) throw new Error("INVALID_KEY_FROM_GOOGLE");
     throw new Error("שגיאה בניתוח המרכיבים, אנא נסו שוב מאוחר יותר.");
   }
 }

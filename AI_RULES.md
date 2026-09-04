@@ -12,7 +12,7 @@
 ## 2. Core Clinical & Business Logic (FIXED - DO NOT ALTER)
 * **3 AM Rollover:** Daily logs reset at 03:00 AM local time.
 * **Nutritional Math:** Clinical formulas (MSJ for BMR, specific UL targets) are immutable.
-* **AI Routing:** Every Gemini feature uses `gemini-3.5-flash-lite` with its default thinking configuration. No explicit `thinkingConfig` is sent, and no second model or duplicate fallback attempt is used. Database quota counting is REMOVED.
+* **AI Routing:** Every Gemini feature first uses `gemini-3.5-flash-lite` with its default thinking configuration. Non-authentication model/request/response failures receive exactly one standard fallback route with `gemini-3.8-flash` and `thinkingConfig.thinkingLevel = "low"`. Transient HTTP `408`, `429`, and `5xx` responses receive one SDK-level exponential-backoff retry per regular content route. Meal-text parsing alone may then try `gemini-3.5-flash`, followed by `gemini-3.1-flash-lite` with model defaults as the final compatibility route. Database quota counting is REMOVED.
 * **Timeframe Target Accumulation:** Weekly and Monthly periods use a rolling window backward from yesterday (excluding the current day). Weekly = Last 7 days, Monthly = Last 30 days. Targets ONLY accumulate for "Active Days". An active day is defined as any past day within the rolling timeframe that contains at least one logged meal (`dailyLogs[dayKey]?.meals?.length > 0`). Empty past days are completely excluded from both the averages and the target multiplier to prevent artificial target inflation. This applies to calories, macros, all 26 micronutrients, progress bar percentages, and AI insight generation.
 
 ## 3. UI/UX Architecture ($1B Startup Aesthetic)
@@ -396,21 +396,21 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
 
 * **Error Handling:**
     * API key errors (`API_KEY_INVALID`, `MISSING_API_KEY`) trigger the BYOK modal, consistent with the text flow.
-    * Any model error returns directly to the preserved confirmation step; the same model is not called twice.
+    * Non-authentication failures receive one standard fallback route with `gemini-3.8-flash` at low thinking. Transient HTTP failures receive one short backoff retry on regular content routes. Meal-text parsing may then try `gemini-3.5-flash`, and only afterward the compatibility-only `gemini-3.1-flash-lite` route, before returning to the preserved confirmation step.
 
 * **Rule:** The Vision pipeline MUST remain a two-step process: (1) image ג†’ raw text, (2) raw text ג†’ structured JSON via `parseMealDescription`. Never bypass the user review step or send images directly to the structured JSON endpoint.
 
 ## 20. UX & Routing
 * **Auto-Navigation & Feedback:** Upon successfully logging any meal, the app MUST automatically navigate the user back to the Home tab and smoothly scroll to the top to provide immediate visual feedback on their daily progress.
 
-## 21. AI Architecture — Single Flash Lite Model (Updated September 2026)
+## 21. AI Architecture — Flash Lite with Flash Fallback (Updated September 2026)
 
-* **Single Model:** `GEMINI_MODEL = "gemini-3.5-flash-lite"` is used by meal parsing, vision, ingredient editing, fast-calorie lookup, insights, supplements, and follow-up answers.
-* **Default Thinking:** No AI request includes an explicit `thinkingConfig`; the model's default configuration is always used.
-* **Single Attempt:** Meal and vision pipelines make one model request. A model error returns to the preserved UI state instead of retrying the same model under a fallback alias.
+* **Primary Model:** `PRIMARY_GEMINI_MODEL = "gemini-3.5-flash-lite"` is used first by meal parsing, vision, ingredient editing, fast-calorie lookup, insights, supplements, and follow-up answers.
+* **Primary Default Thinking:** Primary requests do not include an explicit `thinkingConfig`; Flash Lite's default configuration is used.
+* **Fallback Model:** Non-authentication primary failures receive exactly one standard fallback route through `gemini-3.8-flash` with `thinkingConfig.thinkingLevel = "low"`. This includes timeouts, model/server/network failures, malformed JSON, and response-schema validation failures. The SDK may retry transient HTTP `408`, `429`, and `5xx` responses once on regular content routes; meal-text parsing instead tries bounded 3.5 Flash and then 3.1 Flash Lite compatibility routes after 3.8 fails.
 * **Authentication Errors:** `API_KEY_INVALID` and `MISSING_API_KEY` continue to trigger the existing BYOK flow.
 * **Database quota counting is REMOVED.** No `getDailyAiUsageCount`, `incrementDailyAiUsage`, or `DAILY_AI_LIMIT`.
-* **Vision Response Handling:** `analyzeMealImage()` explicitly parses response candidates to extract only the final `.text` answer, skipping any `thought`-flagged parts if present. Other pipelines use `result.response.text()`.
+* **Vision Response Handling:** `analyzeMealImage()` uses the maintained `@google/genai` SDK's `response.text` accessor, which excludes thought parts. All other pipelines use the same accessor.
 * **Structured Meal Calculation Contract:** `SYSTEM_INSTRUCTION` must preserve user-supplied quantities exactly and estimate only missing quantities. Every returned ingredient name must contain a numeric amount and unit; ready-to-eat edible weight is the default unless the user explicitly states another condition. Explicit sauces, dressings, cream, oil, and calorie-relevant preparation methods must be represented in the ingredient list.
 * **Calculation Consistency:** Root-level `ingredients` is required by both the Gemini response schema and Zod validation. Total calories must equal the rounded sum of ingredient calories, and total protein must equal the rounded sum of ingredient protein. Macro calories must pass a plausibility check using 4/4/9 kcal per gram with reasonable food-label variance.
 * **Micronutrient Completeness:** The structured meal response contains 26 micronutrient keys, not 24. All keys are mandatory and use the units declared in `mealResponseSchema`; `omega3` means EPA + DHA only.
@@ -419,7 +419,7 @@ ramer-motion for smooth entry/exit, adheres to Glassmorphism principles g-white/
     1. **Camera** (Lucide `Camera` icon): Triggers `<input capture="environment">` — opens device camera directly.
     2. **Gallery** (Lucide `Image` icon): Triggers `<input>` WITHOUT `capture` — opens the photo picker/gallery.
     * Both inputs share the same `handleImageCapture` handler and `isAnalyzingImage` loading state.
-* **Rule:** Any future AI pipeline MUST use `GEMINI_MODEL` without an explicit thinking configuration or a duplicate same-model fallback. All AI pipelines require the API Cost Protection confirmation gate (Section 18).
+* **Rule:** Any future AI pipeline MUST use the shared primary/fallback router. Do not configure thinking on the primary, do not retry credentials or caller-aborted requests, and do not add another standard fallback model beyond the single 3.8 route. The meal-text parser's explicitly documented 3.5 Flash and 3.1 Flash Lite compatibility routes are the only exceptions. Only transient transport/server statuses may receive the bounded per-route backoff retry. All AI pipelines require the API Cost Protection confirmation gate (Section 18).
 
 ## 22. Clinical 3-Tier Nutrient Progress Color Logic (March 2026)
 
@@ -553,14 +553,17 @@ pm run build\ or \	sc\) to verify changes before concluding a task.
         3. **Build Fix (TS6133):** Purged unused imports (\Plus\, \Button\, \cn\) and types (\DashboardScreen\) from \Dashboard.tsx\ to satisfy strict production build rules.
     * **Standard:** Always ensure a clean production build by removing unused imports/variables. Maintain the floating navigation standard with proper bottom padding on all scrollable views.
 
-## 28b. Gemini 3.5 Flash Lite & Lossless Retry UX (September 2026)
+## 28b. Gemini Routing & Lossless Retry UX (September 2026)
 
-* **Superseding Model Rule:** This section supersedes older model names and thinking settings retained in historical sections. Every AI path uses only `gemini-3.5-flash-lite` with no explicit thinking configuration.
-* **No Fallback Model:** Each operation makes one model request. If it fails, return the error to the UI; do not repeat the request under another model alias.
+* **Superseding Model Rule:** This section supersedes older model names and thinking settings retained in historical sections. Every AI path uses `gemini-3.5-flash-lite` as the primary model with no explicit thinking configuration.
+* **Single Standard Fallback Route:** If the primary model fails because of a model/server/network timeout, malformed JSON, or response-schema validation, use exactly one standard fallback route with `gemini-3.8-flash` and `thinkingConfig.thinkingLevel = "low"`. For transient HTTP `408`, `429`, and `5xx` responses, regular content routes may make one SDK-managed exponential-backoff retry. Meal-text parsing may use its documented 3.5 Flash route and only then 3.1 Flash Lite after 3.8. Never retry invalid/missing API keys, and never retry after the caller's abort signal has fired.
+* **Safe Failure Diagnostics:** Log only the model name and a sanitized failure category/status. Never log prompts, meal descriptions, user profile data, raw Gemini errors, request URLs, or API keys. HTTP 400 alone is not proof of an invalid API key because Google also uses it for request/schema errors.
 * **Lossless Calculation Failure:** `ConfirmMealModal` must await `processMealSubmission`. It may close only after a successful result. For every failure type—including model, validation, Vault, network, and database errors—the confirmation step remains available with the exact user-edited meal text and an enabled retry action once loading ends.
 * **Duplicate-Submission Guard:** While calculation is running, confirmation and dismissal controls are disabled and display a loading state.
 * **Calculation Animation:** While `ConfirmMealModal` awaits the calculation, it must render the existing `CatLoadingAnimation`. On failure, the animation transitions back to the preserved confirmation state; on success, the modal closes normally.
-* **Bounded Requests:** Gemini calls used by meal parsing, vision, ingredient edits, and the fast-calorie calculator have a 15-second per-request timeout; Vault API-key retrieval has an 8-second timeout. `ConfirmMealModal` also enforces a 45-second end-to-end deadline with `AbortController`. A timeout must cancel the active client request, stop the cat animation, show a retry message, and restore the exact confirmation state.
+* **Bounded Requests:** Each primary Gemini HTTP attempt has a 10-second timeout, the standard 3.8 fallback has 12 seconds, and each compatibility attempt has 10 seconds; Vault API-key retrieval has an 8-second timeout. Retryable statuses (`408`, `429`, and `5xx`) receive at most one short exponential-backoff retry on regular content routes, while the Interactions-based meal-text path makes one request per model so all four routes fit the UI deadline. `ConfirmMealModal` enforces a 55-second end-to-end deadline with `AbortController`. A timeout must cancel the active client request, stop the cat animation, show a retry message, and restore the exact confirmation state.
+* **Maintained SDK:** All Gemini calls use the current `@google/genai` SDK. Do not reintroduce the deprecated, unmaintained `@google/generative-ai` package; it predates Gemini 3.8 and does not receive support for new model behavior.
+* **Meal Text Transport:** `parseMealDescription()` uses the current Gemini Interactions API (`ai.interactions.create`) with `store: false` and a JSON response format derived from the shared meal schema. It tries 3.5 Flash Lite, 3.8 Flash at low thinking, 3.5 Flash, and only then 3.1 Flash Lite as the final compatibility route; Interactions calls do not add hidden SDK retries so every model gets time inside the 55-second UI deadline. This avoids coupling the core meal flow to the legacy `models.generateContent` endpoint while images and the remaining pipelines continue using their supported content APIs.
 * **Abortable Persistence:** The meal-log Supabase upsert accepts the same abort signal and rolls back its optimistic state if aborted or rejected. Retention pruning runs as non-blocking cleanup and must never keep the calorie-calculation UI open.
 
 ## 29. Architectural Standards — Lessons from Weight Tracking (March 2026)

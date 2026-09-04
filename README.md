@@ -5,8 +5,8 @@ Health App is a mobile-first nutrition tracking application built with React, Vi
 ## Highlights
 
 - **Cloud Sync:** Powered by Supabase for Authentication and PostgreSQL storage.
-- **BYOK Gemini AI:** Use your own Google Gemini API key, stored locally in your browser for maximum privacy.
-- **Gemini AI Logging:** All AI features use `gemini-3.5-flash-lite` with the model's default thinking configuration.
+- **BYOK Gemini AI:** Use your own Google Gemini API key, stored through the protected Supabase Vault RPC flow.
+- **Gemini AI Logging:** All AI features use `gemini-3.5-flash-lite` with its default thinking configuration, then fall back on non-authentication failures to `gemini-3.8-flash` at `thinkingLevel: low`. Meal-text parsing uses Google's current Interactions API with structured JSON and may then try `gemini-3.5-flash`, followed by `gemini-3.1-flash-lite` only as a last resort. Transient `408`, `429`, and `5xx` responses receive one short retry on the regular content routes.
 - **Clinical Nutrition:** Miffln-St Jeor formulas, protein heuristics, and safety-first micronutrient tracking.
 - **RTL Hebrew UX:** Fully localized interface with Hebrew support across all screens.
 
@@ -16,7 +16,7 @@ Health App is a mobile-first nutrition tracking application built with React, Vi
 - Supabase (Auth & Database)
 - Zustand (State Management)
 - Tailwind CSS + Framer Motion
-- Google Generative AI SDK
+- Google GenAI SDK (`@google/genai`)
 
 ## Supabase Setup
 
@@ -51,7 +51,7 @@ npm run dev
 
 ### Gemini API Key (BYOK)
 
-When you first try to log a meal using AI, the app will prompt you for your Gemini API key. You can get one for free at [Google AI Studio](https://aistudio.google.com/app/apikey). This key is saved in your browser's `localStorage` and never sent to our servers.
+When you first try to log a meal using AI, the app will prompt you for your Gemini API key. You can get one at [Google AI Studio](https://aistudio.google.com/app/apikey). The key is stored through the app's protected Supabase Vault RPC flow and is never bundled into the frontend source.
 
 ## Repository Notes
 

@@ -15,7 +15,7 @@ export default defineConfig({
         manualChunks: {
           react: ["react", "react-dom"],
           motion: ["framer-motion"],
-          ai: ["@google/generative-ai", "zod"],
+          ai: ["@google/genai", "zod"],
           forms: ["react-hook-form", "@hookform/resolvers"],
           radix: ["@radix-ui/react-accordion", "@radix-ui/react-tabs"],
         },

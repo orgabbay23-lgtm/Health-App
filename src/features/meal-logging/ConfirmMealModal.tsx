@@ -13,7 +13,7 @@ import { Input } from "../../components/ui/input";
 import { CatLoadingAnimation } from "./CatLoadingAnimation";
 import { toast } from "sonner";
 
-const CALCULATION_TIMEOUT_MS = 45_000;
+const CALCULATION_TIMEOUT_MS = 55_000;
 
 interface ConfirmMealModalProps {
   isOpen: boolean;
